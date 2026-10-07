@@ -15,6 +15,6 @@ Eres el dueño de `src/shared/api` y de la sesión en `cancha-nica-front`.
 - **Mutator:** `fetch` con `credentials: 'include'`; ante `401` hace **refresh single-flight** (`POST /api/auth/refresh`) y reintenta **una sola vez**; si falla, redirige al login del portal. **Solo el cliente refresca**, el servidor jamás rota el refresh.
 - **Cookies por portal (R1):** `at_<portal>`/`rt_<portal>`, httpOnly. Nunca tokens en JS ni `localStorage`. Tres portales abiertos a la vez no deben pisarse.
 - **Errores:** `ApiError { status, code, title, detail, requestId, errors? }` desde `application/problem+json`. En `shared/api/errors/es.ts` cada `code` del backend tiene mensaje amable y, cuando aplica, campo del formulario (`setError`). `code` desconocido ⇒ mensaje genérico con `requestId`. Los `5xx` van a Sentry. Cada `code` nuevo del snapshot sin traducción es un hallazgo.
-- **Proxy:** `next.config` reescribe `/api/:path*` → `API_URL` quitando el prefijo `/api`. El `EventSource` público va **directo a la API** (los rewrites de Vercel pueden bufferizar SSE).
+- **Proxy:** `next.config` reescribe `/api/:path*` → `API_URL` quitando el prefijo `/api`. El `EventSource` público va **directo a la API** (el proxy de rewrites de Next puede bufferizar SSE).
 - **Middleware/proxy:** solo comprueba presencia de cookie por prefijo y redirige al login; no valida permisos finos. Verifica el nombre vigente (`middleware.ts` vs `proxy.ts`) en la versión instalada de Next.
 - **MSW:** handlers construidos desde el snapshot (`NEXT_PUBLIC_USE_MSW=true`) para avanzar sin backend.

@@ -9,7 +9,7 @@
 
 ## 1. Resumen ejecutivo
 
-Una sola aplicación **Next.js (App Router) + TypeScript** con cuatro experiencias separadas por *route groups*: **Público**, **Admin** (escritorio), **Delegado** (móvil) y **Mesa** (móvil/tablet, uso de pie y a la luz del sol). Consume la API NestJS mediante un cliente generado con **Orval** a partir del OpenAPI, y se despliega en **Vercel**. La consola de la Mesa es una SPA client-side con reloj local reconciliado con el servidor y una cola de eventos resistente a cortes breves.
+Una sola aplicación **Next.js (App Router) + TypeScript** con cuatro experiencias separadas por *route groups*: **Público**, **Admin** (escritorio), **Delegado** (móvil) y **Mesa** (móvil/tablet, uso de pie y a la luz del sol). Consume la API NestJS mediante un cliente generado con **Orval** a partir del OpenAPI, y se despliega en **Railway** (mismo proveedor que la API). La consola de la Mesa es una SPA client-side con reloj local reconciliado con el servidor y una cola de eventos resistente a cortes breves.
 
 ---
 
@@ -27,7 +27,7 @@ Una sola aplicación **Next.js (App Router) + TypeScript** con cuatro experienci
 | F8 | Móvil | **Mobile-first + PWA instalable básica** | Manifest, iconos, sin service worker de datos |
 | F9 | Rutas por rol | **Middleware + guard en layouts + sesión por portal** | Tres logins; `GET /admin/me`, `/delegado/me`, `/mesa/me` (B2); el servidor usa `at_<portal>` y **nunca** rota el refresh (R1) |
 | F10 | Testing | **Vitest** (lógica) + **Playwright** (flujos críticos) | MSW para aislar la API cuando haga falta |
-| F11 | Deploy | **Vercel**; dominio propio cuando haya presupuesto | Hobby es no comercial: pasar a Pro si se cobran inscripciones |
+| F11 | Deploy | **Railway** (servicio Node con `next start`), junto a la API; dominio propio cuando haya presupuesto | Costo por uso: fijar alertas de gasto antes de abrir inscripciones |
 | F12 | Público | **Server Components + ISR** + hidratación de Query | `revalidate` 30–60 s, Open Graph dinámico |
 | F13 | Diseño | **Sistema de diseño ligero con tokens**, marca de liga configurable | Densidad distinta por portal; tema claro/oscuro |
 | F14 | Estructura | **Por feature + `app/` delgado** | Servidor = Query; Zustand solo en la mesa |
@@ -106,7 +106,7 @@ El producto es **Cancha Nica** y sirve a futsal y a fútbol de campo (9 u 11). E
 | Calidad | ESLint, Prettier, `tsc --noEmit`, Husky + lint-staged |
 | Tests | Vitest + Testing Library, Playwright, MSW |
 | CI | GitHub Actions (lint, typecheck, test, build, Lighthouse como aviso) |
-| Deploy | Vercel (preview por PR) |
+| Deploy | Railway (entorno por PR si se habilita) |
 
 > **Nota de versión:** el archivo de interceptación de rutas se llama `middleware.ts` en versiones anteriores de Next y `proxy.ts` en las más recientes. Al crear el proyecto, verificar el nombre vigente en la versión instalada y fijarlo aquí.
 
@@ -155,12 +155,12 @@ cancha-nica-front/
 Reglas: `app/` no contiene lógica de negocio; una feature **no importa** de otra, **salvo** `features/public`, que está pensada para **componer** las piezas de presentación de `posiciones`, `goleo` y `eliminatorias` (esas features exponen un `index.ts` público con sus componentes de solo lectura). Si dos features comparten otra cosa, sube a `shared/`. Los portales comparten `shared/ui` y `shared/lib`.
 
 ### 4.2 Sesión, cookies y rutas protegidas
-- El navegador solo habla con el dominio de Vercel. `next.config` reescribe `/api/:path*` → `API_URL/:path*` (el prefijo `/api` se elimina al reenviar). Las cookies se emiten según **R1**: `at_<portal>` y `rt_<portal>`, `httpOnly; Secure; SameSite=Lax; Path=/`, same-site y sin CORS.
+- El navegador solo habla con el dominio público del front (Railway). `next.config` reescribe `/api/:path*` → `API_URL/:path*` (el prefijo `/api` se elimina al reenviar). Las cookies se emiten según **R1**: `at_<portal>` y `rt_<portal>`, `httpOnly; Secure; SameSite=Lax; Path=/`, same-site y sin CORS.
 - **Tokens en cookies httpOnly, nunca en JavaScript ni `localStorage`.** El mutator de Orval envía las cookies (`credentials: 'include'`). Ante un `401` ejecuta un **refresh en single-flight** (`POST /api/auth/refresh`) y reintenta **una sola vez**; si falla, redirige al login del portal correspondiente. **Solo el cliente refresca**; el servidor jamás rota el refresh (evita la carrera con la rotación).
 - **Middleware/proxy:** por prefijo (`/admin`, `/delegado`, `/mesa`) comprueba la presencia de `rt_<portal>` o `at_<portal>` y redirige al login adecuado (para la mesa, a `/mesa/[edicionSlug]/login`). **No** valida permisos finos.
 - **Layouts de grupo:** hacen `GET /<portal>/me` **en servidor** con `at_<portal>` para confirmar el rol, precargar el principal y rechazar roles equivocados. Si `at_<portal>` venció (401), redirigen a la ruta cliente de refresh. El backend sigue siendo la autoridad real.
 - Tres pantallas de login: Admin (email + contraseña, con «olvidé mi contraseña», restablecer y aceptar invitación), Delegado (teléfono + PIN, `inputmode="numeric"`) y Mesa (`/mesa/[edicionSlug]/login`, usuario `MESA_X` + PIN; la edición viene de la URL).
-- **SSE y rewrites:** los rewrites de Vercel pueden bufferizar streams. El `EventSource` público se conecta **directo a la API** (sin cookies; CORS habilitado solo para ese endpoint, ajuste B4).
+- **SSE y rewrites:** el proxy de rewrites de Next puede bufferizar streams. El `EventSource` público se conecta **directo a la API** (sin cookies; CORS habilitado solo para ese endpoint, ajuste B4).
 
 ### 4.3 Datos del servidor
 - Orval genera hooks por `operationId` (ej. `useGetEdiciones`, `useCerrarActa`). El script `pnpm api:generate` lee el `/docs-json` del backend (URL por variable de entorno). El resultado se **versiona** en git para que el build no dependa de la API; CI avisa si hay diferencias contra el OpenAPI actual.
@@ -249,13 +249,13 @@ Login `MESA_X` + PIN en `/mesa/[edicionSlug]/login` · Agenda **Hoy** (día loca
 
 ---
 
-## 8. Despliegue (Vercel)
+## 8. Despliegue (Railway)
 
-- **Proyecto:** conectado al repo `cancha-nica-front`; preview por PR; `main` = producción.
-- **Variables:** `API_URL` (Railway), `NEXT_PUBLIC_SSE_URL`, `NEXT_PUBLIC_SITE_URL`, Sentry, y el `orgSlug` por defecto.
-- **Rewrites:** `/api/:path*` → `API_URL`. Verificar en preview que **no** buferizan el SSE (si lo hacen, el stream va directo, como ya está previsto).
-- **Plan:** Hobby para desarrollo; **Pro** cuando la liga cobre inscripciones (Hobby es no comercial).
-- **Dominio:** `.vercel.app` al inicio; dominio propio cuando haya presupuesto (habilita cookie en dominio raíz y quita la dependencia del proxy).
+- **Proyecto:** servicio en Railway conectado al repo `cancha-nica-front`; `main` = producción; entorno de preview por PR si se habilita (*PR environments*). Build `pnpm build`, arranque `pnpm start` (Next lee `PORT` de Railway). Node 22 fijado con `engines` en `package.json`.
+- **Variables:** `API_URL` (URL de la API en Railway), `NEXT_PUBLIC_SSE_URL`, `NEXT_PUBLIC_SITE_URL`, Sentry, y el `orgSlug` por defecto. **Deben existir en el *build*:** `API_URL` se evalúa al construir los rewrites y las `NEXT_PUBLIC_*` se incrustan en el bundle; cambiarlas obliga a redesplegar.
+- **Rewrites:** `/api/:path*` → `API_URL`. Verificar en el entorno desplegado que **no** buferizan el SSE (si lo hacen, el stream va directo, como ya está previsto).
+- **Costos:** Railway cobra por uso; configurar alertas de gasto y revisar el plan antes de que la liga cobre inscripciones.
+- **Dominio:** `*.up.railway.app` al inicio; dominio propio cuando haya presupuesto (habilita cookie en dominio raíz y quita la dependencia del proxy).
 - **PWA:** `manifest.ts` + iconos; instalable para delegado y mesa.
 
 ---
@@ -268,8 +268,8 @@ Login `MESA_X` + PIN en `/mesa/[edicionSlug]/login` · Agenda **Hoy** (día loca
 | Pérdida de eventos en cortes de red | Cola persistida + idempotencia + bloqueo de cierre hasta vaciar la cola |
 | Divergencia entre el motor de faltas del front y del back | Tabla de casos compartida y tests en ambos repos; el servidor siempre gana |
 | Contrato desincronizado entre repos | Orval versionado + CI que detecta diferencias del OpenAPI |
-| Rewrites de Vercel y SSE | EventSource directo a la API |
-| Hobby de Vercel es no comercial | Pasar a Pro antes de cobrar inscripciones |
+| Rewrites del proxy de Next y SSE | EventSource directo a la API |
+| Costo por uso en Railway | Alertas de gasto y revisión del plan antes de cobrar inscripciones |
 | Safari/iOS y cookies | Same-site por proxy; probar en iPhone real desde la Fase 1 |
 | Refresh del servidor y del cliente en carrera (rotación) | Refresh solo desde el cliente, en single-flight (R1) |
 | Dos dispositivos en el mismo partido | Lease con «tomar el control» y consola de solo lectura al perder el control (R9) |
@@ -286,7 +286,7 @@ Las fases del front siguen el orden **revisado** del backend (R7). **Una fase de
 
 | Fase | Nombre | Depende de (back) | Alcance | Criterio de salida |
 |---|---|---|---|---|
-| **0** | Fundaciones | F0 | **Detalle completo en `docs/fases/FASE_00.md`.** **0a (local):** proyecto Next, estructura de carpetas con las 4 zonas, env validado, proxy `/api/*`, Orval desde el snapshot, mutator con `ApiError` y `es.ts`, TanStack Query, MSW, tema y tokens, PWA básica, Vitest y Playwright de humo, CI. **0b (nube):** Vercel, variables, CORS en la API para previews | **0a:** «API conectada ✅» con API real o con MSW; `api:generate` produce `useGetPing`; CI verde. **0b:** la URL de Vercel abre desde el celular |
+| **0** | Fundaciones | F0 | **Detalle completo en `docs/fases/FASE_00.md`.** **0a (local):** proyecto Next, estructura de carpetas con las 4 zonas, env validado, proxy `/api/*`, Orval desde el snapshot, mutator con `ApiError` y `es.ts`, TanStack Query, MSW, tema y tokens, PWA básica, Vitest y Playwright de humo, CI. **0b (nube):** Railway, variables, CORS en la API para previews | **0a:** «API conectada ✅» con API real o con MSW; `api:generate` produce `useGetPing`; CI verde. **0b:** la URL de Railway abre desde el celular |
 | **1** | Auth y shell | F1 | **Login de admin**, «olvidé mi contraseña», restablecer y aceptar invitación, middleware/proxy, `GET /admin/me`, cookies por portal, layouts y navegación base de los tres portales (delegado y mesa con el shell, sus logins llegan en las fases 2 y 3) | Login/refresh/logout del admin; rutas protegidas; **probado en iPhone real**; tres portales abiertos a la vez sin pisarse |
 | **2** | Admin: ediciones y mesas | F2 | Dashboard, CRUD de ediciones, parámetros, **selector de modalidad con preset editable y `useReglasModalidad` (4.9)**, cambio de estado con reporte de precondiciones, banner de pausa, gestión de las 3 mesas (PIN visible una vez, copiar enlace de mesa y mensaje `wa.me`, bloquear, resetear, desbloquear), **login de mesa `/mesa/[edicionSlug]/login`** y `GET /mesa/me` | Un dueño crea una edición **en cada modalidad** (los presets cargan y las reglas inválidas se rechazan en el campo correcto) y 3 mesas de punta a punta; una mesa entra por el enlace |
 | **3** | Admin: clubes, delegados y equipos | F3 | Clubes, delegados, inscripción de equipos, reasignación de delegado, **login del delegado**, `GET /delegado/me` y selector multi-equipo | Delegado con 2 equipos en categorías distintas; mensajes de error por `code` |
@@ -318,7 +318,7 @@ Solo quedan las **realmente abiertas**; el resto se resolvió en F1–F16 y en l
 - **F8:** ¿Imagen de Open Graph con `@vercel/og`? ¿Cómo se explica al público un «empate sin resolver»?
 - **F9:** ¿Cuadro como árbol o como lista en móvil?
 - **F10:** ¿Cómo se avisa al delegado de que un acta fue reabierta?
-- **F11:** ¿Analítica (Vercel Analytics) y consentimiento?
+- **F11:** ¿Analítica y consentimiento?
 
 ---
 

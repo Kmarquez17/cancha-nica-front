@@ -17,9 +17,9 @@ Esta fase **no** implementa login ni pantallas reales. Solo la base.
 
 | | **0a — Local** | **0b — Nube** |
 |---|---|---|
-| Qué es | Front en tu PC (puerto 3001), con la API real o con MSW | Front desplegado en Vercel |
-| Cuentas | Ninguna | GitHub, Vercel (y opcional Sentry) |
-| Costo | 0 | Hobby gratis (es **no comercial**: pasar a Pro antes de cobrar inscripciones) |
+| Qué es | Front en tu PC (puerto 3001), con la API real o con MSW | Front desplegado en Railway |
+| Cuentas | Ninguna | GitHub, Railway (y opcional Sentry) |
+| Costo | 0 | Railway cobra por uso: fijar alertas de gasto antes de cobrar inscripciones |
 | Cuándo | **Ahora** | Cuando la API esté desplegada |
 
 ## 3. Prerrequisitos (0a)
@@ -228,20 +228,20 @@ cancha-nica-front/
 
 ## 8. Tareas de 0b (nube)
 
-> Requiere cuentas de **GitHub** y **Vercel**, y la API desplegada (0b del repo `cancha-nica-api`) para el proxy real.
+> Requiere cuentas de **GitHub** y **Railway**, y la API desplegada (0b del repo `cancha-nica-api`) para el proxy real.
 
 ### 0.15 Subir a GitHub y activar el CI
-### 0.16 Proyecto en Vercel
-1. Importa el repo.
-2. Variables: `API_URL` (URL pública de Railway), `NEXT_PUBLIC_SITE_URL` (dominio de Vercel), `NEXT_PUBLIC_USE_MSW=false`.
-3. Confirma que cada PR genera un *preview deploy*.
-**Comprobación:** abre la URL de Vercel desde el celular: «API conectada ✅» (esto prueba el proxy hacia Railway).
+### 0.16 Servicio en Railway
+1. Nuevo servicio desde el repo `cancha-nica-front` (rama `main`/`master`). Build `pnpm build`, arranque `pnpm start` (Next usa el `PORT` de Railway). Fija Node 22 con `"engines": { "node": ">=22" }` en `package.json`.
+2. Variables (**antes del build**, porque `API_URL` y las `NEXT_PUBLIC_*` se evalúan al construir): `API_URL` (URL de la API en Railway; si ambos servicios están en el mismo proyecto puede usarse la URL interna), `NEXT_PUBLIC_SITE_URL` (dominio público del front), `NEXT_PUBLIC_USE_MSW=false`.
+3. Genera el dominio público (`*.up.railway.app`) y, si se quiere, habilita *PR environments* para previews.
+**Comprobación:** abre la URL de Railway desde el celular: «API conectada ✅» (esto prueba el proxy hacia la API).
 
 ### 0.17 CORS en la API para previews
-Añade a la API el dominio de producción de Vercel en `CORS_ORIGINS` y el patrón de previews (`CORS_ORIGIN_PATTERNS`), **solo** para rutas públicas y SSE (B4).
+Añade a la API el dominio de producción del front (Railway) en `CORS_ORIGINS` y el patrón de previews (`CORS_ORIGIN_PATTERNS`), **solo** para rutas públicas y SSE (B4).
 
 ### 0.18 Verificar que el proxy no rompe nada
-Comprueba que `/api/ping` responde por el proxy de Vercel y anota si los rewrites bufferizan el SSE (se prueba de verdad en la Fase 8; si lo hacen, el SSE ya está previsto para ir **directo** a la API con `NEXT_PUBLIC_SSE_URL`).
+Comprueba que `/api/ping` responde por el proxy del front en Railway y anota si los rewrites bufferizan el SSE (se prueba de verdad en la Fase 8; si lo hacen, el SSE ya está previsto para ir **directo** a la API con `NEXT_PUBLIC_SSE_URL`).
 
 ### 0.19 Sentry (opcional ahora)
 `@sentry/nextjs`, DSN por variable y `beforeSend` que elimina cookies y cabeceras de autorización. Puede dejarse para la Fase 11.
@@ -250,9 +250,9 @@ Comprueba que `/api/ping` responde por el proxy de Vercel y anota si los rewrite
 Con dominio propio la cookie puede pasar al dominio raíz y el proxy deja de ser imprescindible. No bloquea nada.
 
 ## 9. Criterio de salida de 0b ✅
-- [ ] La URL de Vercel abre desde el celular y muestra «API conectada ✅».
-- [ ] El CI corre en verde en GitHub y cada PR crea su preview.
-- [ ] Las variables están documentadas en `.env.example` y configuradas en Vercel.
+- [ ] La URL de Railway abre desde el celular y muestra «API conectada ✅».
+- [ ] El CI corre en verde en GitHub y, si se habilitan los *PR environments*, cada PR crea su preview.
+- [ ] Las variables están documentadas en `.env.example` y configuradas en Railway.
 
 ---
 
@@ -262,12 +262,12 @@ Con dominio propio la cookie puede pasar al dominio raíz y el proxy deja de ser
 | El front se bloquea esperando al backend | Snapshot OpenAPI + MSW (0.6 y 0.9) |
 | Contrato desactualizado | Código de Orval versionado + aviso en CI |
 | Cambios de API entre versiones de Next/Tailwind/shadcn | Anotar versiones fijadas |
-| Hobby de Vercel es no comercial | Pasar a Pro antes de cobrar inscripciones |
+| Costo por uso en Railway | Alertas de gasto y revisión del plan antes de cobrar inscripciones |
 | Los rewrites bufferizan SSE | SSE directo a la API (decidido en el plan, F6) |
 
 ## 11. Entregables para el repo `cancha-nica-api`
 - Confirmación de que `getPing` funciona por el proxy.
-- La **URL del front** (dominio de Vercel) para `CORS_ORIGINS`.
+- La **URL del front** (dominio de Railway) para `CORS_ORIGINS`.
 
 ## 12. Preguntas abiertas de esta fase
 - Fuente tipográfica, logo y color primario provisionales.
