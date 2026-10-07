@@ -1,0 +1,54 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Cancha Nica API (snapshot mínimo)", "version": "0.0.1" },
+  "paths": {
+    "/ping": {
+      "get": {
+        "operationId": "getPing",
+        "tags": ["salud"],
+        "summary": "Estado de la API",
+        "responses": {
+          "200": {
+            "description": "API viva",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ping" } } }
+          },
+          "default": {
+            "description": "Error",
+            "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Ping": {
+        "type": "object",
+        "required": ["ok", "serverNow"],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "serverNow": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "required": ["status", "code", "title"],
+        "properties": {
+          "status": { "type": "integer" },
+          "code": { "type": "string" },
+          "title": { "type": "string" },
+          "detail": { "type": "string" },
+          "requestId": { "type": "string" },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["field", "message"],
+              "properties": { "field": { "type": "string" }, "message": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}
