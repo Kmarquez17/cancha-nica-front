@@ -258,6 +258,42 @@ Login `MESA_X` + PIN en `/mesa/[edicionSlug]/login` · Agenda **Hoy** (día loca
 - **Dominio:** `*.up.railway.app` al inicio; dominio propio cuando haya presupuesto (habilita cookie en dominio raíz y quita la dependencia del proxy).
 - **PWA:** `manifest.ts` + iconos; instalable para delegado y mesa.
 
+### 8.1 FASE_DEPLOY_RAILWAYS (diferida)
+
+> **Estado:** ⏸ Diferida a propósito. Se ejecuta **al final**, cuando el front esté terminado y probado en local, para no generar costos en Railway antes de tiempo. Corresponde a las tareas 0.16–0.20 de la Fase 0b (0.15, GitHub + CI, no cuesta y ya se hizo). Mientras tanto todo se prueba en local: `pnpm dev` en el puerto 3001, con la API local o con MSW.
+
+**Requisitos antes de empezar**
+- [ ] El front está terminado y probado en local (`lint`, `typecheck`, `test`, `test:e2e`, `build` en verde).
+- [ ] La API (`cancha-nica-api`) tiene su propio despliegue en Railway y una URL pública.
+- [ ] Alertas de gasto configuradas en Railway y plan revisado.
+- [ ] CI en verde en GitHub (0.15).
+
+#### ⏸ 0.16 Servicio en Railway
+1. Nuevo servicio desde el repo `cancha-nica-front` (rama `main`/`master`). Build `pnpm build`, arranque `pnpm start` (Next usa el `PORT` de Railway). Fija Node 22 con `"engines": { "node": ">=22" }` en `package.json`.
+2. Variables (**antes del build**, porque `API_URL` y las `NEXT_PUBLIC_*` se evalúan al construir): `API_URL` (URL de la API en Railway; si ambos servicios están en el mismo proyecto puede usarse la URL interna), `NEXT_PUBLIC_SITE_URL` (dominio público del front), `NEXT_PUBLIC_USE_MSW=false`.
+3. Genera el dominio público (`*.up.railway.app`) y, si se quiere, habilita *PR environments* para previews.
+**Comprobación:** abre la URL de Railway desde el celular: «API conectada ✅» (esto prueba el proxy hacia la API).
+
+#### ⏸ 0.17 CORS en la API para previews
+Añade a la API el dominio de producción del front (Railway) en `CORS_ORIGINS` y el patrón de previews (`CORS_ORIGIN_PATTERNS`), **solo** para rutas públicas y SSE (B4).
+
+#### ⏸ 0.18 Verificar que el proxy no rompe nada
+Comprueba que `/api/ping` responde por el proxy del front en Railway y anota si los rewrites bufferizan el SSE (se prueba de verdad en la Fase 8; si lo hacen, el SSE ya está previsto para ir **directo** a la API con `NEXT_PUBLIC_SSE_URL`).
+
+#### ⏸ 0.19 Sentry (opcional ahora)
+`@sentry/nextjs`, DSN por variable y `beforeSend` que elimina cookies y cabeceras de autorización. Puede dejarse para la Fase 11.
+
+#### ⏸ 0.20 Dominio propio (cuando haya presupuesto)
+Con dominio propio la cookie puede pasar al dominio raíz y el proxy deja de ser imprescindible. No bloquea nada.
+
+**Criterio de salida**
+- [ ] La URL de Railway abre desde el celular y muestra «API conectada ✅».
+- [ ] El CI corre en verde en GitHub y, si se habilitan los *PR environments*, cada PR crea su preview.
+- [ ] Las variables están documentadas en `.env.example` y configuradas en Railway.
+- [ ] Anotada la URL del front para `CORS_ORIGINS` de la API.
+
+**Limitantes mientras esté diferida:** Wake Lock y service worker exigen HTTPS (en el celular por red local no funcionan; usar un túnel HTTPS o `localhost`); Safari/iOS y cookies se prueban con un iPhone real vía túnel; el comportamiento del SSE tras el proxy solo se confirma con el deploy (aproximar en local con `pnpm build && pnpm start`).
+
 ---
 
 ## 9. Riesgos y deuda técnica
@@ -286,7 +322,7 @@ Las fases del front siguen el orden **revisado** del backend (R7). **Una fase de
 
 | Fase | Nombre | Depende de (back) | Alcance | Criterio de salida |
 |---|---|---|---|---|
-| **0** | Fundaciones | F0 | **Detalle completo en `docs/fases/FASE_00.md`.** **0a (local):** proyecto Next, estructura de carpetas con las 4 zonas, env validado, proxy `/api/*`, Orval desde el snapshot, mutator con `ApiError` y `es.ts`, TanStack Query, MSW, tema y tokens, PWA básica, Vitest y Playwright de humo, CI. **0b (nube):** Railway, variables, CORS en la API para previews | **0a:** «API conectada ✅» con API real o con MSW; `api:generate` produce `useGetPing`; CI verde. **0b:** la URL de Railway abre desde el celular |
+| **0** | Fundaciones | F0 | **Detalle completo en `docs/fases/FASE_00.md`.** **0a (local):** proyecto Next, estructura de carpetas con las 4 zonas, env validado, proxy `/api/*`, Orval desde el snapshot, mutator con `ApiError` y `es.ts`, TanStack Query, MSW, tema y tokens, PWA básica, Vitest y Playwright de humo, CI. **0b (nube), diferida a la sección 8.1 (`FASE_DEPLOY_RAILWAYS`) hasta terminar el front:** Railway, variables, CORS en la API para previews | **0a:** «API conectada ✅» con API real o con MSW; `api:generate` produce `useGetPing`; CI verde. **0b:** la URL de Railway abre desde el celular |
 | **1** | Auth y shell | F1 | **Login de admin**, «olvidé mi contraseña», restablecer y aceptar invitación, middleware/proxy, `GET /admin/me`, cookies por portal, layouts y navegación base de los tres portales (delegado y mesa con el shell, sus logins llegan en las fases 2 y 3) | Login/refresh/logout del admin; rutas protegidas; **probado en iPhone real**; tres portales abiertos a la vez sin pisarse |
 | **2** | Admin: ediciones y mesas | F2 | Dashboard, CRUD de ediciones, parámetros, **selector de modalidad con preset editable y `useReglasModalidad` (4.9)**, cambio de estado con reporte de precondiciones, banner de pausa, gestión de las 3 mesas (PIN visible una vez, copiar enlace de mesa y mensaje `wa.me`, bloquear, resetear, desbloquear), **login de mesa `/mesa/[edicionSlug]/login`** y `GET /mesa/me` | Un dueño crea una edición **en cada modalidad** (los presets cargan y las reglas inválidas se rechazan en el campo correcto) y 3 mesas de punta a punta; una mesa entra por el enlace |
 | **3** | Admin: clubes, delegados y equipos | F3 | Clubes, delegados, inscripción de equipos, reasignación de delegado, **login del delegado**, `GET /delegado/me` y selector multi-equipo | Delegado con 2 equipos en categorías distintas; mensajes de error por `code` |

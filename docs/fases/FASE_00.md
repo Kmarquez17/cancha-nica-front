@@ -1,7 +1,7 @@
 # FASE 0 — Fundaciones (repo `cancha-nica-front`)
 
 > **Fuente de la verdad:** `PLAN_FRONTEND.md` (raíz del repo). Este documento solo detalla la Fase 0.
-> **Estado:** ✅ 0a (local) · ☐ 0b (nube)
+> **Estado:** ✅ 0a (local) · ⏸ 0b (nube) diferida → `FASE_DEPLOY_RAILWAYS` (solo 0.15 queda aquí: confirmar CI en verde)
 > **Independencia:** este repo **no necesita el repo `cancha-nica-api` para empezar**. Genera su cliente desde `docs/contrato/openapi.snapshot.json` y simula las respuestas con MSW. Cuando la API exista, se cambia a la URL real.
 > **Cómo usarlo con Claude:** abre una sesión **dentro del repo `cancha-nica-front`** y pide, por ejemplo: *«Ejecuta la tarea 0.4 de `docs/fases/FASE_00.md`»*.
 
@@ -20,7 +20,7 @@ Esta fase **no** implementa login ni pantallas reales. Solo la base.
 | Qué es | Front en tu PC (puerto 3001), con la API real o con MSW | Front desplegado en Railway |
 | Cuentas | Ninguna | GitHub, Railway (y opcional Sentry) |
 | Costo | 0 | Railway cobra por uso: fijar alertas de gasto antes de cobrar inscripciones |
-| Cuándo | **Ahora** | Cuando la API esté desplegada |
+| Cuándo | **Ahora** | **Al final**, en `FASE_DEPLOY_RAILWAYS` (diferida para no generar costos antes de tiempo) |
 
 ## 3. Prerrequisitos (0a)
 
@@ -228,31 +228,17 @@ cancha-nica-front/
 
 ## 8. Tareas de 0b (nube)
 
-> Requiere cuentas de **GitHub** y **Railway**, y la API desplegada (0b del repo `cancha-nica-api`) para el proxy real.
+> Solo 0.15 queda activa; 0.16–0.20 están diferidas. Requiere cuentas de **GitHub** y **Railway**, y la API desplegada (0b del repo `cancha-nica-api`) para el proxy real.
 
 ### 0.15 Subir a GitHub y activar el CI
-### 0.16 Servicio en Railway
-1. Nuevo servicio desde el repo `cancha-nica-front` (rama `main`/`master`). Build `pnpm build`, arranque `pnpm start` (Next usa el `PORT` de Railway). Fija Node 22 con `"engines": { "node": ">=22" }` en `package.json`.
-2. Variables (**antes del build**, porque `API_URL` y las `NEXT_PUBLIC_*` se evalúan al construir): `API_URL` (URL de la API en Railway; si ambos servicios están en el mismo proyecto puede usarse la URL interna), `NEXT_PUBLIC_SITE_URL` (dominio público del front), `NEXT_PUBLIC_USE_MSW=false`.
-3. Genera el dominio público (`*.up.railway.app`) y, si se quiere, habilita *PR environments* para previews.
-**Comprobación:** abre la URL de Railway desde el celular: «API conectada ✅» (esto prueba el proxy hacia la API).
+### 0.16 – 0.20 → movidas a `FASE_DEPLOY_RAILWAYS`
 
-### 0.17 CORS en la API para previews
-Añade a la API el dominio de producción del front (Railway) en `CORS_ORIGINS` y el patrón de previews (`CORS_ORIGIN_PATTERNS`), **solo** para rutas públicas y SSE (B4).
+> **Diferidas a propósito** para no generar costos en Railway antes de terminar el front. El detalle de las tareas (servicio en Railway, CORS en la API, verificación del proxy, Sentry, dominio propio) está en la sección 8.1 de `PLAN_FRONTEND.md` («FASE_DEPLOY_RAILWAYS»).
 
-### 0.18 Verificar que el proxy no rompe nada
-Comprueba que `/api/ping` responde por el proxy del front en Railway y anota si los rewrites bufferizan el SSE (se prueba de verdad en la Fase 8; si lo hacen, el SSE ya está previsto para ir **directo** a la API con `NEXT_PUBLIC_SSE_URL`).
+## 9. Criterio de salida de 0b
 
-### 0.19 Sentry (opcional ahora)
-`@sentry/nextjs`, DSN por variable y `beforeSend` que elimina cookies y cabeceras de autorización. Puede dejarse para la Fase 11.
-
-### 0.20 Dominio propio (cuando haya presupuesto)
-Con dominio propio la cookie puede pasar al dominio raíz y el proxy deja de ser imprescindible. No bloquea nada.
-
-## 9. Criterio de salida de 0b ✅
-- [ ] La URL de Railway abre desde el celular y muestra «API conectada ✅».
-- [ ] El CI corre en verde en GitHub y, si se habilitan los *PR environments*, cada PR crea su preview.
-- [ ] Las variables están documentadas en `.env.example` y configuradas en Railway.
+- [ ] **Diferido** a `FASE_DEPLOY_RAILWAYS` (se cierra con el despliegue final).
+- [ ] 0.15: CI en verde en GitHub (repo ya subido).
 
 ---
 
