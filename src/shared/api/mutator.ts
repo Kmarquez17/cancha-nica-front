@@ -1,13 +1,16 @@
-export type FieldError = { field: string; message: string };
+import { portalDeRuta, type Portal } from './portales';
 
 export class ApiError extends Error {
+  /** Portal al que pertenecía la petición (lo fija apiFetch); sirve para decidir a dónde redirigir. */
+  portal?: Portal;
+
   constructor(
     public status: number,
     public code: string,
     public title: string,
     public detail?: string,
     public requestId?: string,
-    public errors?: FieldError[],
+    public errors?: string[],
   ) {
     super(title);
     this.name = 'ApiError';
@@ -24,30 +27,69 @@ export function problemToApiError(status: number, body: unknown): ApiError {
     str(p.title) ?? 'Error',
     str(p.detail),
     str(p.requestId),
-    Array.isArray(p.errors) ? (p.errors as FieldError[]) : undefined,
+    Array.isArray(p.errors) ? p.errors.map(String) : undefined,
   );
 }
 
-let refreshing: Promise<boolean> | null = null; // single-flight (R1)
+export type ResultadoRefresh = 'ok' | 'expirada' | 'bloqueada';
 
-// TODO(Fase 1): refresh real POST /api/auth/refresh + redirección al login del portal.
-async function refreshSession(): Promise<boolean> {
-  refreshing ??= Promise.resolve(false).finally(() => {
-    refreshing = null;
-  });
-  return refreshing;
+const refrescos = new Map<Portal, Promise<ResultadoRefresh>>(); // single-flight por portal (R1)
+
+/**
+ * Refresca la sesión de un portal. Una única petición en curso por portal: las demás esperan su
+ * resultado. 204 = ok; 403 ORG_BLOQUEADA = liga bloqueada (la sesión sigue viva, no se borra nada);
+ * cualquier otra cosa = sesión expirada.
+ */
+export function refrescarSesion(portal: Portal): Promise<ResultadoRefresh> {
+  let enCurso = refrescos.get(portal);
+  if (!enCurso) {
+    enCurso = fetch(`/api/auth/refresh?portal=${portal}`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(async (res): Promise<ResultadoRefresh> => {
+        if (res.status === 204) return 'ok';
+        if (res.status === 403) {
+          const body = await res.json().catch(() => ({}));
+          if (problemToApiError(res.status, body).code === 'ORG_BLOQUEADA') return 'bloqueada';
+        }
+        return 'expirada';
+      })
+      .catch((): ResultadoRefresh => 'expirada')
+      .finally(() => {
+        refrescos.delete(portal);
+      });
+    refrescos.set(portal, enCurso);
+  }
+  return enCurso;
 }
 
+const ORG_BLOQUEADA_ERROR = () =>
+  new ApiError(403, 'ORG_BLOQUEADA', 'Liga bloqueada', 'La liga está bloqueada.');
+
 export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
+  const portal = portalDeRuta(url);
   const doFetch = () => fetch(`/api${url}`, { ...init, credentials: 'include' });
   let res = await doFetch();
-  if (res.status === 401 && !url.startsWith('/auth/') && (await refreshSession())) {
-    res = await doFetch(); // reintento único
+
+  // 401 en una ruta de portal: un refresh y un único reintento. Los /auth/* no se refrescan.
+  if (res.status === 401 && portal && !url.startsWith('/auth/')) {
+    const resultado = await refrescarSesion(portal);
+    if (resultado === 'ok') {
+      res = await doFetch();
+    } else if (resultado === 'bloqueada') {
+      const error = ORG_BLOQUEADA_ERROR();
+      error.portal = portal;
+      throw error;
+    }
   }
+
   if (res.ok) {
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
   }
   const body = await res.json().catch(() => ({}));
-  throw problemToApiError(res.status, body);
+  const error = problemToApiError(res.status, body);
+  if (portal) error.portal = portal;
+  throw error;
 }

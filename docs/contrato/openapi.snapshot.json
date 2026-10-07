@@ -1,54 +1,1442 @@
 {
-  "openapi": "3.0.3",
-  "info": { "title": "Cancha Nica API (snapshot mínimo)", "version": "0.0.1" },
-  "paths": {
-    "/ping": {
-      "get": {
-        "operationId": "getPing",
-        "tags": ["salud"],
-        "summary": "Estado de la API",
-        "responses": {
-          "200": {
-            "description": "API viva",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ping" } } }
+  "components": {
+    "schemas": {
+      "AceptarInvitacionDto": {
+        "properties": {
+          "password": {
+            "description": "Contraseña nueva de la cuenta",
+            "maxLength": 128,
+            "minLength": 10,
+            "type": "string"
           },
-          "default": {
-            "description": "Error",
-            "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          "token": {
+            "description": "Token del enlace de invitación",
+            "type": "string"
           }
-        }
+        },
+        "required": ["token", "password"],
+        "type": "object"
+      },
+      "ActualizarOrganizacionDto": {
+        "properties": {
+          "colorPrimario": {
+            "example": "#16a34a",
+            "type": "string"
+          },
+          "moneda": {
+            "description": "ISO 4217",
+            "example": "NIO",
+            "type": "string"
+          },
+          "nombre": {
+            "example": "Liga Barrio Leningrado",
+            "type": "string"
+          },
+          "pais": {
+            "description": "ISO 3166-1 alpha-2",
+            "example": "NI",
+            "type": "string"
+          },
+          "telefonoContacto": {
+            "example": "+505 8888 8888",
+            "type": "string"
+          },
+          "zonaHoraria": {
+            "example": "America/Managua",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AdminPrincipalDto": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "organizacion": {
+            "$ref": "#/components/schemas/OrganizacionResumenDto"
+          },
+          "role": {
+            "enum": ["OWNER", "ADMIN"],
+            "type": "string"
+          }
+        },
+        "required": ["id", "email", "nombre", "role", "organizacion"],
+        "type": "object"
+      },
+      "BloquearOrganizacionDto": {
+        "properties": {
+          "motivo": {
+            "description": "Queda en la auditoría y en la ficha de la liga",
+            "example": "Falta de pago de la mensualidad",
+            "type": "string"
+          }
+        },
+        "required": ["motivo"],
+        "type": "object"
+      },
+      "CrearOrganizacionDto": {
+        "properties": {
+          "colorPrimario": {
+            "example": "#16a34a",
+            "type": "string"
+          },
+          "moneda": {
+            "description": "ISO 4217",
+            "example": "NIO",
+            "type": "string"
+          },
+          "nombre": {
+            "example": "Liga Barrio Leningrado",
+            "type": "string"
+          },
+          "pais": {
+            "description": "ISO 3166-1 alpha-2",
+            "example": "NI",
+            "type": "string"
+          },
+          "slug": {
+            "description": "Va en las URLs públicas; no se puede cambiar después. Minúsculas, números y guiones.",
+            "example": "barrio-leningrado",
+            "type": "string"
+          },
+          "telefonoContacto": {
+            "example": "+505 8888 8888",
+            "type": "string"
+          },
+          "zonaHoraria": {
+            "example": "America/Managua",
+            "type": "string"
+          }
+        },
+        "required": ["nombre", "slug"],
+        "type": "object"
+      },
+      "ErrorCode": {
+        "description": "Código estable de negocio (catálogo 4.9, B6)",
+        "enum": [
+          "ROSTER_FULL",
+          "ROSTER_MIN_NOT_MET",
+          "PLAYER_ALREADY_ACTIVE",
+          "TRANSFER_LIMIT_REACHED",
+          "PLAYER_FROZEN",
+          "NOMINA_BLOQUEADA",
+          "AGE_OUT_OF_RANGE",
+          "DOCUMENTO_INVALIDO",
+          "EDICION_ESTADO_INVALIDO",
+          "EDICION_SOLO_LECTURA",
+          "EDICION_PRECONDICIONES_NO_CUMPLIDAS",
+          "EDICION_CATEGORIA_ABIERTA",
+          "EDICION_PAUSADA",
+          "MESA_LIMIT_REACHED",
+          "MESA_BLOQUEADA",
+          "DELEGADO_PHONE_DUPLICATED",
+          "DELEGADO_REASIGNACION_INVALIDA",
+          "INVALID_CREDENTIALS",
+          "ACCOUNT_LOCKED",
+          "ORG_BLOQUEADA",
+          "ORG_SLUG_DUPLICATED",
+          "ORG_ESTADO_INVALIDO",
+          "ORG_YA_TIENE_OWNER",
+          "EMAIL_YA_REGISTRADO",
+          "PASSWORD_DEBIL",
+          "IP_LOCKED",
+          "TOKEN_INVALIDO_O_EXPIRADO",
+          "BUSQUEDA_LIMITE_EXCEDIDO",
+          "CLOCK_NOT_ELAPSED",
+          "MATCH_CLOSED",
+          "PARTIDO_EN_USO",
+          "PARTIDO_NO_ASIGNADO",
+          "CONVOCADOS_MAXIMO_EXCEDIDO",
+          "CONVOCADOS_MINIMO_NO_CUMPLIDO",
+          "JUGADOR_BLOQUEADO",
+          "EVENTO_YA_ANULADO",
+          "EVENTO_FUERA_DE_ORDEN",
+          "LLAVE_PARTIDO_EMPATADO",
+          "PENALES_INCOMPLETOS",
+          "WALKOVER_GOLES_INVALIDOS",
+          "FIXTURE_CONFLICTO",
+          "MODALIDAD_BLOQUEADA",
+          "EVENTO_NO_PERMITIDO_EN_MODALIDAD",
+          "MODALIDAD_REGLAS_INVALIDAS",
+          "VALIDATION_ERROR",
+          "UNAUTHORIZED",
+          "FORBIDDEN",
+          "NOT_FOUND",
+          "CONFLICT",
+          "TOO_MANY_REQUESTS",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "SERVICE_UNAVAILABLE",
+          "INTERNAL_ERROR"
+        ],
+        "type": "string"
+      },
+      "EstadoOrganizacion": {
+        "enum": ["ACTIVA", "BLOQUEADA"],
+        "type": "string"
+      },
+      "InvitacionCreadaDto": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "emailEnviado": {
+            "description": "Si se envió el correo (false si se pidió no enviarlo o falló)",
+            "type": "boolean"
+          },
+          "enlace": {
+            "description": "Enlace de un solo uso. El token en claro SOLO se devuelve aquí; no se puede recuperar después (reenviar genera uno nuevo).",
+            "type": "string"
+          },
+          "expiraEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reenvio": {
+            "description": "true si anuló una invitación anterior pendiente",
+            "type": "boolean"
+          },
+          "waMeUrl": {
+            "description": "Abre WhatsApp con el mensaje armado; null si no se indicó teléfono",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "enlace",
+          "waMeUrl",
+          "expiraEn",
+          "email",
+          "emailEnviado",
+          "reenvio"
+        ],
+        "type": "object"
+      },
+      "InvitacionOwnerPendienteDto": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "expiraEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "nombre": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["email", "expiraEn"],
+        "type": "object"
+      },
+      "InvitarAdminDto": {
+        "properties": {
+          "email": {
+            "example": "carlos@liga.test",
+            "type": "string"
+          },
+          "enviarEmail": {
+            "default": true,
+            "description": "Si es false no se envía correo; solo se devuelve el enlace (envío manual por WhatsApp).",
+            "type": "boolean"
+          },
+          "nombre": {
+            "example": "Carlos Pérez",
+            "type": "string"
+          },
+          "telefono": {
+            "description": "Formato internacional (con +código de país). Si se envía, la respuesta trae el enlace de WhatsApp.",
+            "example": "+505 8888 8888",
+            "type": "string"
+          }
+        },
+        "required": ["email", "nombre"],
+        "type": "object"
+      },
+      "InvitarDuenoDto": {
+        "properties": {
+          "email": {
+            "example": "carlos@liga.test",
+            "type": "string"
+          },
+          "enviarEmail": {
+            "default": true,
+            "description": "Si es false no se envía correo; solo se devuelve el enlace (envío manual por WhatsApp).",
+            "type": "boolean"
+          },
+          "nombre": {
+            "example": "Carlos Pérez",
+            "type": "string"
+          },
+          "telefono": {
+            "description": "Formato internacional (con +código de país). Si se envía, la respuesta trae el enlace de WhatsApp.",
+            "example": "+505 8888 8888",
+            "type": "string"
+          }
+        },
+        "required": ["email", "nombre"],
+        "type": "object"
+      },
+      "LoginDto": {
+        "properties": {
+          "email": {
+            "example": "dueno@cancha-nica.app",
+            "type": "string"
+          },
+          "password": {
+            "example": "********",
+            "type": "string"
+          }
+        },
+        "required": ["email", "password"],
+        "type": "object"
+      },
+      "OlvideContrasenaDto": {
+        "properties": {
+          "email": {
+            "example": "carlos@liga.test",
+            "type": "string"
+          }
+        },
+        "required": ["email"],
+        "type": "object"
+      },
+      "OlvideContrasenaRespuestaDto": {
+        "properties": {
+          "mensaje": {
+            "example": "Si el correo corresponde a una cuenta, te enviamos un enlace para restablecer la contraseña.",
+            "type": "string"
+          }
+        },
+        "required": ["mensaje"],
+        "type": "object"
+      },
+      "OrganizacionDto": {
+        "properties": {
+          "bloqueadaEn": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "colorPrimario": {
+            "example": "#16a34a",
+            "type": "string"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoOrganizacion"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "invitacionOwner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvitacionOwnerPendienteDto"
+              }
+            ],
+            "description": "Invitación del dueño vigente y sin usar, si la hay",
+            "nullable": true,
+            "type": "object"
+          },
+          "moneda": {
+            "example": "NIO",
+            "type": "string"
+          },
+          "motivoBloqueo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "owner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OwnerResumenDto"
+              }
+            ],
+            "description": "OWNER activo de la liga, si ya aceptó su invitación",
+            "nullable": true,
+            "type": "object"
+          },
+          "pais": {
+            "example": "NI",
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "telefonoContacto": {
+            "nullable": true,
+            "type": "string"
+          },
+          "zonaHoraria": {
+            "example": "America/Managua",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "slug",
+          "zonaHoraria",
+          "moneda",
+          "pais",
+          "colorPrimario",
+          "estado",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
+      "OrganizacionResumenDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "slug"],
+        "type": "object"
+      },
+      "OrganizacionesPaginaDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizacionDto"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Total que cumple el filtro (sin paginar)",
+            "type": "number"
+          }
+        },
+        "required": ["items", "total"],
+        "type": "object"
+      },
+      "OwnerResumenDto": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "email"],
+        "type": "object"
+      },
+      "PlataformaPrincipalDto": {
+        "properties": {
+          "email": {
+            "example": "dueno@cancha-nica.app",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "example": "Kevin Marquez",
+            "type": "string"
+          },
+          "role": {
+            "enum": ["PLATAFORMA"],
+            "type": "string"
+          }
+        },
+        "required": ["id", "email", "nombre", "role"],
+        "type": "object"
+      },
+      "ProblemDetailsDto": {
+        "properties": {
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ErrorCode"
+              }
+            ],
+            "description": "Código estable de negocio (catálogo 4.9, B6)",
+            "example": "ROSTER_FULL"
+          },
+          "detail": {
+            "example": "El equipo ya tiene 18 jugadores activos.",
+            "type": "string"
+          },
+          "errors": {
+            "description": "Mensajes de validación (solo VALIDATION_ERROR)",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "instance": {
+            "example": "/equipos/123/roster",
+            "type": "string"
+          },
+          "requestId": {
+            "description": "Id de correlación (x-request-id)",
+            "type": "string"
+          },
+          "status": {
+            "description": "Status HTTP",
+            "example": 409,
+            "type": "number"
+          },
+          "title": {
+            "example": "Plantel completo",
+            "type": "string"
+          },
+          "type": {
+            "description": "URI que identifica el tipo de error",
+            "example": "https://api.cancha-nica/errors/ROSTER_FULL",
+            "type": "string"
+          }
+        },
+        "required": ["type", "title", "status", "code", "instance"],
+        "type": "object"
+      },
+      "RestablecerContrasenaDto": {
+        "properties": {
+          "password": {
+            "maxLength": 128,
+            "minLength": 10,
+            "type": "string"
+          },
+          "token": {
+            "description": "Token del enlace recibido por correo",
+            "type": "string"
+          }
+        },
+        "required": ["token", "password"],
+        "type": "object"
       }
     }
   },
-  "components": {
-    "schemas": {
-      "Ping": {
-        "type": "object",
-        "required": ["ok", "serverNow"],
-        "properties": {
-          "ok": { "type": "boolean" },
-          "serverNow": { "type": "string", "format": "date-time" }
-        }
-      },
-      "ProblemDetails": {
-        "type": "object",
-        "required": ["status", "code", "title"],
-        "properties": {
-          "status": { "type": "integer" },
-          "code": { "type": "string" },
-          "title": { "type": "string" },
-          "detail": { "type": "string" },
-          "requestId": { "type": "string" },
-          "errors": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["field", "message"],
-              "properties": { "field": { "type": "string" }, "message": { "type": "string" } }
+  "info": {
+    "contact": {},
+    "description": "Contrato HTTP de Cancha Nica. Errores: application/problem+json (RFC 7807) con `code` del catálogo (schema ProblemDetailsDto).",
+    "title": "Cancha Nica API",
+    "version": "0.0.1"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/admin/me": {
+      "get": {
+        "operationId": "getAdminMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Cuenta y liga de la sesión de admin actual",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/usuarios/invitar": {
+      "post": {
+        "description": "Crea (o reenvía, anulando la anterior de ese correo) una invitación de rol ADMIN válida 7 días. Devuelve el enlace una sola vez, con el botón de WhatsApp si se indicó teléfono.",
+        "operationId": "invitarAdmin",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitarAdminDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitacionCreadaDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EMAIL_YA_REGISTRADO"
+          }
+        },
+        "summary": "El dueño invita a un admin a su liga",
+        "tags": ["Admin"]
+      }
+    },
+    "/auth/aceptar-invitacion": {
+      "post": {
+        "description": "El token del enlace se usa una sola vez. Deja las cookies at_admin y rt_admin (httpOnly).",
+        "operationId": "aceptarInvitacion",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceptarInvitacionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "TOKEN_INVALIDO_O_EXPIRADO, PASSWORD_DEBIL o VALIDATION_ERROR"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_BLOQUEADA (el token no se consume)"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EMAIL_YA_REGISTRADO u ORG_YA_TIENE_OWNER"
+          }
+        },
+        "summary": "Acepta una invitación: crea la cuenta y abre la sesión del portal admin",
+        "tags": ["Auth"]
+      }
+    },
+    "/auth/admin/login": {
+      "post": {
+        "description": "Emite las cookies at_admin y rt_admin (httpOnly). Los tokens no viajan en el cuerpo. Bloqueo escalonado por IP y por cuenta.",
+        "operationId": "adminLogin",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIALS"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_BLOQUEADA (solo tras validar la contraseña)"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "IP_LOCKED, ACCOUNT_LOCKED o TOO_MANY_REQUESTS"
+          }
+        },
+        "summary": "Inicia sesión como dueño o admin de una liga",
+        "tags": ["Admin"]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "parameters": [
+          {
+            "description": "Portal cuya sesión se refresca o se cierra",
+            "in": "query",
+            "name": "portal",
+            "required": true,
+            "schema": {
+              "enum": ["plataforma", "admin", "delegado", "mesa"],
+              "type": "string"
             }
           }
-        }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sesión cerrada (idempotente)"
+          }
+        },
+        "summary": "Cierra la sesión del portal y revoca su familia de refresh",
+        "tags": ["Auth"]
+      }
+    },
+    "/auth/olvide-contrasena": {
+      "post": {
+        "description": "Responde igual exista o no la cuenta. Si existe y está activa, envía el enlace por correo.",
+        "operationId": "olvideContrasena",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OlvideContrasenaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OlvideContrasenaRespuestaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Pide un enlace para restablecer la contraseña (30 min, un solo uso)",
+        "tags": ["Auth"]
+      }
+    },
+    "/auth/plataforma/login": {
+      "post": {
+        "description": "Emite las cookies at_plataforma y rt_plataforma (httpOnly). Los tokens no viajan en el cuerpo. Bloqueo escalonado por IP y por cuenta.",
+        "operationId": "plataformaLogin",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlataformaPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIALS"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "IP_LOCKED, ACCOUNT_LOCKED o TOO_MANY_REQUESTS"
+          }
+        },
+        "summary": "Inicia sesión en el portal de plataforma",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "description": "Lee la cookie rt_<portal>. Solo lo llama el cliente. Un refresh reutilizado fuera de los 10 s de gracia revoca toda la sesión.",
+        "operationId": "refreshSession",
+        "parameters": [
+          {
+            "description": "Portal cuya sesión se refresca o se cierra",
+            "in": "query",
+            "name": "portal",
+            "required": true,
+            "schema": {
+              "enum": ["plataforma", "admin", "delegado", "mesa"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cookies renovadas (sin cuerpo)"
+          },
+          "401": {
+            "description": "Sesión inválida, vencida o revocada"
+          }
+        },
+        "summary": "Rota el refresh token y renueva las cookies del portal",
+        "tags": ["Auth"]
+      }
+    },
+    "/auth/restablecer": {
+      "post": {
+        "description": "No abre sesión. Revoca todas las sesiones de la cuenta y levanta su bloqueo por intentos fallidos.",
+        "operationId": "restablecerContrasena",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestablecerContrasenaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Contraseña cambiada"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "TOKEN_INVALIDO_O_EXPIRADO, PASSWORD_DEBIL o VALIDATION_ERROR"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_BLOQUEADA (el token no se consume)"
+          }
+        },
+        "summary": "Cambia la contraseña con el token del correo",
+        "tags": ["Auth"]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": ["up", "degraded", "down"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status"],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "error": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": ["up", "degraded", "down"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status"],
+                        "type": "object"
+                      },
+                      "example": {},
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "info": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": ["up", "degraded", "down"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status"],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        }
+                      },
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "status": {
+                      "enum": ["ok", "degraded"],
+                      "example": "ok",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Health Check is successful"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": ["up", "degraded", "down"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status"],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        },
+                        "redis": {
+                          "message": "Could not connect",
+                          "responseTime": 3005,
+                          "status": "down"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "error": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": ["up", "degraded", "down"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status"],
+                        "type": "object"
+                      },
+                      "example": {
+                        "redis": {
+                          "message": "Could not connect",
+                          "responseTime": 3005,
+                          "status": "down"
+                        }
+                      },
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "info": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": ["up", "degraded", "down"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status"],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        }
+                      },
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "status": {
+                      "enum": ["error", "shutting_down"],
+                      "example": "error",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Health Check is not successful"
+          }
+        },
+        "summary": "",
+        "tags": ["Sistema"]
+      }
+    },
+    "/ping": {
+      "get": {
+        "operationId": "getPing",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "",
+        "tags": ["Sistema"]
+      }
+    },
+    "/plataforma/me": {
+      "get": {
+        "operationId": "getPlataformaMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlataformaPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Cuenta de plataforma de la sesión actual",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones": {
+      "get": {
+        "operationId": "listarOrganizaciones",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoOrganizacion"
+            }
+          },
+          {
+            "description": "Busca en nombre y slug",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionesPaginaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Lista las ligas, con su dueño e invitación pendiente",
+        "tags": ["Plataforma"]
+      },
+      "post": {
+        "operationId": "crearOrganizacion",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearOrganizacionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_SLUG_DUPLICATED"
+          }
+        },
+        "summary": "Crea una liga (la invitación del dueño es un paso aparte)",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones/{id}": {
+      "get": {
+        "operationId": "getOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Ficha de una liga",
+        "tags": ["Plataforma"]
+      },
+      "patch": {
+        "operationId": "actualizarOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarOrganizacionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Edita los datos de una liga (el slug no se puede cambiar)",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones/{id}/bloquear": {
+      "post": {
+        "operationId": "bloquearOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BloquearOrganizacionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_ESTADO_INVALIDO (ya estaba bloqueada)"
+          }
+        },
+        "summary": "Bloquea la liga: corte inmediato de todos sus usuarios y /public oculto",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones/{id}/invitacion": {
+      "post": {
+        "description": "Anula la invitación pendiente anterior (si la hay). Devuelve el enlace UNA sola vez, con el botón de WhatsApp si se indicó teléfono, y opcionalmente envía el correo.",
+        "operationId": "invitarDueno",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitarDuenoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitacionCreadaDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_YA_TIENE_OWNER o EMAIL_YA_REGISTRADO"
+          }
+        },
+        "summary": "Crea o reenvía la invitación del dueño de la liga",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones/{id}/reactivar": {
+      "post": {
+        "operationId": "reactivarOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_ESTADO_INVALIDO (no estaba bloqueada)"
+          }
+        },
+        "summary": "Reactiva una liga bloqueada; sus sesiones y datos vuelven",
+        "tags": ["Plataforma"]
       }
     }
-  }
+  },
+  "servers": [],
+  "tags": []
 }

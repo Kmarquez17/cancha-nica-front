@@ -251,6 +251,8 @@ cancha-nica-front/
 | Costo por uso en Railway | Alertas de gasto y revisión del plan antes de cobrar inscripciones |
 | Los rewrites bufferizan SSE | SSE directo a la API (decidido en el plan, F6) |
 
+> **Nota (R11, 2026-10-07):** esta fase se ejecutó con 4 zonas de rutas (público, admin, delegado, mesa). El plan añade un quinto route group `(plataforma)`, que se crea en la Fase 1 (`FASE_01.md`); no requiere cambios retroactivos aquí.
+
 ## 11. Entregables para el repo `cancha-nica-api`
 - Confirmación de que `getPing` funciona por el proxy.
 - La **URL del front** (dominio de Railway) para `CORS_ORIGINS`.

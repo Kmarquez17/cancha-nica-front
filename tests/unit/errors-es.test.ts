@@ -38,4 +38,38 @@ describe('problemToApiError + es.ts', () => {
     expect(campoDeError(problemToApiError(409, { code: 'ROSTER_FULL' }))).toBeUndefined();
     expect(campoDeError(problemToApiError(400, { code: 'WAT' }))).toBeUndefined();
   });
+
+  it('traduce los códigos de la Fase 1', () => {
+    for (const code of [
+      'INVALID_CREDENTIALS',
+      'ACCOUNT_LOCKED',
+      'IP_LOCKED',
+      'TOO_MANY_REQUESTS',
+      'UNAUTHORIZED',
+      'ORG_BLOQUEADA',
+      'ORG_SLUG_DUPLICATED',
+      'ORG_ESTADO_INVALIDO',
+      'ORG_YA_TIENE_OWNER',
+      'EMAIL_YA_REGISTRADO',
+      'TOKEN_INVALIDO_O_EXPIRADO',
+      'VALIDATION_ERROR',
+    ]) {
+      expect(esKnownCode(code), code).toBe(true);
+      expect(mensajeDeError(problemToApiError(400, { code }))).not.toContain('inesperado');
+    }
+    expect(mensajeDeError(problemToApiError(403, { code: 'ORG_BLOQUEADA' }))).toBe(
+      'Esta liga está bloqueada. Contacta al administrador de la app.',
+    );
+  });
+
+  it('mapea slug y email duplicados a su campo', () => {
+    expect(campoDeError(problemToApiError(409, { code: 'ORG_SLUG_DUPLICATED' }))).toBe('slug');
+    expect(campoDeError(problemToApiError(409, { code: 'EMAIL_YA_REGISTRADO' }))).toBe('email');
+  });
+
+  it('PASSWORD_DEBIL muestra el motivo que manda el servidor', () => {
+    const err = problemToApiError(400, { code: 'PASSWORD_DEBIL', detail: 'No uses tu correo.' });
+    expect(mensajeDeError(err)).toBe('No uses tu correo.');
+    expect(esKnownCode('PASSWORD_DEBIL')).toBe(true);
+  });
 });
