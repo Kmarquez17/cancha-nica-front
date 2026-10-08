@@ -7,8 +7,8 @@ export default async function PanelPlataformaLayout({ children }: LayoutProps<'/
   const yo = await exigirSesion<PlataformaPrincipalDto>('plataforma');
   return (
     <ShellEscritorio
-      marca="Cancha Nica · Plataforma"
-      nav={[{ href: '/plataforma/ligas', etiqueta: 'Ligas' }]}
+      marca="Plataforma"
+      nav={[{ href: '/plataforma/clientes', etiqueta: 'Clientes' }]}
       usuario={yo.nombre}
       acciones={<CerrarSesionButton portal="plataforma" />}
     >

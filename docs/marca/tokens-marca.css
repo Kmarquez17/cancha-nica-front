@@ -1,0 +1,152 @@
+/*
+ * Cancha Nica — tokens de marca (v2): verde cancha + dorado.
+ * Mismos nombres de variable que src/app/globals.css (shadcn) + extensiones: success/warning/info y los
+ * estados del fútbol (--tarjeta-amarilla, --tarjeta-roja, --en-vivo, --gol, --finalizado, --pendiente, --wo).
+ *
+ * Todos los pares de texto de los bloques :root y .dark pasan AA (4.5:1) y los de borde/foco/primario 3:1;
+ * foreground/background pasa AAA. El perfil .mesa lleva los textos a >= 7:1 (AAA). Verificado por script.
+ * Ver docs/marca/MANUAL-DE-MARCA.md §3.
+ *
+ * Color de cada cliente: sobrescribe SOLO --primary, --primary-foreground, --ring y --sidebar-primary*
+ * (el texto se elige entre blanco y #04110A por contraste).
+ *
+ * Marca: Verde Noche #07180F · Verde Bosque #14532D · Verde Césped #6AA23A · Dorado #DDB34E · Tiza #FFFFFF · Cal #F4F8F3
+ */
+
+:root {
+  --background: #F4F8F3;
+  --foreground: #04110A;
+  --card: #FFFFFF;
+  --card-foreground: #04110A;
+  --popover: #FFFFFF;
+  --popover-foreground: #04110A;
+  --primary: #14532D;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E3EDE5;
+  --secondary-foreground: #04110A;
+  --muted: #E9F0EA;
+  --muted-foreground: #4B5E52;
+  --accent: #DDB34E;
+  --accent-foreground: #04110A;
+  --destructive: #B91C1C;
+  --destructive-foreground: #FFFFFF;
+  --success: #15803D;
+  --success-foreground: #FFFFFF;
+  --warning: #B45309;
+  --warning-foreground: #FFFFFF;
+  --info: #0369A1;
+  --info-foreground: #FFFFFF;
+  --border: #D3E0D6;
+  --input: #7A8F80;
+  --ring: #15803D;
+  --tarjeta-amarilla: #FACC15;
+  --tarjeta-amarilla-foreground: #04110A;
+  --tarjeta-roja: #C62828;
+  --tarjeta-roja-foreground: #FFFFFF;
+  --en-vivo: #D6204F;
+  --en-vivo-foreground: #FFFFFF;
+  --gol: #15803D;
+  --gol-foreground: #FFFFFF;
+  --finalizado: #475569;
+  --finalizado-foreground: #FFFFFF;
+  --pendiente: #64748B;
+  --pendiente-foreground: #FFFFFF;
+  --wo: #6D28D9;
+  --wo-foreground: #FFFFFF;
+  --chart-1: #C2570C;
+  --chart-2: #7E22CE;
+  --chart-3: #0A7F6A;
+  --chart-4: #475569;
+  --chart-5: #9A3412;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #04110A;
+  --sidebar-primary: #14532D;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E9F0EA;
+  --sidebar-accent-foreground: #04110A;
+  --sidebar-border: #D3E0D6;
+  --sidebar-ring: #15803D;
+}
+
+.dark {
+  --background: #07180F;
+  --foreground: #EEF5EF;
+  --card: #0D2318;
+  --card-foreground: #EEF5EF;
+  --popover: #0D2318;
+  --popover-foreground: #EEF5EF;
+  --primary: #6AA23A;
+  --primary-foreground: #04110A;
+  --secondary: #14301F;
+  --secondary-foreground: #EEF5EF;
+  --muted: #112A1B;
+  --muted-foreground: #A8BDAE;
+  --accent: #EDC350;
+  --accent-foreground: #04110A;
+  --destructive: #FF7B7B;
+  --destructive-foreground: #04110A;
+  --success: #4ADE80;
+  --success-foreground: #04110A;
+  --warning: #FBBF24;
+  --warning-foreground: #04110A;
+  --info: #4CC2F5;
+  --info-foreground: #04110A;
+  --border: #1D3A2A;
+  --input: #6E8A77;
+  --ring: #9BCB5A;
+  --tarjeta-amarilla: #FACC15;
+  --tarjeta-amarilla-foreground: #04110A;
+  --tarjeta-roja: #F04848;
+  --tarjeta-roja-foreground: #04110A;
+  --en-vivo: #FF6B8B;
+  --en-vivo-foreground: #04110A;
+  --gol: #4ADE80;
+  --gol-foreground: #04110A;
+  --finalizado: #94A3B8;
+  --finalizado-foreground: #04110A;
+  --pendiente: #8794AA;
+  --pendiente-foreground: #04110A;
+  --wo: #B49CFF;
+  --wo-foreground: #04110A;
+  --chart-1: #FB923C;
+  --chart-2: #C4B5FD;
+  --chart-3: #86EFAC;
+  --chart-4: #FACC15;
+  --chart-5: #94A3B8;
+  --sidebar: #0D2318;
+  --sidebar-foreground: #EEF5EF;
+  --sidebar-primary: #6AA23A;
+  --sidebar-primary-foreground: #04110A;
+  --sidebar-accent: #112A1B;
+  --sidebar-accent-foreground: #EEF5EF;
+  --sidebar-border: #1D3A2A;
+  --sidebar-ring: #9BCB5A;
+}
+
+/* Consola de Mesa (envolver con <div class="mesa">): AAA 7:1 en claro y en oscuro */
+.mesa {
+  --muted-foreground: #3A4C41;
+  --primary: #0F4224;
+  --success: #0F5F2D;
+  --warning: #8F4108;
+  --info: #035985;
+  --destructive: #9B1717;
+  --tarjeta-roja: #A91F1F;
+  --en-vivo: #A01639;
+  --gol: #0F5F2D;
+  --finalizado: #3B4656;
+  --pendiente: #4B5668;
+  --wo: #5B21B6;
+  --ring: #116B33;
+}
+
+.dark .mesa,
+.dark.mesa {
+  --muted-foreground: #C5D4C9;
+  --primary: #9BCB5A;
+  --primary-foreground: #04110A;
+  --tarjeta-roja: #FF7B7B;
+  --en-vivo: #FF8AA3;
+  --pendiente: #A9B4C6;
+  --secondary-foreground: #EEF5EF;
+}

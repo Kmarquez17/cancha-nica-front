@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cancha Nica">
+  <rect width="64" height="64" rx="14" fill="#1D4ED8"/>
+  <g fill="none" stroke="#fff" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M15 12V51H54"/>
+    <path d="M30 51A15 15 0 0 0 15 36"/>
+  </g>
+  <path d="M15 12L15 30L40 21Z" fill="#F5B700" stroke="#F5B700" stroke-width="2" stroke-linejoin="round"/>
+</svg>

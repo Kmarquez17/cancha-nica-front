@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Logo } from '@/shared/ui/logo';
 
 /** Cabecera + contenido para los portales de escritorio (plataforma y admin). */
 export function ShellEscritorio({
@@ -19,7 +20,12 @@ export function ShellEscritorio({
     <div className="flex min-h-dvh flex-col">
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <span className="font-semibold">{marca}</span>
+          <span className="flex items-center gap-3">
+            <Logo className="w-36" />
+            <span className="font-heading text-sm font-extrabold tracking-wide text-muted-foreground uppercase italic">
+              {marca}
+            </span>
+          </span>
           <nav aria-label="Principal" className="flex gap-4 text-sm">
             {nav.map((item) => (
               <Link key={item.href} href={item.href} className="underline-offset-4 hover:underline">

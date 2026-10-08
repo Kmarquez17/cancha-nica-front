@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cancha Nica">
+  <title>Cancha Nica</title>
+  <rect width="64" height="64" rx="14" fill="#4338CA"/>
+  <g>
+    <path d="M7 7H29V18C29 24.6 18 29 18 29C18 29 7 24.6 7 18Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M35 7H57V18C57 24.6 46 29 46 29C46 29 35 24.6 35 18Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M18 27H46V42.5C46 51.8 32 58 32 58C32 58 18 51.8 18 42.5Z" fill="#FB7185" stroke="#4338CA" stroke-width="3" stroke-linejoin="round"/>
+    <g transform="translate(18 15.5) scale(0.82)" fill="#4338CA">
+      <path d="M-5 -6H5V-1C5 2.6 2.6 4.2 0 4.2C-2.6 4.2 -5 2.6 -5 -1Z"/>
+      <path d="M-5 -4.6H-7.6C-7.6 -1 -6.6 0.2 -5 0.8M5 -4.6H7.6C7.6 -1 6.6 0.2 5 0.8" fill="none" stroke="#4338CA" stroke-width="1.9" stroke-linecap="round"/>
+      <rect x="-1.1" y="4.2" width="2.2" height="2.8"/><rect x="-3.6" y="7" width="7.2" height="2.2" rx="1"/>
+    </g>
+    <path transform="translate(46 16) scale(0.82)" d="M-4.5 -6.5L-9.5 -3.3L-7.4 0.8L-5.2 -0.6V7.2H5.2V-0.6L7.4 0.8L9.5 -3.3L4.5 -6.5C3.6 -4.3 -3.6 -4.3 -4.5 -6.5Z" fill="#4338CA"/>
+    <g transform="translate(13.2 25.4) scale(0.56)">
+      <path d="M23.54 39.30L35.03 39.20L35.54 33.25L24.24 31.17Z" fill="#4338CA"/><circle cx="23.5" cy="35.2" r="4.1" fill="#4338CA"/><circle cx="35" cy="36.2" r="3" fill="#4338CA"/><path d="M36.75 38.64L48.78 29.99L46.42 26.29L33.52 33.59Z" fill="#4338CA"/><circle cx="35" cy="36.2" r="3" fill="#4338CA"/><circle cx="47.5" cy="28.2" r="2.2" fill="#4338CA"/><path d="M48.73 30.38L53.23 27.83L51.46 24.04L46.62 25.86Z" fill="#4338CA"/><circle cx="47.5" cy="28.2" r="2.5" fill="#4338CA"/><circle cx="52.2" cy="26" r="2.1" fill="#4338CA"/><path d="M19.49 36.06L21.87 47.13L27.80 46.45L27.60 35.13Z" fill="#4338CA"/><circle cx="23.5" cy="35.2" r="4.1" fill="#4338CA"/><circle cx="24.8" cy="46.5" r="3" fill="#4338CA"/><path d="M21.86 45.89L19.65 56.55L23.87 57.76L27.62 47.53Z" fill="#4338CA"/><circle cx="24.8" cy="46.5" r="3" fill="#4338CA"/><circle cx="21.8" cy="57" r="2.2" fill="#4338CA"/><path d="M21.28 59.45L26.96 60.65L28.11 56.63L22.65 54.65Z" fill="#4338CA"/><circle cx="21.8" cy="57" r="2.5" fill="#4338CA"/><circle cx="27.4" cy="58.6" r="2.1" fill="#4338CA"/><path d="M26.37 22.14L33.28 25.49L35.35 21.84L28.93 17.63Z" fill="#4338CA"/><circle cx="27.5" cy="19.8" r="2.6" fill="#4338CA"/><circle cx="34.2" cy="23.6" r="2.1" fill="#4338CA"/><path d="M35.63 25.14L41.03 20.12L38.69 17.39L32.90 21.95Z" fill="#4338CA"/><circle cx="34.2" cy="23.6" r="2.1" fill="#4338CA"/><circle cx="39.8" cy="18.8" r="1.8" fill="#4338CA"/><path d="M25.94 17.72L19.24 22.72L21.55 26.22L28.80 22.05Z" fill="#4338CA"/><circle cx="27.5" cy="19.8" r="2.6" fill="#4338CA"/><circle cx="20.5" cy="24.4" r="2.1" fill="#4338CA"/><path d="M19.12 22.82L13.82 27.44L16.06 30.25L21.74 26.09Z" fill="#4338CA"/><circle cx="20.5" cy="24.4" r="2.1" fill="#4338CA"/><circle cx="15" cy="28.8" r="1.8" fill="#4338CA"/><path d="M22.96 19.07L21.55 27.81L28.66 29.71L31.80 21.43Z" fill="#4338CA"/><circle cx="27.5" cy="19.8" r="4.6" fill="#4338CA"/><circle cx="25.2" cy="28.4" r="3.7" fill="#4338CA"/><path d="M21.70 27.20L19.43 33.80L27.75 35.88L28.85 28.99Z" fill="#4338CA"/><circle cx="25.2" cy="28.4" r="3.7" fill="#4338CA"/><circle cx="23.5" cy="35.2" r="4.3" fill="#4338CA"/><path d="M30.17 17.73L30.67 14.93L26.93 14.27L26.43 17.07Z" fill="#4338CA"/><circle cx="28.3" cy="17.4" r="1.9" fill="#4338CA"/><circle cx="28.8" cy="14.6" r="1.9" fill="#4338CA"/><circle cx="29.2" cy="11.3" r="4.6" fill="#4338CA"/>
+      <circle cx="57.6" cy="23.5" r="5.4" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.4"/>
+    </g>
+  </g>
+</svg>

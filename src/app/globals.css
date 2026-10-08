@@ -7,9 +7,30 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-barlow-condensed), 'Arial Narrow', ui-sans-serif, sans-serif;
+  --font-mono: var(--font-atkinson-mono), ui-monospace, monospace;
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-tarjeta-amarilla: var(--tarjeta-amarilla);
+  --color-tarjeta-amarilla-foreground: var(--tarjeta-amarilla-foreground);
+  --color-tarjeta-roja: var(--tarjeta-roja);
+  --color-tarjeta-roja-foreground: var(--tarjeta-roja-foreground);
+  --color-en-vivo: var(--en-vivo);
+  --color-en-vivo-foreground: var(--en-vivo-foreground);
+  --color-gol: var(--gol);
+  --color-gol-foreground: var(--gol-foreground);
+  --color-finalizado: var(--finalizado);
+  --color-finalizado-foreground: var(--finalizado-foreground);
+  --color-pendiente: var(--pendiente);
+  --color-pendiente-foreground: var(--pendiente-foreground);
+  --color-wo: var(--wo);
+  --color-wo-foreground: var(--wo-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -58,76 +79,150 @@
   --text-4xl: 2.25rem;
 }
 
+/* Marca Cancha Nica (v2): verde cancha + dorado. Fuente: docs/marca/tokens-marca.css y MANUAL-DE-MARCA.md §3.
+   El color de cada cliente sobrescribe solo --primary, --primary-foreground, --ring y --sidebar-primary*. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Marca de la liga: color por defecto #16a34a; texto oscuro encima para cumplir contraste AA */
-  --primary: #16a34a;
-  --primary-foreground: #052e16;
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: #16a34a;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --spacing-page: 1rem; /* gutter de página */
-  --spacing-section: 1.5rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #f4f8f3;
+  --foreground: #04110a;
+  --card: #ffffff;
+  --card-foreground: #04110a;
+  --popover: #ffffff;
+  --popover-foreground: #04110a;
+  --primary: #14532d;
+  --primary-foreground: #ffffff;
+  --secondary: #e3ede5;
+  --secondary-foreground: #04110a;
+  --muted: #e9f0ea;
+  --muted-foreground: #4b5e52;
+  --accent: #ddb34e;
+  --accent-foreground: #04110a;
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+  --success: #15803d;
+  --success-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --info: #0369a1;
+  --info-foreground: #ffffff;
+  --border: #d3e0d6;
+  --input: #7a8f80;
+  --ring: #15803d;
+  --tarjeta-amarilla: #facc15;
+  --tarjeta-amarilla-foreground: #04110a;
+  --tarjeta-roja: #c62828;
+  --tarjeta-roja-foreground: #ffffff;
+  --en-vivo: #d6204f;
+  --en-vivo-foreground: #ffffff;
+  --gol: #15803d;
+  --gol-foreground: #ffffff;
+  --finalizado: #475569;
+  --finalizado-foreground: #ffffff;
+  --pendiente: #64748b;
+  --pendiente-foreground: #ffffff;
+  --wo: #6d28d9;
+  --wo-foreground: #ffffff;
+  --chart-1: #c2570c;
+  --chart-2: #7e22ce;
+  --chart-3: #0a7f6a;
+  --chart-4: #475569;
+  --chart-5: #9a3412;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #04110a;
+  --sidebar-primary: #14532d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9f0ea;
+  --sidebar-accent-foreground: #04110a;
+  --sidebar-border: #d3e0d6;
+  --sidebar-ring: #15803d;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: #4ade80;
-  --primary-foreground: #052e16;
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: #4ade80;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #07180f;
+  --foreground: #eef5ef;
+  --card: #0d2318;
+  --card-foreground: #eef5ef;
+  --popover: #0d2318;
+  --popover-foreground: #eef5ef;
+  --primary: #6aa23a;
+  --primary-foreground: #04110a;
+  --secondary: #14301f;
+  --secondary-foreground: #eef5ef;
+  --muted: #112a1b;
+  --muted-foreground: #a8bdae;
+  --accent: #edc350;
+  --accent-foreground: #04110a;
+  --destructive: #ff7b7b;
+  --destructive-foreground: #04110a;
+  --success: #4ade80;
+  --success-foreground: #04110a;
+  --warning: #fbbf24;
+  --warning-foreground: #04110a;
+  --info: #4cc2f5;
+  --info-foreground: #04110a;
+  --border: #1d3a2a;
+  --input: #6e8a77;
+  --ring: #9bcb5a;
+  --tarjeta-amarilla: #facc15;
+  --tarjeta-amarilla-foreground: #04110a;
+  --tarjeta-roja: #f04848;
+  --tarjeta-roja-foreground: #04110a;
+  --en-vivo: #ff6b8b;
+  --en-vivo-foreground: #04110a;
+  --gol: #4ade80;
+  --gol-foreground: #04110a;
+  --finalizado: #94a3b8;
+  --finalizado-foreground: #04110a;
+  --pendiente: #8794aa;
+  --pendiente-foreground: #04110a;
+  --wo: #b49cff;
+  --wo-foreground: #04110a;
+  --chart-1: #fb923c;
+  --chart-2: #c4b5fd;
+  --chart-3: #86efac;
+  --chart-4: #facc15;
+  --chart-5: #94a3b8;
+  --sidebar: #0d2318;
+  --sidebar-foreground: #eef5ef;
+  --sidebar-primary: #6aa23a;
+  --sidebar-primary-foreground: #04110a;
+  --sidebar-accent: #112a1b;
+  --sidebar-accent-foreground: #eef5ef;
+  --sidebar-border: #1d3a2a;
+  --sidebar-ring: #9bcb5a;
+}
+
+/* Consola de Mesa (envolver con <div class="mesa">): AAA 7:1 en claro y en oscuro */
+.mesa {
+  --muted-foreground: #3a4c41;
+  --primary: #0f4224;
+  --success: #0f5f2d;
+  --warning: #8f4108;
+  --info: #035985;
+  --destructive: #9b1717;
+  --tarjeta-roja: #a91f1f;
+  --en-vivo: #a01639;
+  --gol: #0f5f2d;
+  --finalizado: #3b4656;
+  --pendiente: #4b5668;
+  --wo: #5b21b6;
+  --ring: #116b33;
+}
+
+.dark .mesa,
+.dark.mesa {
+  --muted-foreground: #c5d4c9;
+  --primary: #9bcb5a;
+  --primary-foreground: #04110a;
+  --tarjeta-roja: #ff7b7b;
+  --en-vivo: #ff8aa3;
+  --pendiente: #a9b4c6;
+  --secondary-foreground: #eef5ef;
+}
+
+:root {
+  --radius: 0.625rem;
+  --spacing-page: 1rem; /* gutter de página */
+  --spacing-section: 1.5rem;
 }
 
 @layer base {
@@ -139,5 +234,14 @@
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2 {
+    @apply font-heading font-extrabold italic;
+  }
+  .marcador {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
   }
 }

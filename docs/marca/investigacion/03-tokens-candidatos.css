@@ -1,0 +1,461 @@
+/*
+ * 03-tokens-candidatos.css — 3 paletas candidatas para Cancha Nica.
+ * Mismas variables que src/app/globals.css (shadcn) + extensiones: *-strong, success/warning/info,
+ * estados de futbol (--tarjeta-amarilla, --tarjeta-roja, --en-vivo, --gol, --finalizado, --pendiente, --wo).
+ *
+ * USO (solo evaluacion): importar este archivo y poner la clase del tema en <html>:
+ *   <html class="tema-a">         claro       |  <html class="tema-a dark">   oscuro
+ *   En la consola de Mesa, envolver con <div class="mesa"> para activar el perfil AAA (7:1).
+ * Los hex fueron medidos con script (ver 03-color-tipografia.md). El color de cada cliente
+ * sobreescribe SOLO --primary / --primary-foreground / --ring / --sidebar-primary* (ver algoritmo).
+ * Nota: este archivo NO se importa en la app; es material de decision.
+ */
+
+/* ============================================================
+   TEMA A — Cobalto Nica
+   Azul de la bandera nicaraguense + dorado de gol. Institucional, sobrio, el "azul de estadio nocturno"; el verde queda reservado a la cancha y al gol.
+   ============================================================ */
+
+/* Cobalto Nica — claro */
+.tema-a {
+  --background: #F8FAFC; /* oklch(0.984 0.003 0) */
+  --foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --card: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --card-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --popover: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --popover-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --primary: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+  --primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --primary-strong: #1E40AF; /* oklch(0.424 0.181 265.6) */
+  --primary-strong-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --secondary: #E1E8F2; /* oklch(0.929 0.016 257.2) */
+  --secondary-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --muted: #EAEFF5; /* oklch(0.950 0.010 252.8) */
+  --muted-foreground: #46546A; /* oklch(0.443 0.040 259.3) */
+  --accent: #F5B700; /* oklch(0.814 0.167 83.9) */
+  --accent-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --destructive: #B91C1C; /* oklch(0.505 0.190 27.5) */
+  --destructive-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --success: #15803D; /* oklch(0.527 0.137 150.1) */
+  --success-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --warning: #B45309; /* oklch(0.555 0.146 49.0) */
+  --warning-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --info: #0369A1; /* oklch(0.500 0.119 242.7) */
+  --info-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --border: #D3DBE6; /* oklch(0.889 0.017 256.3) */
+  --input: #7A889C; /* oklch(0.622 0.034 257.3) */
+  --ring: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --tarjeta-roja: #C62828; /* oklch(0.539 0.194 26.7) */
+  --tarjeta-roja-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --en-vivo: #D6204F; /* oklch(0.569 0.211 14.3) */
+  --en-vivo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --gol: #15803D; /* oklch(0.527 0.137 150.1) */
+  --gol-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --finalizado: #475569; /* oklch(0.446 0.037 257.3) */
+  --finalizado-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --pendiente: #64748B; /* oklch(0.554 0.041 257.4) */
+  --pendiente-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --wo: #6D28D9; /* oklch(0.491 0.241 292.6) */
+  --wo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --chart-1: #C2570C; /* oklch(0.583 0.156 47.4) */
+  --chart-2: #7E22CE; /* oklch(0.496 0.237 301.9) */
+  --chart-3: #0A7F6A; /* oklch(0.534 0.098 175.4) */
+  --chart-4: #475569; /* oklch(0.446 0.037 257.3) */
+  --chart-5: #9A3412; /* oklch(0.470 0.143 37.3) */
+  --sidebar: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --sidebar-primary: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+  --sidebar-primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-accent: #EAEFF5; /* oklch(0.950 0.010 252.8) */
+  --sidebar-accent-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --sidebar-border: #D3DBE6; /* oklch(0.889 0.017 256.3) */
+  --sidebar-ring: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+}
+
+/* Cobalto Nica — oscuro */
+.dark.tema-a,
+.dark .tema-a {
+  --background: #080D18; /* oklch(0.160 0.025 264.6) */
+  --foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --card: #101829; /* oklch(0.211 0.036 264.3) */
+  --card-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --popover: #101829; /* oklch(0.211 0.036 264.3) */
+  --popover-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --primary: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+  --primary-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --primary-strong: #93B6FF; /* oklch(0.779 0.112 264.3) */
+  --primary-strong-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --secondary: #1E2A42; /* oklch(0.286 0.047 263.4) */
+  --secondary-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --muted: #1A2438; /* oklch(0.261 0.040 263.5) */
+  --muted-foreground: #AAB6C9; /* oklch(0.773 0.030 259.6) */
+  --accent: #FBBF24; /* oklch(0.837 0.164 84.4) */
+  --accent-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --destructive: #FF7B7B; /* oklch(0.736 0.161 21.8) */
+  --destructive-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --success: #4ADE80; /* oklch(0.800 0.182 151.7) */
+  --success-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --warning: #FBBF24; /* oklch(0.837 0.164 84.4) */
+  --warning-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --info: #4CC2F5; /* oklch(0.769 0.127 230.4) */
+  --info-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --border: #26324A; /* oklch(0.318 0.046 263.6) */
+  --input: #7C8BA3; /* oklch(0.633 0.040 259.8) */
+  --ring: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --tarjeta-roja: #F04848; /* oklch(0.643 0.205 25.0) */
+  --tarjeta-roja-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --en-vivo: #FF6B8B; /* oklch(0.719 0.181 9.5) */
+  --en-vivo-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --gol: #4ADE80; /* oklch(0.800 0.182 151.7) */
+  --gol-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --finalizado: #94A3B8; /* oklch(0.711 0.035 256.8) */
+  --finalizado-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --pendiente: #8794AA; /* oklch(0.664 0.036 261.0) */
+  --pendiente-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --wo: #B49CFF; /* oklch(0.753 0.141 293.9) */
+  --wo-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --chart-1: #FB923C; /* oklch(0.758 0.159 55.9) */
+  --chart-2: #C4B5FD; /* oklch(0.811 0.101 293.6) */
+  --chart-3: #86EFAC; /* oklch(0.871 0.136 154.4) */
+  --chart-4: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --chart-5: #94A3B8; /* oklch(0.711 0.035 256.8) */
+  --sidebar: #101829; /* oklch(0.211 0.036 264.3) */
+  --sidebar-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --sidebar-primary: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+  --sidebar-primary-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --sidebar-accent: #1A2438; /* oklch(0.261 0.040 263.5) */
+  --sidebar-accent-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --sidebar-border: #26324A; /* oklch(0.318 0.046 263.6) */
+  --sidebar-ring: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+}
+
+/* Cobalto Nica — Mesa AAA claro (solo tokens que cambian) */
+.tema-a .mesa,
+.tema-a.mesa {
+  --primary: #1E40AF; /* oklch(0.424 0.181 265.6) */
+  --muted-foreground: #425065; /* oklch(0.428 0.039 258.3) */
+  --destructive: #AE0610; /* oklch(0.474 0.191 27.5) */
+  --success: #00642B; /* oklch(0.440 0.121 150.0) */
+  --warning: #8D3F01; /* oklch(0.463 0.123 49.4) */
+  --info: #015A8B; /* oklch(0.449 0.107 242.7) */
+  --ring: #1E40AF; /* oklch(0.424 0.181 265.6) */
+  --tarjeta-roja: #B40A16; /* oklch(0.487 0.194 26.8) */
+  --en-vivo: #B3003C; /* oklch(0.488 0.195 14.3) */
+  --gol: #00662C; /* oklch(0.446 0.123 150.0) */
+  --pendiente: #4A5A70; /* oklch(0.463 0.041 256.4) */
+}
+
+/* Cobalto Nica — Mesa AAA oscuro (solo tokens que cambian) */
+.dark.tema-a .mesa,
+.dark .tema-a .mesa,
+.dark .tema-a.mesa {
+  --primary: #93B6FF; /* oklch(0.779 0.112 264.3) */
+  --ring: #93B6FF; /* oklch(0.779 0.112 264.3) */
+  --tarjeta-roja: #FF6C66; /* oklch(0.712 0.181 25.1) */
+  --pendiente: #8E9BB2; /* oklch(0.687 0.037 261.9) */
+}
+
+/* ============================================================
+   TEMA B — Volcán
+   Naranja Masaya/terracota sobre neutros cálidos (crema y carbón), con acento turquesa del lago. Energía de fin de semana de torneo; se distingue de cualquier verde "fútbol" y del azul "SaaS".
+   ============================================================ */
+
+/* Volcán — claro */
+.tema-b {
+  --background: #FFFAF5; /* oklch(0.988 0.009 67.7) */
+  --foreground: #1F140D; /* oklch(0.203 0.023 53.5) */
+  --card: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --card-foreground: #1F140D; /* oklch(0.203 0.023 53.5) */
+  --popover: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --popover-foreground: #1F140D; /* oklch(0.203 0.023 53.5) */
+  --primary: #C2410C; /* oklch(0.553 0.174 38.4) */
+  --primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --primary-strong: #9A3412; /* oklch(0.470 0.143 37.3) */
+  --primary-strong-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --secondary: #FCE5D0; /* oklch(0.935 0.038 64.8) */
+  --secondary-foreground: #3B1706; /* oklch(0.256 0.063 44.1) */
+  --muted: #F4EBE2; /* oklch(0.945 0.015 67.6) */
+  --muted-foreground: #5A463A; /* oklch(0.412 0.034 52.5) */
+  --accent: #0E7490; /* oklch(0.520 0.094 223.1) */
+  --accent-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --destructive: #B91C1C; /* oklch(0.505 0.190 27.5) */
+  --destructive-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --success: #15803D; /* oklch(0.527 0.137 150.1) */
+  --success-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --warning: #A16207; /* oklch(0.554 0.121 66.4) */
+  --warning-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --info: #0369A1; /* oklch(0.500 0.119 242.7) */
+  --info-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --border: #E6D8CA; /* oklch(0.890 0.024 67.5) */
+  --input: #8C7566; /* oklch(0.580 0.037 55.0) */
+  --ring: #C2410C; /* oklch(0.553 0.174 38.4) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #1C0F06; /* oklch(0.184 0.028 56.4) */
+  --tarjeta-roja: #C62828; /* oklch(0.539 0.194 26.7) */
+  --tarjeta-roja-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --en-vivo: #C0126B; /* oklch(0.530 0.208 358.1) */
+  --en-vivo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --gol: #15803D; /* oklch(0.527 0.137 150.1) */
+  --gol-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --finalizado: #57534E; /* oklch(0.444 0.010 73.6) */
+  --finalizado-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --pendiente: #78716C; /* oklch(0.553 0.012 58.1) */
+  --pendiente-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --wo: #5B21B6; /* oklch(0.432 0.211 292.8) */
+  --wo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --chart-1: #C2570C; /* oklch(0.583 0.156 47.4) */
+  --chart-2: #7E22CE; /* oklch(0.496 0.237 301.9) */
+  --chart-3: #0A7F6A; /* oklch(0.534 0.098 175.4) */
+  --chart-4: #475569; /* oklch(0.446 0.037 257.3) */
+  --chart-5: #9A3412; /* oklch(0.470 0.143 37.3) */
+  --sidebar: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-foreground: #1F140D; /* oklch(0.203 0.023 53.5) */
+  --sidebar-primary: #C2410C; /* oklch(0.553 0.174 38.4) */
+  --sidebar-primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-accent: #F4EBE2; /* oklch(0.945 0.015 67.6) */
+  --sidebar-accent-foreground: #1F140D; /* oklch(0.203 0.023 53.5) */
+  --sidebar-border: #E6D8CA; /* oklch(0.890 0.024 67.5) */
+  --sidebar-ring: #C2410C; /* oklch(0.553 0.174 38.4) */
+}
+
+/* Volcán — oscuro */
+.dark.tema-b,
+.dark .tema-b {
+  --background: #130C07; /* oklch(0.162 0.016 58.5) */
+  --foreground: #FBF1E8; /* oklch(0.964 0.016 64.7) */
+  --card: #1E140D; /* oklch(0.202 0.021 56.2) */
+  --card-foreground: #FBF1E8; /* oklch(0.964 0.016 64.7) */
+  --popover: #1E140D; /* oklch(0.202 0.021 56.2) */
+  --popover-foreground: #FBF1E8; /* oklch(0.964 0.016 64.7) */
+  --primary: #FB923C; /* oklch(0.758 0.159 55.9) */
+  --primary-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --primary-strong: #FDBA74; /* oklch(0.837 0.117 66.3) */
+  --primary-strong-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --secondary: #35231A; /* oklch(0.276 0.032 47.5) */
+  --secondary-foreground: #FBF1E8; /* oklch(0.964 0.016 64.7) */
+  --muted: #2A1D13; /* oklch(0.244 0.027 58.6) */
+  --muted-foreground: #C9B5A4; /* oklch(0.785 0.033 62.7) */
+  --accent: #22D3EE; /* oklch(0.797 0.134 211.5) */
+  --accent-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --destructive: #FF8080; /* oklch(0.744 0.155 21.5) */
+  --destructive-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --success: #4ADE80; /* oklch(0.800 0.182 151.7) */
+  --success-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --warning: #FBBF24; /* oklch(0.837 0.164 84.4) */
+  --warning-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --info: #4CC2F5; /* oklch(0.769 0.127 230.4) */
+  --info-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --border: #41302A; /* oklch(0.327 0.027 40.3) */
+  --input: #8F7A6B; /* oklch(0.595 0.034 57.5) */
+  --ring: #FB923C; /* oklch(0.758 0.159 55.9) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --tarjeta-roja: #F04848; /* oklch(0.643 0.205 25.0) */
+  --tarjeta-roja-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --en-vivo: #FF6FB5; /* oklch(0.736 0.189 352.4) */
+  --en-vivo-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --gol: #4ADE80; /* oklch(0.800 0.182 151.7) */
+  --gol-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --finalizado: #A8A29E; /* oklch(0.716 0.009 56.3) */
+  --finalizado-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --pendiente: #928A83; /* oklch(0.638 0.014 63.8) */
+  --pendiente-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --wo: #B9A1FF; /* oklch(0.766 0.134 294.8) */
+  --wo-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --chart-1: #FB923C; /* oklch(0.758 0.159 55.9) */
+  --chart-2: #C4B5FD; /* oklch(0.811 0.101 293.6) */
+  --chart-3: #86EFAC; /* oklch(0.871 0.136 154.4) */
+  --chart-4: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --chart-5: #94A3B8; /* oklch(0.711 0.035 256.8) */
+  --sidebar: #1E140D; /* oklch(0.202 0.021 56.2) */
+  --sidebar-foreground: #FBF1E8; /* oklch(0.964 0.016 64.7) */
+  --sidebar-primary: #FB923C; /* oklch(0.758 0.159 55.9) */
+  --sidebar-primary-foreground: #1A0B02; /* oklch(0.169 0.034 57.5) */
+  --sidebar-accent: #2A1D13; /* oklch(0.244 0.027 58.6) */
+  --sidebar-accent-foreground: #FBF1E8; /* oklch(0.964 0.016 64.7) */
+  --sidebar-border: #41302A; /* oklch(0.327 0.027 40.3) */
+  --sidebar-ring: #FB923C; /* oklch(0.758 0.159 55.9) */
+}
+
+/* Volcán — Mesa AAA claro (solo tokens que cambian) */
+.tema-b .mesa,
+.tema-b.mesa {
+  --primary: #9A3412; /* oklch(0.470 0.143 37.3) */
+  --accent: #056079; /* oklch(0.455 0.084 224.0) */
+  --destructive: #AF0A11; /* oklch(0.477 0.190 27.6) */
+  --success: #00642B; /* oklch(0.440 0.121 150.0) */
+  --warning: #7C4A02; /* oklch(0.457 0.101 66.5) */
+  --info: #005B8D; /* oklch(0.452 0.109 242.8) */
+  --ring: #9A3412; /* oklch(0.470 0.143 37.3) */
+  --tarjeta-roja: #B40A16; /* oklch(0.487 0.194 26.8) */
+  --en-vivo: #AF0060; /* oklch(0.490 0.200 357.9) */
+  --gol: #00662C; /* oklch(0.446 0.123 150.0) */
+  --pendiente: #5E5752; /* oklch(0.462 0.012 58.0) */
+}
+
+/* Volcán — Mesa AAA oscuro (solo tokens que cambian) */
+.dark.tema-b .mesa,
+.dark .tema-b .mesa,
+.dark .tema-b.mesa {
+  --primary: #FDBA74; /* oklch(0.837 0.117 66.3) */
+  --ring: #FDBA74; /* oklch(0.837 0.117 66.3) */
+  --tarjeta-roja: #FE6F68; /* oklch(0.715 0.176 25.3) */
+  --pendiente: #A39B94; /* oklch(0.694 0.014 63.8) */
+}
+
+/* ============================================================
+   TEMA C — Selva Tropical
+   Verde-teal profundo (más azulado y oscuro que el #16a34a actual) con acento lima eléctrico. Continuidad con la marca verde provisional, pero con aire premium/tecnológico.
+   ============================================================ */
+
+/* Selva Tropical — claro */
+.tema-c {
+  --background: #F6FAF8; /* oklch(0.982 0.005 165.0) */
+  --foreground: #06150F; /* oklch(0.180 0.025 166.4) */
+  --card: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --card-foreground: #06150F; /* oklch(0.180 0.025 166.4) */
+  --popover: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --popover-foreground: #06150F; /* oklch(0.180 0.025 166.4) */
+  --primary: #0F766E; /* oklch(0.511 0.086 186.4) */
+  --primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --primary-strong: #115E59; /* oklch(0.437 0.071 188.2) */
+  --primary-strong-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --secondary: #D6EBE5; /* oklch(0.923 0.024 176.8) */
+  --secondary-foreground: #04140F; /* oklch(0.174 0.026 171.9) */
+  --muted: #E6F0EC; /* oklch(0.946 0.012 170.3) */
+  --muted-foreground: #42584F; /* oklch(0.439 0.031 167.9) */
+  --accent: #BEF264; /* oklch(0.897 0.179 126.7) */
+  --accent-foreground: #04140F; /* oklch(0.174 0.026 171.9) */
+  --destructive: #B91C1C; /* oklch(0.505 0.190 27.5) */
+  --destructive-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --success: #15803D; /* oklch(0.527 0.137 150.1) */
+  --success-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --warning: #B45309; /* oklch(0.555 0.146 49.0) */
+  --warning-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --info: #0369A1; /* oklch(0.500 0.119 242.7) */
+  --info-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --border: #CFDFD8; /* oklch(0.890 0.020 167.9) */
+  --input: #6F8A7E; /* oklch(0.609 0.036 166.4) */
+  --ring: #0F766E; /* oklch(0.511 0.086 186.4) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #04140F; /* oklch(0.174 0.026 171.9) */
+  --tarjeta-roja: #C62828; /* oklch(0.539 0.194 26.7) */
+  --tarjeta-roja-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --en-vivo: #D6204F; /* oklch(0.569 0.211 14.3) */
+  --en-vivo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --gol: #15803D; /* oklch(0.527 0.137 150.1) */
+  --gol-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --finalizado: #475569; /* oklch(0.446 0.037 257.3) */
+  --finalizado-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --pendiente: #64748B; /* oklch(0.554 0.041 257.4) */
+  --pendiente-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --wo: #6D28D9; /* oklch(0.491 0.241 292.6) */
+  --wo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --chart-1: #C2570C; /* oklch(0.583 0.156 47.4) */
+  --chart-2: #7E22CE; /* oklch(0.496 0.237 301.9) */
+  --chart-3: #0A7F6A; /* oklch(0.534 0.098 175.4) */
+  --chart-4: #475569; /* oklch(0.446 0.037 257.3) */
+  --chart-5: #9A3412; /* oklch(0.470 0.143 37.3) */
+  --sidebar: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-foreground: #06150F; /* oklch(0.180 0.025 166.4) */
+  --sidebar-primary: #0F766E; /* oklch(0.511 0.086 186.4) */
+  --sidebar-primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-accent: #E6F0EC; /* oklch(0.946 0.012 170.3) */
+  --sidebar-accent-foreground: #06150F; /* oklch(0.180 0.025 166.4) */
+  --sidebar-border: #CFDFD8; /* oklch(0.890 0.020 167.9) */
+  --sidebar-ring: #0F766E; /* oklch(0.511 0.086 186.4) */
+}
+
+/* Selva Tropical — oscuro */
+.dark.tema-c,
+.dark .tema-c {
+  --background: #071210; /* oklch(0.171 0.017 181.7) */
+  --foreground: #ECF6F2; /* oklch(0.965 0.012 170.3) */
+  --card: #0E1D1A; /* oklch(0.216 0.022 180.0) */
+  --card-foreground: #ECF6F2; /* oklch(0.965 0.012 170.3) */
+  --popover: #0E1D1A; /* oklch(0.216 0.022 180.0) */
+  --popover-foreground: #ECF6F2; /* oklch(0.965 0.012 170.3) */
+  --primary: #2DD4BF; /* oklch(0.785 0.133 181.9) */
+  --primary-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --primary-strong: #5EEAD4; /* oklch(0.855 0.125 181.1) */
+  --primary-strong-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --secondary: #173230; /* oklch(0.295 0.033 189.3) */
+  --secondary-foreground: #ECF6F2; /* oklch(0.965 0.012 170.3) */
+  --muted: #16292A; /* oklch(0.265 0.025 200.0) */
+  --muted-foreground: #A3BDB4; /* oklch(0.776 0.031 172.6) */
+  --accent: #BEF264; /* oklch(0.897 0.179 126.7) */
+  --accent-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --destructive: #FF7B7B; /* oklch(0.736 0.161 21.8) */
+  --destructive-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --success: #4ADE80; /* oklch(0.800 0.182 151.7) */
+  --success-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --warning: #FBBF24; /* oklch(0.837 0.164 84.4) */
+  --warning-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --info: #4CC2F5; /* oklch(0.769 0.127 230.4) */
+  --info-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --border: #223A36; /* oklch(0.327 0.031 182.7) */
+  --input: #6F8F84; /* oklch(0.622 0.040 171.9) */
+  --ring: #2DD4BF; /* oklch(0.785 0.133 181.9) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --tarjeta-roja: #F04848; /* oklch(0.643 0.205 25.0) */
+  --tarjeta-roja-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --en-vivo: #FF6B8B; /* oklch(0.719 0.181 9.5) */
+  --en-vivo-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --gol: #86EFAC; /* oklch(0.871 0.136 154.4) */
+  --gol-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --finalizado: #94A3B8; /* oklch(0.711 0.035 256.8) */
+  --finalizado-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --pendiente: #8794AA; /* oklch(0.664 0.036 261.0) */
+  --pendiente-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --wo: #B49CFF; /* oklch(0.753 0.141 293.9) */
+  --wo-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --chart-1: #FB923C; /* oklch(0.758 0.159 55.9) */
+  --chart-2: #C4B5FD; /* oklch(0.811 0.101 293.6) */
+  --chart-3: #86EFAC; /* oklch(0.871 0.136 154.4) */
+  --chart-4: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --chart-5: #94A3B8; /* oklch(0.711 0.035 256.8) */
+  --sidebar: #0E1D1A; /* oklch(0.216 0.022 180.0) */
+  --sidebar-foreground: #ECF6F2; /* oklch(0.965 0.012 170.3) */
+  --sidebar-primary: #2DD4BF; /* oklch(0.785 0.133 181.9) */
+  --sidebar-primary-foreground: #03100B; /* oklch(0.158 0.024 169.2) */
+  --sidebar-accent: #16292A; /* oklch(0.265 0.025 200.0) */
+  --sidebar-accent-foreground: #ECF6F2; /* oklch(0.965 0.012 170.3) */
+  --sidebar-border: #223A36; /* oklch(0.327 0.031 182.7) */
+  --sidebar-ring: #2DD4BF; /* oklch(0.785 0.133 181.9) */
+}
+
+/* Selva Tropical — Mesa AAA claro (solo tokens que cambian) */
+.tema-c .mesa,
+.tema-c.mesa {
+  --primary: #115E59; /* oklch(0.437 0.071 188.2) */
+  --muted-foreground: #3E544B; /* oklch(0.425 0.031 167.8) */
+  --destructive: #AE0610; /* oklch(0.474 0.191 27.5) */
+  --success: #01622B; /* oklch(0.434 0.118 150.3) */
+  --warning: #8D3F01; /* oklch(0.463 0.123 49.4) */
+  --info: #015A8B; /* oklch(0.449 0.107 242.7) */
+  --ring: #115E59; /* oklch(0.437 0.071 188.2) */
+  --tarjeta-roja: #B40A16; /* oklch(0.487 0.194 26.8) */
+  --en-vivo: #B3003C; /* oklch(0.488 0.195 14.3) */
+  --gol: #00662C; /* oklch(0.446 0.123 150.0) */
+  --pendiente: #4A5A70; /* oklch(0.463 0.041 256.4) */
+}
+
+/* Selva Tropical — Mesa AAA oscuro (solo tokens que cambian) */
+.dark.tema-c .mesa,
+.dark .tema-c .mesa,
+.dark .tema-c.mesa {
+  --primary: #5EEAD4; /* oklch(0.855 0.125 181.1) */
+  --ring: #5EEAD4; /* oklch(0.855 0.125 181.1) */
+  --tarjeta-roja: #FF6C66; /* oklch(0.712 0.181 25.1) */
+  --pendiente: #8F9DB3; /* oklch(0.692 0.036 259.4) */
+}
+
+/* Gancho de globals.css: exponer los tokens nuevos a Tailwind v4 dentro de @theme inline, p. ej.:
+   --color-success: var(--success);  --color-success-foreground: var(--success-foreground);
+   --color-warning / --color-info / --color-primary-strong / --color-tarjeta-amarilla / --color-tarjeta-roja
+   --color-en-vivo / --color-gol / --color-finalizado / --color-pendiente / --color-wo  (+ sus -foreground) */

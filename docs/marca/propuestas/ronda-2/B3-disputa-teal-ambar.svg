@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cancha Nica">
+  <title>Cancha Nica</title>
+  <rect width="64" height="64" rx="14" fill="#0F766E"/>
+  <g>
+    <path d="M8 58.5H56" fill="none" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="2.4" stroke-linecap="round"/>
+    
+      <circle cx="24" cy="15" r="5.2" fill="#FFFFFF"/>
+      <g fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 22L18 36"/>
+        <path d="M18 36L24.5 43L27 50"/>
+        <path d="M18 36L14 45L9 52"/>
+        <path d="M22.5 25L14.5 20.5"/>
+        <path d="M22.5 25L13.5 31"/>
+      </g>
+    <g transform="translate(64 0) scale(-1 1)">
+      <circle cx="24" cy="15" r="5.2" fill="#FFFFFF"/>
+      <g fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 22L18 36"/>
+        <path d="M18 36L24.5 43L27 50"/>
+        <path d="M18 36L14 45L9 52"/>
+        <path d="M22.5 25L14.5 20.5"/>
+        <path d="M22.5 25L13.5 31"/>
+      </g></g>
+    <circle cx="32" cy="49.5" r="5.6" fill="#F59E0B" stroke="#0F766E" stroke-width="2"/>
+  </g>
+</svg>

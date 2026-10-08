@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cancha Nica">
+  <title>Cancha Nica</title>
+  <g transform="translate(-2 0.5)">
+    <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 11V52H54"/>
+      <path d="M31 52A15 15 0 0 0 16 37"/>
+    </g>
+    <path d="M16 11L16 31L43 21Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <g fill="none" stroke="#FFFFFF" stroke-opacity=".11" stroke-width="4" stroke-linecap="round">
+    <path d="M200 0V400"/>
+    <circle cx="200" cy="200" r="74"/>
+    <circle cx="200" cy="200" r="5" fill="#FFFFFF" fill-opacity=".11"/>
+    <path d="M0 44A44 44 0 0 0 44 0M356 0A44 44 0 0 0 400 44M400 356A44 44 0 0 0 356 400M44 400A44 44 0 0 0 0 356"/>
+  </g></svg>

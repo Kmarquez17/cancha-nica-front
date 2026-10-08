@@ -1,0 +1,154 @@
+/* Cancha Nica - tokens propuestos (Paleta A "Cobalto Nica"). NO aplicados a la app todavia.
+ * Origen: investigacion/03-tokens-candidatos.css (bloque .tema-a, con perfil .mesa AAA).
+ * Para adoptar en src/app/globals.css: cambiar el selector .tema-a por :root (y .dark.tema-a por .dark),
+ * conservar .mesa tal cual y mapear los tokens nuevos (success, warning, info, estados) en @theme inline.
+ */
+
+/* ============================================================
+   TEMA A — Cobalto Nica
+   Azul de la bandera nicaraguense + dorado de gol. Institucional, sobrio, el "azul de estadio nocturno"; el verde queda reservado a la cancha y al gol.
+   ============================================================ */
+
+/* Cobalto Nica — claro */
+.tema-a {
+  --background: #F8FAFC; /* oklch(0.984 0.003 0) */
+  --foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --card: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --card-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --popover: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --popover-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --primary: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+  --primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --primary-strong: #1E40AF; /* oklch(0.424 0.181 265.6) */
+  --primary-strong-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --secondary: #E1E8F2; /* oklch(0.929 0.016 257.2) */
+  --secondary-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --muted: #EAEFF5; /* oklch(0.950 0.010 252.8) */
+  --muted-foreground: #46546A; /* oklch(0.443 0.040 259.3) */
+  --accent: #F5B700; /* oklch(0.814 0.167 83.9) */
+  --accent-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --destructive: #B91C1C; /* oklch(0.505 0.190 27.5) */
+  --destructive-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --success: #15803D; /* oklch(0.527 0.137 150.1) */
+  --success-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --warning: #B45309; /* oklch(0.555 0.146 49.0) */
+  --warning-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --info: #0369A1; /* oklch(0.500 0.119 242.7) */
+  --info-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --border: #D3DBE6; /* oklch(0.889 0.017 256.3) */
+  --input: #7A889C; /* oklch(0.622 0.034 257.3) */
+  --ring: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --tarjeta-roja: #C62828; /* oklch(0.539 0.194 26.7) */
+  --tarjeta-roja-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --en-vivo: #D6204F; /* oklch(0.569 0.211 14.3) */
+  --en-vivo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --gol: #15803D; /* oklch(0.527 0.137 150.1) */
+  --gol-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --finalizado: #475569; /* oklch(0.446 0.037 257.3) */
+  --finalizado-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --pendiente: #64748B; /* oklch(0.554 0.041 257.4) */
+  --pendiente-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --wo: #6D28D9; /* oklch(0.491 0.241 292.6) */
+  --wo-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --chart-1: #C2570C; /* oklch(0.583 0.156 47.4) */
+  --chart-2: #7E22CE; /* oklch(0.496 0.237 301.9) */
+  --chart-3: #0A7F6A; /* oklch(0.534 0.098 175.4) */
+  --chart-4: #475569; /* oklch(0.446 0.037 257.3) */
+  --chart-5: #9A3412; /* oklch(0.470 0.143 37.3) */
+  --sidebar: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --sidebar-primary: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+  --sidebar-primary-foreground: #FFFFFF; /* oklch(1.000 0.000 0) */
+  --sidebar-accent: #EAEFF5; /* oklch(0.950 0.010 252.8) */
+  --sidebar-accent-foreground: #0A1220; /* oklch(0.182 0.031 261.1) */
+  --sidebar-border: #D3DBE6; /* oklch(0.889 0.017 256.3) */
+  --sidebar-ring: #1D4ED8; /* oklch(0.488 0.217 264.4) */
+}
+
+/* Cobalto Nica — oscuro */
+.dark.tema-a,
+.dark .tema-a {
+  --background: #080D18; /* oklch(0.160 0.025 264.6) */
+  --foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --card: #101829; /* oklch(0.211 0.036 264.3) */
+  --card-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --popover: #101829; /* oklch(0.211 0.036 264.3) */
+  --popover-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --primary: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+  --primary-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --primary-strong: #93B6FF; /* oklch(0.779 0.112 264.3) */
+  --primary-strong-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --secondary: #1E2A42; /* oklch(0.286 0.047 263.4) */
+  --secondary-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --muted: #1A2438; /* oklch(0.261 0.040 263.5) */
+  --muted-foreground: #AAB6C9; /* oklch(0.773 0.030 259.6) */
+  --accent: #FBBF24; /* oklch(0.837 0.164 84.4) */
+  --accent-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --destructive: #FF7B7B; /* oklch(0.736 0.161 21.8) */
+  --destructive-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --success: #4ADE80; /* oklch(0.800 0.182 151.7) */
+  --success-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --warning: #FBBF24; /* oklch(0.837 0.164 84.4) */
+  --warning-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --info: #4CC2F5; /* oklch(0.769 0.127 230.4) */
+  --info-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --border: #26324A; /* oklch(0.318 0.046 263.6) */
+  --input: #7C8BA3; /* oklch(0.633 0.040 259.8) */
+  --ring: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+  --tarjeta-amarilla: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --tarjeta-amarilla-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --tarjeta-roja: #F04848; /* oklch(0.643 0.205 25.0) */
+  --tarjeta-roja-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --en-vivo: #FF6B8B; /* oklch(0.719 0.181 9.5) */
+  --en-vivo-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --gol: #4ADE80; /* oklch(0.800 0.182 151.7) */
+  --gol-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --finalizado: #94A3B8; /* oklch(0.711 0.035 256.8) */
+  --finalizado-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --pendiente: #8794AA; /* oklch(0.664 0.036 261.0) */
+  --pendiente-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --wo: #B49CFF; /* oklch(0.753 0.141 293.9) */
+  --wo-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --chart-1: #FB923C; /* oklch(0.758 0.159 55.9) */
+  --chart-2: #C4B5FD; /* oklch(0.811 0.101 293.6) */
+  --chart-3: #86EFAC; /* oklch(0.871 0.136 154.4) */
+  --chart-4: #FACC15; /* oklch(0.861 0.173 91.9) */
+  --chart-5: #94A3B8; /* oklch(0.711 0.035 256.8) */
+  --sidebar: #101829; /* oklch(0.211 0.036 264.3) */
+  --sidebar-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --sidebar-primary: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+  --sidebar-primary-foreground: #050B16; /* oklch(0.149 0.026 259.1) */
+  --sidebar-accent: #1A2438; /* oklch(0.261 0.040 263.5) */
+  --sidebar-accent-foreground: #EEF2F8; /* oklch(0.960 0.009 258.3) */
+  --sidebar-border: #26324A; /* oklch(0.318 0.046 263.6) */
+  --sidebar-ring: #7AA7FF; /* oklch(0.733 0.137 262.9) */
+}
+
+/* Cobalto Nica — Mesa AAA claro (solo tokens que cambian) */
+.tema-a .mesa,
+.tema-a.mesa {
+  --primary: #1E40AF; /* oklch(0.424 0.181 265.6) */
+  --muted-foreground: #425065; /* oklch(0.428 0.039 258.3) */
+  --destructive: #AE0610; /* oklch(0.474 0.191 27.5) */
+  --success: #00642B; /* oklch(0.440 0.121 150.0) */
+  --warning: #8D3F01; /* oklch(0.463 0.123 49.4) */
+  --info: #015A8B; /* oklch(0.449 0.107 242.7) */
+  --ring: #1E40AF; /* oklch(0.424 0.181 265.6) */
+  --tarjeta-roja: #B40A16; /* oklch(0.487 0.194 26.8) */
+  --en-vivo: #B3003C; /* oklch(0.488 0.195 14.3) */
+  --gol: #00662C; /* oklch(0.446 0.123 150.0) */
+  --pendiente: #4A5A70; /* oklch(0.463 0.041 256.4) */
+}
+
+/* Cobalto Nica — Mesa AAA oscuro (solo tokens que cambian) */
+.dark.tema-a .mesa,
+.dark .tema-a .mesa,
+.dark .tema-a.mesa {
+  --primary: #93B6FF; /* oklch(0.779 0.112 264.3) */
+  --ring: #93B6FF; /* oklch(0.779 0.112 264.3) */
+  --tarjeta-roja: #FF6C66; /* oklch(0.712 0.181 25.1) */
+  --pendiente: #8E9BB2; /* oklch(0.687 0.037 261.9) */
+}
+

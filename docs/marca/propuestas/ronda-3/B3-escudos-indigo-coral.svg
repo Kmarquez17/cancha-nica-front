@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cancha Nica">
+  <title>Cancha Nica</title>
+  <rect width="64" height="64" rx="14" fill="#4338CA"/>
+  <g>
+    <path d="M7 7H29V18C29 24.6 18 29 18 29C18 29 7 24.6 7 18Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M35 7H57V18C57 24.6 46 29 46 29C46 29 35 24.6 35 18Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M18 27H46V42.5C46 51.8 32 58 32 58C32 58 18 51.8 18 42.5Z" fill="#FB7185" stroke="#4338CA" stroke-width="3" stroke-linejoin="round"/>
+    <g transform="translate(18 15.5) scale(0.82)" fill="#4338CA">
+      <path d="M-5 -6H5V-1C5 2.6 2.6 4.2 0 4.2C-2.6 4.2 -5 2.6 -5 -1Z"/>
+      <path d="M-5 -4.6H-7.6C-7.6 -1 -6.6 0.2 -5 0.8M5 -4.6H7.6C7.6 -1 6.6 0.2 5 0.8" fill="none" stroke="#4338CA" stroke-width="1.9" stroke-linecap="round"/>
+      <rect x="-1.1" y="4.2" width="2.2" height="2.8"/><rect x="-3.6" y="7" width="7.2" height="2.2" rx="1"/>
+    </g>
+    <path transform="translate(46 16) scale(0.82)" d="M-4.5 -6.5L-9.5 -3.3L-7.4 0.8L-5.2 -0.6V7.2H5.2V-0.6L7.4 0.8L9.5 -3.3L4.5 -6.5C3.6 -4.3 -3.6 -4.3 -4.5 -6.5Z" fill="#4338CA"/>
+    <g transform="translate(32 42)">
+      <g fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-0.6 -5.2L-2.6 1.8"/>
+        <path d="M-2.6 1.8L-1.6 6.6L-3.2 11"/>
+        <path d="M-2.6 1.8L3.2 4.2L8.4 -0.6"/>
+        <path d="M-0.8 -3.4L-6.2 -0.4"/>
+        <path d="M-0.8 -3.4L4.4 -6.2"/>
+      </g>
+      <circle cx="-1.8" cy="-9" r="2.7" fill="#4338CA"/>
+      <circle cx="10.2" cy="-3.6" r="3.1" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.3"/>
+    </g>
+  </g>
+</svg>
