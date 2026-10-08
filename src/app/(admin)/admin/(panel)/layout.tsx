@@ -1,6 +1,7 @@
 import { CerrarSesionButton } from '@/features/auth/components/cerrar-sesion-button';
 import type { AdminPrincipalDto } from '@/shared/api/generated/models';
 import { exigirSesion, leerColorCliente } from '@/shared/api/server-session';
+import { HAY_PROTOTIPOS } from '@/shared/config/prototipos';
 import { ShellEscritorio } from '@/shared/ui/shell-escritorio';
 import { TemaCliente } from '@/shared/ui/tema-cliente';
 
@@ -16,8 +17,13 @@ export default async function PanelAdminLayout({ children }: LayoutProps<'/admin
           { href: '/admin', etiqueta: 'Inicio' },
           { href: '/admin/ligas', etiqueta: 'Ligas' },
           { href: '/admin/categorias', etiqueta: 'Categorías' },
-          { href: '/admin/clubes', etiqueta: 'Clubes' },
-          { href: '/admin/delegados', etiqueta: 'Delegados' },
+          // Fase 3 sin contrato real todavía: solo con datos simulados (MSW).
+          ...(HAY_PROTOTIPOS
+            ? [
+                { href: '/admin/clubes', etiqueta: 'Clubes' },
+                { href: '/admin/delegados', etiqueta: 'Delegados' },
+              ]
+            : []),
           { href: '/admin/mesas', etiqueta: 'Mesas' },
           { href: '/admin/configuracion', etiqueta: 'Configuración' },
         ]}

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { KeyRound, Lock, LockOpen, Pencil, Plus, Power, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEdiciones } from '@/features/ediciones/api';
-import type { MesaConPinDto, MesaDto } from '@/features/ediciones/tipos';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
+import type { AccesoMesaDto, MesaConPinDto, MesaDto } from '@/shared/api/generated/models';
 import { ApiError } from '@/shared/api/mutator';
 import { Button } from '@/shared/ui/button';
 import { AlertaError, Campo } from '@/shared/ui/campo';
@@ -19,9 +19,11 @@ import {
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import {
+  useActivarMesa,
   useActualizarMesa,
-  useAsignarEdiciones,
   useCrearMesa,
+  useDefinirAlcance,
+  useDesactivarMesa,
   useDesbloquearMesa,
   useMesas,
   useResetearPin,
@@ -33,18 +35,21 @@ const MAX_MESAS = 6;
 const hora = (iso: string) =>
   new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 
-type Acceso = { texto: string; clases: string };
-export function accesoDeMesa(
-  m: Pick<MesaDto, 'activa' | 'bloqueadaHasta'>,
-  ahora = Date.now(),
-): Acceso {
-  if (!m.activa) return { texto: 'Desactivada', clases: 'bg-pendiente text-pendiente-foreground' };
-  if (m.bloqueadaHasta && new Date(m.bloqueadaHasta).getTime() > ahora)
-    return {
-      texto: `Bloqueada hasta las ${hora(m.bloqueadaHasta)}`,
-      clases: 'bg-warning text-warning-foreground',
-    };
-  return { texto: 'Activa', clases: 'bg-success text-success-foreground' };
+/** Estado de acceso de una mesa tal como lo calcula el API (activa, desactivada o bloqueada por intentos). */
+export function accesoDeMesa(acceso: Pick<AccesoMesaDto, 'estado' | 'bloqueadaHasta'>) {
+  switch (acceso.estado) {
+    case 'DESACTIVADA':
+      return { texto: 'Desactivada', clases: 'bg-pendiente text-pendiente-foreground' };
+    case 'BLOQUEADA':
+      return {
+        texto: acceso.bloqueadaHasta
+          ? `Bloqueada hasta las ${hora(acceso.bloqueadaHasta)}`
+          : 'Bloqueada',
+        clases: 'bg-warning text-warning-foreground',
+      };
+    default:
+      return { texto: 'Activa', clases: 'bg-success text-success-foreground' };
+  }
 }
 
 const avisoError = (e: unknown) =>
@@ -53,18 +58,20 @@ const avisoError = (e: unknown) =>
 export function MesasLista() {
   const { data, isLoading, error } = useMesas();
   const [nueva, setNueva] = useState(false);
-  const [conPin, setConPin] = useState<{ mesa: MesaConPinDto; reseteo: boolean } | null>(null);
+  const [conPin, setConPin] = useState<{ dto: MesaConPinDto; reseteo: boolean } | null>(null);
   const [aResetear, setAResetear] = useState<MesaDto | null>(null);
   const [alcance, setAlcance] = useState<MesaDto | null>(null);
   const [renombrando, setRenombrando] = useState<MesaDto | null>(null);
-  const actualizar = useActualizarMesa();
+  const activar = useActivarMesa();
+  const desactivar = useDesactivarMesa();
   const desbloquear = useDesbloquearMesa();
   const lleno = (data?.length ?? 0) >= MAX_MESAS;
 
   async function alternarActiva(m: MesaDto) {
     try {
-      await actualizar.mutateAsync({ id: m.id, data: { activa: !m.activa } });
-      toast.success(m.activa ? 'Mesa desactivada.' : 'Mesa activada.');
+      if (m.activo) await desactivar.mutateAsync({ id: m.id });
+      else await activar.mutateAsync({ id: m.id });
+      toast.success(m.activo ? 'Mesa desactivada.' : 'Mesa activada.');
     } catch (e) {
       avisoError(e);
     }
@@ -72,7 +79,7 @@ export function MesasLista() {
 
   async function quitarBloqueo(m: MesaDto) {
     try {
-      await desbloquear.mutateAsync(m.id);
+      await desbloquear.mutateAsync({ id: m.id });
       toast.success('Mesa desbloqueada.');
     } catch (e) {
       avisoError(e);
@@ -86,7 +93,7 @@ export function MesasLista() {
           <h1 className="text-2xl">Mesas</h1>
           <p className="max-w-prose text-sm text-muted-foreground">
             Quienes llevan el marcador en la cancha. Cada mesa entra con su usuario y un PIN de 6
-            dígitos, y solo opera las ligas que le asignes.
+            dígitos, y solo opera las ligas que le asignes. Desactivar una mesa no libera su lugar.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -120,8 +127,7 @@ export function MesasLista() {
       {data && data.length > 0 ? (
         <ul className="grid gap-3 md:grid-cols-2">
           {data.map((m) => {
-            const acceso = accesoDeMesa(m);
-            const bloqueada = acceso.texto.startsWith('Bloqueada');
+            const acceso = accesoDeMesa(m.acceso);
             return (
               <li key={m.id} className="grid gap-3 rounded-lg border bg-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -164,19 +170,19 @@ export function MesasLista() {
                     <KeyRound data-icon="inline-start" />
                     Resetear PIN
                   </Button>
-                  {bloqueada ? (
+                  {m.acceso.estado === 'BLOQUEADA' ? (
                     <Button variant="outline" size="sm" onClick={() => quitarBloqueo(m)}>
                       <LockOpen data-icon="inline-start" />
                       Desbloquear
                     </Button>
                   ) : null}
                   <Button variant="outline" size="sm" onClick={() => alternarActiva(m)}>
-                    {m.activa ? (
+                    {m.activo ? (
                       <Lock data-icon="inline-start" />
                     ) : (
                       <Power data-icon="inline-start" />
                     )}
-                    {m.activa ? 'Desactivar' : 'Activar'}
+                    {m.activo ? 'Desactivar' : 'Activar'}
                   </Button>
                 </div>
               </li>
@@ -188,23 +194,23 @@ export function MesasLista() {
       <NuevaMesaDialog
         open={nueva}
         onCerrar={() => setNueva(false)}
-        onCreada={(mesa) => {
+        onCreada={(dto) => {
           setNueva(false);
-          setConPin({ mesa, reseteo: false });
+          setConPin({ dto, reseteo: false });
         }}
       />
       <ResetearDialog
         mesa={aResetear}
         onCerrar={() => setAResetear(null)}
-        onListo={(mesa) => {
+        onListo={(dto) => {
           setAResetear(null);
-          setConPin({ mesa, reseteo: true });
+          setConPin({ dto, reseteo: true });
         }}
       />
       <AlcanceDialog mesa={alcance} onCerrar={() => setAlcance(null)} />
       <OperadorDialog mesa={renombrando} onCerrar={() => setRenombrando(null)} />
       <PinDialog
-        mesa={conPin?.mesa ?? null}
+        mesa={conPin?.dto ?? null}
         reseteo={conPin?.reseteo}
         onCerrar={() => setConPin(null)}
       />
@@ -229,9 +235,9 @@ function NuevaMesaDialog({
     e.preventDefault();
     setError(null);
     try {
-      const mesa = await crear.mutateAsync({ nombreOperador: nombre.trim() || null });
+      const dto = await crear.mutateAsync({ data: { nombreOperador: nombre.trim() || null } });
       setNombre('');
-      onCreada(mesa);
+      onCreada(dto);
     } catch (err) {
       setError(err instanceof ApiError ? mensajeDeError(err) : mensajeGenerico());
     }
@@ -252,6 +258,7 @@ function NuevaMesaDialog({
             <Input
               id="mesa-nombre"
               autoComplete="off"
+              maxLength={80}
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
             />
@@ -281,7 +288,7 @@ function ResetearDialog({
     if (!mesa) return;
     setError(null);
     try {
-      onListo(await resetear.mutateAsync(mesa.id));
+      onListo(await resetear.mutateAsync({ id: mesa.id }));
     } catch (err) {
       setError(err instanceof ApiError ? mensajeDeError(err) : mensajeGenerico());
     }
@@ -293,8 +300,9 @@ function ResetearDialog({
         <DialogHeader>
           <DialogTitle>Resetear el PIN de {mesa?.username}</DialogTitle>
           <DialogDescription>
-            Se crea un PIN nuevo y el anterior deja de funcionar. Si la mesa estaba bloqueada, se
-            desbloquea.
+            Se crea un PIN nuevo y el anterior deja de funcionar. Se cierran las sesiones abiertas
+            de la mesa (el acceso que ya tenía puede durar hasta 15 minutos más) y, si estaba
+            bloqueada por intentos, se desbloquea.
           </DialogDescription>
         </DialogHeader>
         {error ? <AlertaError>{error}</AlertaError> : null}
@@ -310,15 +318,18 @@ function ResetearDialog({
 
 function AlcanceDialog({ mesa, onCerrar }: { mesa: MesaDto | null; onCerrar: () => void }) {
   const { data: ligas } = useEdiciones(false);
-  const asignar = useAsignarEdiciones();
+  const definir = useDefinirAlcance();
   const [marcadas, setMarcadas] = useState<string[] | null>(null);
   const actuales = marcadas ?? mesa?.ediciones.map((e) => e.id) ?? [];
-  const asignables = (ligas ?? []).filter((l) => l.estado !== 'FINALIZADA');
+  // Las que ya tenía se pueden conservar aunque hayan terminado; las nuevas no pueden estar finalizadas.
+  const asignables = (ligas ?? []).filter(
+    (l) => l.estado !== 'FINALIZADA' || (mesa?.ediciones.some((e) => e.id === l.id) ?? false),
+  );
 
   async function guardar() {
     if (!mesa) return;
     try {
-      await asignar.mutateAsync({ id: mesa.id, edicionIds: actuales });
+      await definir.mutateAsync({ id: mesa.id, data: { edicionIds: actuales } });
       toast.success('Ligas de la mesa actualizadas.');
       setMarcadas(null);
       onCerrar();
@@ -341,7 +352,8 @@ function AlcanceDialog({ mesa, onCerrar }: { mesa: MesaDto | null; onCerrar: () 
         <DialogHeader>
           <DialogTitle>Ligas de {mesa?.username}</DialogTitle>
           <DialogDescription>
-            La mesa solo puede operar las ligas marcadas. Quitar una surte efecto al instante.
+            La mesa solo puede operar las ligas marcadas. Quitar una surte efecto al instante,
+            aunque la mesa esté trabajando.
           </DialogDescription>
         </DialogHeader>
         {asignables.length === 0 ? (
@@ -367,8 +379,8 @@ function AlcanceDialog({ mesa, onCerrar }: { mesa: MesaDto | null; onCerrar: () 
           </fieldset>
         )}
         <DialogFooter showCloseButton>
-          <Button onClick={guardar} disabled={asignar.isPending}>
-            {asignar.isPending ? 'Guardando…' : 'Guardar'}
+          <Button onClick={guardar} disabled={definir.isPending}>
+            {definir.isPending ? 'Guardando…' : 'Guardar'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -397,6 +409,7 @@ function FormularioOperador({ mesa, onCerrar }: { mesa: MesaDto; onCerrar: () =>
     e.preventDefault();
     setError(null);
     try {
+      // `null` borra el nombre.
       await actualizar.mutateAsync({
         id: mesa.id,
         data: { nombreOperador: nombre.trim() || null },

@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   PRESETS,
-  camposEditables,
   formAReglas,
   normalizarNombre,
   presetAForm,
   reglasAForm,
   reglasFormSchema,
   slugDeEdicion,
-  transicionesDe,
 } from '@/features/ediciones/lib/reglas';
 import { MODALIDADES } from '@/features/ediciones/tipos';
 
@@ -73,46 +71,6 @@ describe('invariantes (4.14), cada una por separado y en su campo', () => {
     const r = reglasFormSchema.safeParse({ ...base, rosterMax: Number.NaN });
     expect(r.success).toBe(false);
     if (!r.success) expect(r.error.issues[0].message).toBe('Escribe un número.');
-  });
-});
-
-describe('estados de la liga', () => {
-  it('sigue el orden del plan', () => {
-    expect(transicionesDe('CONFIGURACION', null)).toEqual(['EN_REGISTRO']);
-    expect(transicionesDe('EN_REGISTRO', null)).toEqual(['EN_CURSO', 'PAUSADA']);
-    expect(transicionesDe('EN_CURSO', null)).toEqual(['EN_ELIMINATORIAS', 'PAUSADA']);
-    expect(transicionesDe('EN_ELIMINATORIAS', null)).toEqual(['FINALIZADA']);
-  });
-  it('no se pausa en eliminatorias y finalizada no tiene salida', () => {
-    expect(transicionesDe('EN_ELIMINATORIAS', null)).not.toContain('PAUSADA');
-    expect(transicionesDe('FINALIZADA', null)).toEqual([]);
-  });
-  it('pausada vuelve al estado previo', () => {
-    expect(transicionesDe('PAUSADA', 'EN_CURSO')).toEqual(['EN_CURSO']);
-    expect(transicionesDe('PAUSADA', 'EN_REGISTRO')).toEqual(['EN_REGISTRO']);
-  });
-});
-
-describe('campos editables por estado (tarea 2.5)', () => {
-  it('en configuración se edita todo', () => {
-    expect([...camposEditables('CONFIGURACION')].sort()).toEqual(
-      ['costos', 'fechaFinEstimada', 'fechaInicio', 'modalidad', 'nombre', 'reglas', 'slug'].sort(),
-    );
-  });
-  it('con inscripciones abiertas el slug y la fecha de inicio quedan fijos', () => {
-    const c = camposEditables('EN_REGISTRO');
-    expect(c.has('slug')).toBe(false);
-    expect(c.has('fechaInicio')).toBe(false);
-    expect(c.has('reglas')).toBe(true);
-  });
-  it.each(['EN_CURSO', 'EN_ELIMINATORIAS', 'PAUSADA'] as const)(
-    'en %s solo se editan nombre, fin estimado y costos',
-    (e) => {
-      expect([...camposEditables(e)].sort()).toEqual(['costos', 'fechaFinEstimada', 'nombre']);
-    },
-  );
-  it('finalizada no admite nada', () => {
-    expect(camposEditables('FINALIZADA').size).toBe(0);
   });
 });
 

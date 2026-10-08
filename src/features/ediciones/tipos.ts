@@ -1,20 +1,13 @@
 /**
- * Tipos de la Fase 2 escritos a mano a partir de `FASE_02.md` del backend.
- * PROVISIONAL: se reemplazan por los generados con Orval cuando llegue el snapshot y
- * `FRONT_FASE_02.md` (el nombre exacto de campos y códigos puede variar).
+ * Vistas tipadas de lo que el contrato deja como objeto libre. El snapshot declara `reglasModalidad`,
+ * `reglasSanciones` y `reglasFinancieras` como `{ [key: string]: unknown }`; aquí se les da forma según
+ * `FRONT_FASE_02.md` (secciones 3.2 y 3.4) y PLAN_BACKEND 4.12, 4.14 y H15. Los DTO de la API vienen de
+ * `@/shared/api/generated/models`.
  */
-export const MODALIDADES = ['FUTSAL', 'FUTBOL_9', 'FUTBOL_11'] as const;
-export type Modalidad = (typeof MODALIDADES)[number];
+import { Modalidad as ModalidadApi } from '@/shared/api/generated/models/modalidad';
 
-export const ESTADOS_EDICION = [
-  'CONFIGURACION',
-  'EN_REGISTRO',
-  'EN_CURSO',
-  'EN_ELIMINATORIAS',
-  'PAUSADA',
-  'FINALIZADA',
-] as const;
-export type EstadoEdicion = (typeof ESTADOS_EDICION)[number];
+export const MODALIDADES = Object.values(ModalidadApi);
+export type Modalidad = (typeof MODALIDADES)[number];
 
 export type ReglasModalidad = {
   jugadoresEnCancha: 5 | 9 | 11;
@@ -34,7 +27,7 @@ export type ParametrosEdicion = {
   rosterMax: number;
 };
 
-/** Reglas de sanción por liga (PLAN_BACKEND 4.12). Los importes son decimales como texto («0.00»). */
+/** Reglas de sanción por liga. Los importes son decimales como texto («0.00»). */
 export type ReglasSanciones = {
   rojaDirectaFechas: number;
   dobleAmarillaFechas: number;
@@ -51,7 +44,6 @@ export type ReglasSanciones = {
   inferioridadNumerica: { multaInfractor: string };
 };
 
-/** Reglas financieras por liga (PLAN_BACKEND H15). */
 export type ReglasFinancieras = {
   bloquearEquipoPorDeudaInscripcion: boolean;
   bloquearEquipoPorDeudaArbitraje: boolean;
@@ -59,84 +51,11 @@ export type ReglasFinancieras = {
 
 export type CostosEdicion = { costoInscripcion: string; costoArbitraje: string };
 
-export type RegistradoPor = { id: string; nombre: string };
+/** Condición que impide un cambio de estado (`incumplimientos` del error). */
+export type Incumplimiento = { codigo: string; mensaje: string; forzable: boolean };
 
-export type CategoriaDto = {
-  id: string;
-  nombre: string;
-  edadMinima: number | null;
-  edadMaxima: number | null;
-  archivada: boolean;
-  creadoPor: RegistradoPor;
-  creadaEn: string;
-};
+/** Invariante de la modalidad que se rompe (`erroresReglas` del error). */
+export type ErrorRegla = { codigo: string; campo: string; mensaje: string };
 
-export type EdicionDto = ParametrosEdicion &
-  CostosEdicion & {
-    reglasSanciones: ReglasSanciones;
-    reglasFinancieras: ReglasFinancieras;
-    id: string;
-    nombre: string;
-    slug: string;
-    modalidad: Modalidad;
-    categoria: { id: string; nombre: string };
-    estado: EstadoEdicion;
-    estadoPrevioPausa: EstadoEdicion | null;
-    fechaInicio: string; // YYYY-MM-DD
-    fechaFinEstimada: string | null;
-    edadMinima: number | null;
-    edadMaxima: number | null;
-    reglasModalidad: ReglasModalidad;
-    archivadaEn: string | null;
-    creadoPor: RegistradoPor;
-    creadaEn: string;
-  };
-
-export type MesaDto = {
-  id: string;
-  username: string; // MESA1..MESA6
-  nombreOperador: string | null;
-  activa: boolean;
-  bloqueadaHasta: string | null;
-  ediciones: { id: string; nombre: string }[];
-  creadoPor: RegistradoPor;
-  creadaEn: string;
-};
-
-/** Respuesta del alta y del reseteo: el PIN viaja una sola vez. */
-export type MesaConPinDto = MesaDto & { pin: string; waMeUrl: string | null; loginUrl: string };
-
-export type CrearCategoriaBody = {
-  nombre: string;
-  edadMinima?: number | null;
-  edadMaxima?: number | null;
-};
-
-export type CrearEdicionBody = ParametrosEdicion &
-  CostosEdicion & {
-    reglasSanciones: ReglasSanciones;
-    reglasFinancieras: ReglasFinancieras;
-    nombre: string;
-    categoriaId: string;
-    modalidad: Modalidad;
-    fechaInicio: string;
-    fechaFinEstimada?: string | null;
-    edadMinima?: number | null;
-    edadMaxima?: number | null;
-    reglasModalidad: ReglasModalidad;
-  };
-
-export type ActualizarEdicionBody = Partial<Omit<CrearEdicionBody, 'categoriaId'>> & {
-  slug?: string;
-};
-
-export type CambiarEstadoBody = { a: EstadoEdicion; forzar?: boolean; confirmar?: boolean };
-
-export type MesaLoginBody = { username: string; pin: string };
-export type MesaMeDto = {
-  id: string;
-  username: string;
-  nombreOperador: string | null;
-  organizacion: { id: string; nombre: string; slug: string };
-  ediciones: { id: string; nombre: string; slug: string; estado: EstadoEdicion }[];
-};
+/** Campo bloqueado por el estado de la liga (`camposBloqueados` del error). */
+export type CampoBloqueado = { campo: string; codigo: string };

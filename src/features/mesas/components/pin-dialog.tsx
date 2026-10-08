@@ -1,23 +1,18 @@
 'use client';
 
-import type { MesaConPinDto } from '@/features/ediciones/tipos';
+import type { MesaConPinDto } from '@/shared/api/generated/models';
 import { PinEntregaDialog, type EntregaPin } from '@/shared/ui/pin-entrega';
 
-const enlaceDe = (mesa: MesaConPinDto, origen: string) =>
-  mesa.loginUrl.startsWith('http') ? mesa.loginUrl : `${origen}${mesa.loginUrl}`;
+/** El API entrega el enlace completo (`{FRONT_URL}/mesa/<slug>`); si llegara relativo se le antepone el origen. */
+const enlaceDe = (m: MesaConPinDto, origen: string) =>
+  m.loginUrl.startsWith('http') ? m.loginUrl : `${origen}${m.loginUrl}`;
 
 /** Mensaje para la persona de la mesa: enlace de acceso, usuario y PIN. */
-export function mensajeAccesoMesa(mesa: MesaConPinDto, origen: string): string {
-  return `Tu acceso a la mesa de Cancha Nica:\nEnlace: ${enlaceDe(mesa, origen)}\nUsuario: ${mesa.username}\nPIN: ${mesa.pin}`;
+export function mensajeAccesoMesa(m: MesaConPinDto, origen: string): string {
+  return `Tu acceso a la mesa de Cancha Nica:\nEnlace: ${enlaceDe(m, origen)}\nUsuario: ${m.mesa.username}\nPIN: ${m.pin}`;
 }
 
-export function waMeDeMesa(mesa: MesaConPinDto, origen: string): string {
-  return (
-    mesa.waMeUrl ?? `https://wa.me/?text=${encodeURIComponent(mensajeAccesoMesa(mesa, origen))}`
-  );
-}
-
-/** Entrega del PIN de una mesa (una sola vez). */
+/** Entrega del PIN de una mesa (una sola vez). El `wa.me` lo arma el API y deja elegir a quién enviarlo. */
 export function PinDialog({
   mesa,
   reseteo,
@@ -31,11 +26,11 @@ export function PinDialog({
   const entrega: EntregaPin | null = mesa
     ? {
         etiquetaUsuario: 'Usuario',
-        usuario: mesa.username,
+        usuario: mesa.mesa.username,
         pin: mesa.pin,
         enlace: enlaceDe(mesa, origen),
         mensaje: mensajeAccesoMesa(mesa, origen),
-        waMeUrl: waMeDeMesa(mesa, origen),
+        waMeUrl: mesa.waMeUrl,
       }
     : null;
   return (

@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Recorrido de la Fase 2 con MSW. Cada prueba usa un navegador nuevo, así que la base simulada
- * (que vive en sessionStorage) siempre parte de los datos de ejemplo: categorías Libre y Sub-18,
- * ligas «Apertura 2026» (inscripciones abiertas) y «Clausura Sub-18», MESA1 activa y MESA2 bloqueada.
+ * Recorrido de la Fase 2 con MSW siguiendo el contrato real (`docs/contrato/FRONT_FASE_02.md`). Cada prueba usa un
+ * navegador nuevo, así que la base simulada (que vive en sessionStorage) parte de los datos de ejemplo: categorías
+ * Libre y Sub-18 (y Sub-15 archivada), ligas «Apertura 2026» (inscripciones abiertas) y «Clausura Sub-18» (en
+ * configuración), MESA1 activa con Apertura y MESA2 bloqueada.
  */
 test.beforeEach(async ({ context, baseURL }) => {
   await context.addCookies([{ name: 'at_admin', value: 'sesion-de-prueba', url: baseURL! }]);
@@ -13,6 +14,9 @@ const abrir = async (page: Page, ruta: string, esperar: string | RegExp) => {
   await page.goto(ruta);
   await expect(page.getByText(esperar).first()).toBeVisible();
 };
+
+const tarjeta = (page: Page, texto: string) =>
+  page.getByRole('listitem').filter({ hasText: texto });
 
 /** Pasa una liga de «inscripciones abiertas» a «en juego» forzando los requisitos (solo el dueño puede). */
 async function empezarForzando(page: Page) {
@@ -38,45 +42,86 @@ test.describe('admin: categorías', () => {
     await expect(page.getByText('Desde 35 años')).toBeVisible();
   });
 
+  test('las edades van de 5 a 80', async ({ page }) => {
+    await abrir(page, '/admin/categorias', 'Sub-18');
+    await page.getByRole('button', { name: 'Nueva categoría' }).click();
+    await page.getByLabel('Nombre').fill('Niños');
+    await page.getByLabel('Edad máxima').fill('3');
+    await page.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText('Escribe una edad entre 5 y 80, o déjala vacía.')).toBeVisible();
+  });
+
+  test('cuenta las ligas de cada categoría', async ({ page }) => {
+    await abrir(page, '/admin/categorias', 'Sub-18');
+    await expect(tarjeta(page, 'Libre').getByText(/En 1 liga/)).toBeVisible();
+  });
+
   test('archivar oculta la categoría y restaurar la devuelve', async ({ page }) => {
     await abrir(page, '/admin/categorias', 'Sub-18');
-    const fila = page.getByRole('listitem').filter({ hasText: 'Sub-18' });
-    await fila.getByRole('button', { name: 'Archivar' }).click();
-    await expect(page.getByRole('listitem').filter({ hasText: 'Sub-18' })).toHaveCount(0);
+    await tarjeta(page, 'Sub-18').getByRole('button', { name: 'Archivar' }).click();
+    await expect(tarjeta(page, 'Sub-18')).toHaveCount(0);
     await page.getByLabel('Mostrar archivadas').check();
-    await page
-      .getByRole('listitem')
-      .filter({ hasText: 'Sub-18' })
-      .getByRole('button', { name: 'Restaurar' })
-      .click();
+    await tarjeta(page, 'Sub-18').getByRole('button', { name: 'Restaurar' }).click();
     await page.getByLabel('Mostrar archivadas').uncheck();
-    await expect(page.getByRole('listitem').filter({ hasText: 'Sub-18' })).toHaveCount(1);
+    await expect(tarjeta(page, 'Sub-18')).toHaveCount(1);
   });
 });
 
-test.describe('admin: ligas', () => {
-  test('al elegir modalidad se carga el preset y una regla rota se marca en su campo', async ({
-    page,
-  }) => {
+test.describe('admin: crear una liga', () => {
+  test('pide solo lo básico, muestra el preset y abre el detalle', async ({ page }) => {
     await abrir(page, '/admin/ligas/nueva', 'Nueva liga');
     await page.getByLabel('Nombre', { exact: true }).fill('Copa Veteranos');
     await page.getByLabel('Categoría').selectOption({ label: 'Sub-18' });
     await page.getByLabel('Modalidad').selectOption('FUTBOL_11');
-    await expect(page.getByText(/Cargamos las reglas de Fútbol 11/)).toBeVisible();
-    await expect(page.getByLabel('Plantel máximo')).toHaveValue('30');
+    await expect(page.getByText('Plantel de 14 a 30 jugadores')).toBeVisible();
+    await expect(page.getByText('No se registran faltas')).toBeVisible();
 
-    await page.getByLabel('Plantel máximo').fill('5');
-    await page.getByRole('button', { name: 'Crear liga' }).click();
-    await expect(page.getByText(/No puede ser menor que los convocados por partido/)).toBeVisible();
-
-    await page.getByLabel('Plantel máximo').fill('30');
     await page.getByRole('button', { name: 'Crear liga' }).click();
     await expect(page).toHaveURL(/\/admin\/ligas\/ed-/);
     await expect(page.getByRole('heading', { name: 'Copa Veteranos' })).toBeVisible();
+    // El preset llegó cargado desde el servidor.
+    await expect(page.getByLabel('Plantel máximo')).toHaveValue('30');
+    // Las edades de la categoría se copian a la liga.
+    await expect(page.getByLabel('Edad máxima')).toHaveValue('17');
   });
 
-  test('una liga nueva trae las sanciones y los costos del plan', async ({ page }) => {
+  test('valida el nombre y la categoría antes de enviar', async ({ page }) => {
     await abrir(page, '/admin/ligas/nueva', 'Nueva liga');
+    await page.getByRole('button', { name: 'Crear liga' }).click();
+    await expect(page.getByText('Escribe el nombre (mínimo 3 letras).')).toBeVisible();
+    await expect(page.getByText('Elige una categoría.')).toBeVisible();
+  });
+
+  test('una categoría archivada no aparece para crear ligas', async ({ page }) => {
+    await abrir(page, '/admin/ligas/nueva', 'Nueva liga');
+    const categoria = page.getByLabel('Categoría');
+    await expect(categoria.getByRole('option', { name: 'Libre' })).toHaveCount(1);
+    await expect(categoria.getByRole('option', { name: 'Sub-15' })).toHaveCount(0);
+  });
+});
+
+test.describe('admin: configurar una liga', () => {
+  test('una regla rota se marca en su campo y no se envía', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-2', 'Estado de la liga');
+    await page.getByLabel('Plantel máximo').fill('5');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText(/No puede ser menor que los convocados por partido/)).toBeVisible();
+  });
+
+  test('cambiar la modalidad carga las reglas de la nueva', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-2', 'Estado de la liga');
+    await page.getByLabel('Modalidad').selectOption('FUTBOL_11');
+    await expect(page.getByText(/Cargamos las reglas de Fútbol 11/)).toBeVisible();
+    await expect(page.getByLabel('Plantel máximo')).toHaveValue('30');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Cambios guardados.')).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel('Plantel máximo')).toHaveValue('30');
+    await expect(page.getByLabel('Modalidad')).toHaveValue('FUTBOL_11');
+  });
+
+  test('trae las sanciones y los costos del plan', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-2', 'Estado de la liga');
     await expect(page.getByLabel('Fechas de suspensión por roja directa')).toHaveValue('1');
     await expect(page.getByLabel('Amarillas acumuladas para una fecha')).toHaveValue('5');
     await expect(page.getByLabel('Goles que se dan al ganador por W.O.')).toHaveValue('3');
@@ -104,17 +149,75 @@ test.describe('admin: ligas', () => {
     await expect(page.getByLabel('Multa por roja')).toHaveValue('7.50');
   });
 
-  test('empezar sin requisitos muestra el reporte; el dueño puede forzar y las reglas quedan congeladas', async ({
+  test('eliminatorias, tercer puesto y equipos mínimos se guardan', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-2', 'Estado de la liga');
+    await page.getByLabel('Clasificados a eliminatorias').selectOption('8');
+    await page.getByLabel('Jugar partido por el tercer puesto').check();
+    await page.getByLabel('Equipos mínimos para empezar').fill('6');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Cambios guardados.')).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel('Clasificados a eliminatorias')).toHaveValue('8');
+    await expect(page.getByLabel('Jugar partido por el tercer puesto')).toBeChecked();
+    await expect(page.getByLabel('Equipos mínimos para empezar')).toHaveValue('6');
+  });
+
+  test('las edades se pueden borrar', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-2', 'Estado de la liga');
+    await expect(page.getByLabel('Edad máxima')).toHaveValue('17');
+    await page.getByLabel('Edad máxima').fill('');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Cambios guardados.')).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel('Edad máxima')).toHaveValue('');
+  });
+
+  test('con inscripciones abiertas lo que dice la API como fijo queda deshabilitado', async ({
     page,
   }) => {
     await abrir(page, '/admin/ligas/ed-1', 'Estado de la liga');
     await expect(page.getByLabel('Plantel máximo')).toBeEnabled();
     await expect(page.getByLabel('Dirección pública (slug)')).toBeDisabled();
+    await expect(page.getByLabel('Fecha de inicio')).toBeDisabled();
+    await expect(page.getByLabel('Categoría')).toBeDisabled();
+  });
+});
 
-    await empezarForzando(page);
+test.describe('admin: estado de la liga', () => {
+  test('los botones salen de lo que permite la API', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-1', 'Estado de la liga');
+    await expect(page.getByRole('button', { name: 'Empezar la liga' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pausar liga' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Finalizar liga' })).toHaveCount(0);
+  });
+
+  test('empezar sin requisitos muestra el checklist; el dueño puede forzar y las reglas se congelan', async ({
+    page,
+  }) => {
+    await abrir(page, '/admin/ligas/ed-1', 'Estado de la liga');
+    await page.getByRole('button', { name: 'Empezar la liga' }).click();
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    const requisitos = page.getByRole('list', { name: 'Requisitos' });
+    await expect(requisitos.getByText(/Faltan equipos confirmados/)).toBeVisible();
+    await expect(requisitos.getByText('(se puede saltar)').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Forzar de todos modos' }).click();
+    await expect(page.locator('[data-estado="EN_CURSO"]')).toBeVisible();
+
     await expect(page.getByLabel('Plantel máximo')).toBeDisabled();
     await expect(page.getByLabel('Multa por roja')).toBeDisabled();
-    await expect(page.getByLabel('Fecha de inicio')).toBeDisabled();
+    await expect(page.getByLabel('Nombre', { exact: true })).toBeEnabled();
+  });
+
+  test('lo que no se puede saltar no ofrece «Forzar»', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-1', 'Estado de la liga');
+    await empezarForzando(page);
+    await page.getByRole('button', { name: 'Pasar a eliminatorias' }).click();
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    const requisitos = page.getByRole('list', { name: 'Requisitos' });
+    await expect(requisitos.getByText(/Define cuántos equipos clasifican/)).toBeVisible();
+    await expect(requisitos.getByText('(no se puede saltar)')).toBeVisible();
+    await expect(page.getByText(/Hay requisitos que no se pueden saltar/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Forzar de todos modos' })).toHaveCount(0);
   });
 
   test('en juego los costos se siguen pudiendo cambiar', async ({ page }) => {
@@ -130,9 +233,6 @@ test.describe('admin: ligas', () => {
   test('finalizar pide confirmación y deja la liga solo de lectura', async ({ page }) => {
     await abrir(page, '/admin/ligas/ed-1', 'Estado de la liga');
     await empezarForzando(page);
-    await page.getByRole('button', { name: 'Pasar a eliminatorias' }).click();
-    await page.getByRole('button', { name: 'Confirmar' }).click();
-    await expect(page.locator('[data-estado="EN_ELIMINATORIAS"]')).toBeVisible();
 
     await page.getByRole('button', { name: 'Finalizar liga' }).click();
     const confirmar = page.getByRole('button', { name: 'Confirmar' });
@@ -146,12 +246,32 @@ test.describe('admin: ligas', () => {
     await expect(page.getByRole('button', { name: 'Guardar cambios' })).toHaveCount(0);
   });
 
-  test('archivar una liga en configuración la saca del listado', async ({ page }) => {
+  test('pausar y reanudar vuelven al estado anterior', async ({ page }) => {
+    await abrir(page, '/admin/ligas/ed-1', 'Estado de la liga');
+    await page.getByRole('button', { name: 'Pausar liga' }).click();
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page.locator('[data-estado="PAUSADA"]')).toBeVisible();
+    await page.getByRole('button', { name: 'Reanudar liga' }).click();
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page.locator('[data-estado="EN_REGISTRO"]')).toBeVisible();
+  });
+
+  test('archivar una liga en configuración la saca del listado, no se edita y se restaura', async ({
+    page,
+  }) => {
     await abrir(page, '/admin/ligas/ed-2', 'Estado de la liga');
     await page.getByRole('button', { name: 'Archivar liga' }).click();
-    await expect(page.getByText('Liga archivada.')).toBeVisible();
+    await expect(page.getByText('Liga archivada.').first()).toBeVisible();
+    await expect(page.getByText(/Esta liga está archivada/)).toBeVisible();
+    await expect(page.getByLabel('Nombre', { exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Abrir inscripciones' })).toHaveCount(0);
+
     await abrir(page, '/admin/ligas', 'Apertura 2026');
     await expect(page.getByText('Clausura Sub-18')).toHaveCount(0);
+
+    await page.goto('/admin/ligas/ed-2');
+    await page.getByRole('button', { name: 'Restaurar liga' }).click();
+    await expect(page.getByLabel('Nombre', { exact: true })).toBeEnabled();
   });
 });
 
@@ -165,12 +285,28 @@ test.describe('admin: mesas', () => {
 
     const pin = (await page.locator('dd.marcador').nth(1).innerText()).trim();
     expect(pin).toMatch(/^\d{6}$/);
+    await expect(page.getByRole('link', { name: /WhatsApp/ })).toHaveAttribute(
+      'href',
+      /^https:\/\/wa\.me\//,
+    );
     await page.getByRole('button', { name: 'Copiar PIN' }).click();
     await expect(page.getByText('Copiado al portapapeles.')).toBeVisible();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(pin);
 
     await page.getByRole('button', { name: 'Cerrar' }).first().click();
     await expect(page.getByText(pin)).toHaveCount(0);
+  });
+
+  test('resetear el PIN muestra uno nuevo y levanta el bloqueo', async ({ page }) => {
+    await abrir(page, '/admin/mesas', 'MESA2');
+    const mesa2 = tarjeta(page, 'MESA2');
+    await expect(mesa2.getByText(/Bloqueada hasta las/)).toBeVisible();
+    await mesa2.getByRole('button', { name: 'Resetear PIN' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Resetear PIN' }).click();
+    await expect(page.getByText('PIN nuevo')).toBeVisible();
+    await expect(page.getByText('El PIN anterior ya no funciona.')).toBeVisible();
+    await page.getByRole('button', { name: 'Cerrar' }).first().click();
+    await expect(mesa2.getByText('Activa', { exact: true })).toBeVisible();
   });
 
   test('el límite de 6 mesas deshabilita «Nueva mesa»', async ({ page }) => {
@@ -185,9 +321,33 @@ test.describe('admin: mesas', () => {
     await expect(page.getByText('Ya tienes las 6 mesas que permite un cliente.')).toBeVisible();
   });
 
+  test('desactivar una mesa y volver a activarla', async ({ page }) => {
+    await abrir(page, '/admin/mesas', 'MESA1');
+    const mesa1 = tarjeta(page, 'MESA1');
+    await mesa1.getByRole('button', { name: 'Desactivar' }).click();
+    await expect(mesa1.getByText('Desactivada')).toBeVisible();
+    await mesa1.getByRole('button', { name: 'Activar' }).click();
+    await expect(mesa1.getByText('Activa', { exact: true })).toBeVisible();
+  });
+
+  test('las ligas de una mesa se asignan y se quitan', async ({ page }) => {
+    await abrir(page, '/admin/mesas', 'MESA1');
+    const mesa1 = tarjeta(page, 'MESA1');
+    await expect(mesa1.getByText('Apertura 2026')).toBeVisible();
+    await mesa1.getByRole('button', { name: 'Ligas' }).click();
+    const apertura = page.getByRole('checkbox', { name: /Apertura 2026/ });
+    await expect(apertura).toBeChecked();
+    await apertura.uncheck();
+    await page.getByRole('checkbox', { name: /Clausura Sub-18/ }).check();
+    await page.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText('Ligas de la mesa actualizadas.')).toBeVisible();
+    await expect(mesa1.getByText('Clausura Sub-18')).toBeVisible();
+    await expect(mesa1.getByText('Apertura 2026')).toHaveCount(0);
+  });
+
   test('cambiar el operador no toca el usuario', async ({ page }) => {
     await abrir(page, '/admin/mesas', 'MESA1');
-    const mesa1 = page.getByRole('listitem').filter({ hasText: 'MESA1' });
+    const mesa1 = tarjeta(page, 'MESA1');
     await mesa1.getByRole('button', { name: 'Operador' }).click();
     await expect(page.getByLabel('Nombre de quien opera')).toHaveValue('Carlos Pérez');
     await expect(page.getByRole('button', { name: 'Guardar' })).toBeDisabled();
@@ -200,7 +360,7 @@ test.describe('admin: mesas', () => {
 
   test('quitar el nombre deja «Sin nombre de operador»', async ({ page }) => {
     await abrir(page, '/admin/mesas', 'MESA1');
-    const mesa1 = page.getByRole('listitem').filter({ hasText: 'MESA1' });
+    const mesa1 = tarjeta(page, 'MESA1');
     await mesa1.getByRole('button', { name: 'Operador' }).click();
     await page.getByLabel('Nombre de quien opera').fill('');
     await page.getByRole('button', { name: 'Guardar' }).click();
@@ -209,10 +369,10 @@ test.describe('admin: mesas', () => {
 
   test('desbloquear una mesa bloqueada', async ({ page }) => {
     await abrir(page, '/admin/mesas', 'MESA2');
-    const mesa2 = page.getByRole('listitem').filter({ hasText: 'MESA2' });
+    const mesa2 = tarjeta(page, 'MESA2');
     await expect(mesa2.getByText(/Bloqueada hasta las/)).toBeVisible();
     await mesa2.getByRole('button', { name: 'Desbloquear' }).click();
-    await expect(mesa2.getByText('Activa')).toBeVisible();
+    await expect(mesa2.getByText('Activa', { exact: true })).toBeVisible();
   });
 });
 
@@ -233,9 +393,10 @@ test.describe('mesa: login e inicio', () => {
     await expect(page).toHaveURL(/\/mesa$/);
     await expect(page.getByRole('heading', { name: /MESA1/ })).toBeVisible();
     await expect(page.getByText('Apertura 2026')).toBeVisible();
+    await expect(page.getByText(/Libre · Fútbol sala/)).toBeVisible();
   });
 
-  test('un usuario de otro cliente responde igual que un PIN errónea', async ({ page }) => {
+  test('un cliente que no existe responde igual que un PIN errónea', async ({ page }) => {
     await page.goto('/mesa/otra-liga');
     await page.getByLabel('Usuario').fill('MESA1');
     await page.getByLabel('PIN').fill('123456');
@@ -248,7 +409,7 @@ test.describe('mesa: login e inicio', () => {
     await page.getByLabel('Usuario').fill('MESA2');
     await page.getByLabel('PIN').fill('654321');
     await page.getByRole('button', { name: 'Entrar' }).click();
-    await expect(page.getByText(/bloqueada por intentos fallidos/)).toBeVisible();
+    await expect(page.getByText(/Demasiados intentos/)).toBeVisible();
   });
 
   test('validación en el cliente: usuario y PIN con formato', async ({ page }) => {
@@ -258,5 +419,15 @@ test.describe('mesa: login e inicio', () => {
     await page.getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByText('Escribe tu usuario, por ejemplo MESA1.')).toBeVisible();
     await expect(page.getByText('El PIN tiene 6 números.')).toBeVisible();
+  });
+
+  test('salir cierra la sesión y vuelve al inicio', async ({ page }) => {
+    await page.goto('/mesa/sopa');
+    await page.getByLabel('Usuario').fill('MESA1');
+    await page.getByLabel('PIN').fill('123456');
+    await page.getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.getByRole('heading', { name: /MESA1/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Salir' }).click();
+    await expect(page).toHaveURL(/\/$/);
   });
 });

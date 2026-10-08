@@ -35,30 +35,37 @@ export const mensajesEs: Record<string, { message: string; field?: string }> = {
   ORG_ESTADO_INVALIDO: { message: 'El cliente ya está en ese estado. Actualiza la lista.' },
   ORG_YA_TIENE_OWNER: { message: 'Este cliente ya tiene un dueño.' },
 
-  // Ligas, categorías y mesas (Fase 2; nombres provisionales hasta el snapshot)
+  // Ligas, categorías y mesas (Fase 2, FRONT_FASE_02.md §6)
   CATEGORIA_DUPLICADA: {
-    message: 'Ya existe una categoría con ese nombre (no importan mayúsculas, tildes ni guiones).',
+    message: 'Ya existe una categoría con ese nombre (no importan mayúsculas, tildes ni signos).',
     field: 'nombre',
   },
   CATEGORIA_ARCHIVADA: {
     message: 'Esa categoría está archivada: restáurala para crear ligas con ella.',
   },
+  EDICION_CAMPO_CONGELADO: {
+    message: 'Hay datos que ya no se pueden cambiar con la liga en su estado actual.',
+  },
+  MODALIDAD_BLOQUEADA: {
+    message: 'La modalidad y sus reglas ya no se pueden cambiar en este estado.',
+  },
+  EDICION_SOLO_LECTURA: { message: 'La liga ya terminó y no se puede cambiar.' },
+  EDICION_ARCHIVADA: { message: 'La liga está archivada. Restáurala para poder cambiarla.' },
+  EDICION_ESTADO_INVALIDO: { message: 'La liga no puede pasar a ese estado desde el actual.' },
+  EDICION_PRECONDICIONES_NO_CUMPLIDAS: {
+    message: 'La liga todavía no cumple los requisitos para este cambio.',
+  },
   EDICION_CATEGORIA_ABIERTA: {
     message:
       'Ya hay una liga abierta de esta categoría y modalidad. Finalízala antes de abrir otra.',
   },
-  EDICION_SOLO_LECTURA: {
-    message: 'Este dato ya no se puede cambiar en el estado actual de la liga.',
-  },
-  EDICION_TRANSICION_INVALIDA: { message: 'La liga no puede pasar a ese estado desde el actual.' },
-  EDICION_PRECONDICIONES: { message: 'La liga todavía no cumple los requisitos para este cambio.' },
-  MODALIDAD_BLOQUEADA: { message: 'La modalidad ya no se puede cambiar en este estado.' },
-  MODALIDAD_REGLAS_INVALIDAS: { message: 'Las reglas de la modalidad no son coherentes entre sí.' },
   CONFIRMACION_REQUERIDA: { message: 'Confirma la acción para continuar.' },
+  MODALIDAD_REGLAS_INVALIDAS: {
+    message: 'Las reglas de la modalidad no son coherentes entre sí. Revisa los campos marcados.',
+  },
   MESA_LIMIT_REACHED: { message: 'Ya tienes las 6 mesas que permite un cliente.' },
   MESA_BLOQUEADA: {
-    message:
-      'Esta mesa está bloqueada por intentos fallidos. Espera unos minutos o pide al organizador que la desbloquee.',
+    message: 'Demasiados intentos. Espera unos minutos o pide al dueño que desbloquee la mesa.',
   },
   FORBIDDEN: { message: 'No tienes permiso para hacer esto.' },
   NOT_FOUND: { message: 'No encontramos lo que buscas. Puede que ya no exista.' },

@@ -5,6 +5,7 @@ import { rutaBloqueada, rutaLogin, type Portal } from './portales';
 const MUTACIONES_PROPIAS = new Set([
   'plataformaLogin',
   'adminLogin',
+  'mesaLogin',
   'aceptarInvitacion',
   'restablecerContrasena',
   'olvideContrasena',

@@ -4,137 +4,119 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
+import type { ActualizarEdicionDto, CategoriaDto, EdicionDto } from '@/shared/api/generated/models';
 import { ApiError } from '@/shared/api/mutator';
 import { Button } from '@/shared/ui/button';
 import { AlertaError, Campo } from '@/shared/ui/campo';
 import { Input } from '@/shared/ui/input';
 import { Select } from '@/shared/ui/select';
 import {
-  camposEditables,
-  formAReglas,
-  presetAForm,
-  reglasAForm,
-  type ReglasForm,
-} from '../lib/reglas';
-import { dineroAForm, dineroPorDefecto, formADinero } from '../lib/sanciones';
+  cambiosDeEdicion,
+  edicionAForm,
+  ligaSchema,
+  puedeEditar,
+  type LigaValues,
+} from '../lib/edicion-form';
+import { camposBloqueadosDe, erroresReglasDe } from '../lib/errores';
+import { presetAForm, type ReglasForm } from '../lib/reglas';
 import { MODALIDAD_TEXTO } from '../lib/textos';
+import { MODALIDADES, type Modalidad } from '../tipos';
 import {
-  MODALIDADES,
-  type ActualizarEdicionBody,
-  type CategoriaDto,
-  type CrearEdicionBody,
-  type EdicionDto,
-  type Modalidad,
-} from '../tipos';
-import { DineroCampos, ReglasCampos, SancionesCampos } from './liga-campos';
-import { ligaSchema, type LigaValues } from './liga-schema';
+  ArranqueCampos,
+  DineroCampos,
+  EdadesCampos,
+  ReglasCampos,
+  SancionesCampos,
+} from './liga-campos';
 
-export type { LigaValues } from './liga-schema';
+export type { LigaValues } from '../lib/edicion-form';
 
-type Props =
-  | {
-      modo: 'crear';
-      categorias: CategoriaDto[];
-      onGuardar: (body: CrearEdicionBody) => Promise<void>;
-    }
-  | {
-      modo: 'editar';
-      edicion: EdicionDto;
-      categorias: CategoriaDto[];
-      onGuardar: (body: ActualizarEdicionBody) => Promise<void>;
-    };
+/** `campo` de un error de regla (`roja.cancelaPorGolRival`) -> nombre del campo del formulario. */
+const CAMPO_DE_REGLA: Record<string, keyof LigaValues> = {
+  'roja.cancelaPorGolRival': 'cancelaPorGolRival',
+  'roja.inferioridadMs': 'inferioridadMin',
+};
+const campoDeRegla = (campo: string) => (CAMPO_DE_REGLA[campo] ?? campo) as keyof LigaValues;
 
-const hoy = () => new Date().toISOString().slice(0, 10);
+type Props = {
+  edicion: EdicionDto;
+  categorias: CategoriaDto[];
+  /** Guarda los cambios y devuelve la liga ya actualizada. */
+  onGuardar: (cambios: ActualizarEdicionDto) => Promise<EdicionDto>;
+};
 
-export function LigaFormulario(props: Props) {
-  const edicion = props.modo === 'editar' ? props.edicion : null;
-  const editables = edicion ? camposEditables(edicion.estado) : null;
-  const puede = (c: Parameters<NonNullable<typeof editables>['has']>[0]) =>
-    editables ? editables.has(c) : true;
+/**
+ * Edición de una liga. Qué campos se pueden tocar lo dice la API (`camposEditables`): aquí no se duplica la regla.
+ * Solo se envía lo que cambió, porque el servidor es «todo o nada» ante un campo bloqueado.
+ */
+export function LigaFormulario({ edicion, categorias, onGuardar }: Props) {
+  const puede = (g: Parameters<typeof puedeEditar>[1]) =>
+    !edicion.archivadaEn && puedeEditar(edicion, g);
+  const [base, setBase] = useState(() => edicionAForm(edicion));
   const [error, setError] = useState<{ mensaje: string; detalles?: string[] } | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
-  const inicial: Modalidad = edicion?.modalidad ?? 'FUTSAL';
   const {
     register,
     handleSubmit,
     setValue,
+    setError: setCampo,
+    reset,
     control,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<LigaValues>({
-    resolver: zodResolver(ligaSchema),
-    defaultValues: {
-      nombre: edicion?.nombre ?? '',
-      categoriaId: edicion?.categoria.id ?? '',
-      modalidad: inicial,
-      fechaInicio: edicion?.fechaInicio ?? hoy(),
-      fechaFinEstimada: edicion?.fechaFinEstimada ?? '',
-      slug: edicion?.slug ?? '',
-      ...(edicion ? reglasAForm(edicion.reglasModalidad, edicion) : presetAForm(inicial)),
-      ...(edicion
-        ? dineroAForm(edicion.reglasSanciones, edicion.reglasFinancieras, edicion)
-        : dineroPorDefecto()),
-    },
-  });
+  } = useForm<LigaValues>({ resolver: zodResolver(ligaSchema), defaultValues: base });
 
   const registraFaltas = useWatch({ control, name: 'registraFaltas' });
   const modalidad = useWatch({ control, name: 'modalidad' });
   const modalidadReg = register('modalidad');
-  const soloLectura = editables !== null && editables.size === 0;
+  const nadaEditable = edicion.camposEditables.length === 0;
 
   function cargarPreset(m: Modalidad) {
     for (const [k, v] of Object.entries(presetAForm(m)))
       setValue(k as keyof ReglasForm, v as never, { shouldDirty: true, shouldValidate: true });
-    setAviso(`Cargamos las reglas de ${MODALIDAD_TEXTO[m]}. Puedes ajustarlas antes de guardar.`);
+    setAviso(
+      `Cargamos las reglas de ${MODALIDAD_TEXTO[m]}. Reemplazan los ajustes de reglas que habías hecho; puedes volver a ajustarlas antes de guardar.`,
+    );
   }
 
   async function onSubmit(v: LigaValues) {
     setError(null);
-    const { reglas, parametros } = formAReglas(v);
-    const { sanciones, finanzas, costos } = formADinero(v);
+    const cambios = cambiosDeEdicion(base, v);
+    if (Object.keys(cambios).length === 0) return;
     try {
-      if (props.modo === 'crear') {
-        await props.onGuardar({
-          nombre: v.nombre.trim(),
-          categoriaId: v.categoriaId,
-          modalidad: v.modalidad,
-          fechaInicio: v.fechaInicio,
-          fechaFinEstimada: v.fechaFinEstimada || null,
-          reglasModalidad: reglas,
-          reglasSanciones: sanciones,
-          reglasFinancieras: finanzas,
-          ...parametros,
-          ...costos,
-        });
-      } else {
-        const cambios: ActualizarEdicionBody = {};
-        if (puede('nombre')) cambios.nombre = v.nombre.trim();
-        if (puede('slug') && v.slug && v.slug !== edicion!.slug) cambios.slug = v.slug;
-        if (puede('fechaInicio')) cambios.fechaInicio = v.fechaInicio;
-        if (puede('fechaFinEstimada')) cambios.fechaFinEstimada = v.fechaFinEstimada || null;
-        if (puede('modalidad') && v.modalidad !== edicion!.modalidad)
-          cambios.modalidad = v.modalidad;
-        if (puede('reglas'))
-          Object.assign(cambios, {
-            reglasModalidad: reglas,
-            reglasSanciones: sanciones,
-            reglasFinancieras: finanzas,
-            ...parametros,
-          });
-        if (puede('costos')) Object.assign(cambios, costos);
-        await props.onGuardar(cambios);
-      }
+      const nueva = await onGuardar(cambios);
+      const valores = edicionAForm(nueva);
+      setBase(valores);
+      reset(valores);
+      setAviso(null);
     } catch (e) {
       if (!(e instanceof ApiError)) return setError({ mensaje: mensajeGenerico() });
-      setError({ mensaje: mensajeDeError(e), detalles: e.errors });
+      const reglas = erroresReglasDe(e);
+      for (const r of reglas) setCampo(campoDeRegla(r.campo), { message: r.mensaje });
+      const bloqueados = camposBloqueadosDe(e).map((c) => c.campo);
+      setError({
+        mensaje: mensajeDeError(e),
+        detalles: [
+          ...(e.errors ?? []),
+          ...reglas.map((r) => r.mensaje),
+          ...(bloqueados.length
+            ? [`Campos que ya no se pueden cambiar: ${bloqueados.join(', ')}.`]
+            : []),
+        ],
+      });
     }
   }
 
-  const bloqueado = (c: Parameters<typeof puede>[0]) => !puede(c) || isSubmitting;
-  const reglasCongeladas = !puede('reglas') && !soloLectura;
+  const deshabilitado = (g: Parameters<typeof puedeEditar>[1]) => !puede(g) || isSubmitting;
+  const categoriasElegibles = categorias.filter((c) => c.activa || c.id === edicion.categoria.id);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid max-w-3xl gap-8">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      aria-label="Configuración de la liga"
+      className="grid max-w-3xl gap-8"
+    >
       {error ? (
         <AlertaError>
           {error.mensaje}
@@ -147,7 +129,11 @@ export function LigaFormulario(props: Props) {
           ) : null}
         </AlertaError>
       ) : null}
-      {soloLectura ? (
+      {edicion.archivadaEn ? (
+        <p role="status" className="rounded-lg border bg-muted p-3 text-sm">
+          Esta liga está archivada. Restáurala para poder cambiar algo.
+        </p>
+      ) : nadaEditable ? (
         <p role="status" className="rounded-lg border bg-muted p-3 text-sm">
           Esta liga está finalizada y ya no se puede cambiar nada.
         </p>
@@ -160,7 +146,7 @@ export function LigaFormulario(props: Props) {
             <Input
               id="liga-nombre"
               autoComplete="off"
-              disabled={bloqueado('nombre')}
+              disabled={deshabilitado('nombre')}
               aria-invalid={!!errors.nombre}
               {...register('nombre')}
             />
@@ -171,16 +157,19 @@ export function LigaFormulario(props: Props) {
           id="liga-categoria"
           etiqueta="Categoría"
           error={errors.categoriaId?.message}
-          ayuda={edicion ? 'La categoría no se puede cambiar.' : undefined}
+          ayuda={
+            !puede('categoria')
+              ? 'Solo se cambia mientras la liga está en configuración.'
+              : undefined
+          }
         >
           <Select
             id="liga-categoria"
-            disabled={props.modo === 'editar' || isSubmitting}
+            disabled={deshabilitado('categoria')}
             aria-invalid={!!errors.categoriaId}
             {...register('categoriaId')}
           >
-            <option value="">Elige una categoría</option>
-            {props.categorias.map((c) => (
+            {categoriasElegibles.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
               </option>
@@ -196,7 +185,7 @@ export function LigaFormulario(props: Props) {
         >
           <Select
             id="liga-modalidad"
-            disabled={bloqueado('modalidad')}
+            disabled={deshabilitado('modalidad')}
             {...modalidadReg}
             onChange={(e) => {
               modalidadReg.onChange(e);
@@ -220,7 +209,7 @@ export function LigaFormulario(props: Props) {
           <Input
             id="liga-inicio"
             type="date"
-            disabled={bloqueado('fechaInicio')}
+            disabled={deshabilitado('fechaInicio')}
             {...register('fechaInicio')}
           />
         </Campo>
@@ -233,27 +222,30 @@ export function LigaFormulario(props: Props) {
           <Input
             id="liga-fin"
             type="date"
-            disabled={bloqueado('fechaFinEstimada')}
+            disabled={deshabilitado('fechaFin')}
             {...register('fechaFinEstimada')}
           />
         </Campo>
 
-        {props.modo === 'editar' ? (
-          <div className="sm:col-span-2">
-            <Campo
-              id="liga-slug"
-              etiqueta="Dirección pública (slug)"
-              error={errors.slug?.message}
-              ayuda={
-                puede('slug')
-                  ? 'Va en el enlace público de la liga. Después de abrir inscripciones queda fijo.'
-                  : 'Quedó fijo al abrir inscripciones.'
-              }
-            >
-              <Input id="liga-slug" disabled={bloqueado('slug')} {...register('slug')} />
-            </Campo>
-          </div>
-        ) : null}
+        <div className="sm:col-span-2">
+          <Campo
+            id="liga-slug"
+            etiqueta="Dirección pública (slug)"
+            error={errors.slug?.message}
+            ayuda={
+              puede('slug')
+                ? 'Va en el enlace público de la liga. Después de abrir inscripciones queda fijo.'
+                : 'Quedó fijo al abrir inscripciones.'
+            }
+          >
+            <Input id="liga-slug" disabled={deshabilitado('slug')} {...register('slug')} />
+          </Campo>
+        </div>
+      </fieldset>
+
+      <fieldset className="grid gap-4" disabled={!puede('edades') || isSubmitting}>
+        <legend className="mb-2 text-lg font-semibold">Edad de los jugadores</legend>
+        <EdadesCampos register={register} errors={errors} />
       </fieldset>
 
       <fieldset className="grid gap-4" disabled={!puede('reglas') || isSubmitting}>
@@ -265,7 +257,7 @@ export function LigaFormulario(props: Props) {
             {aviso}
           </p>
         ) : null}
-        {reglasCongeladas ? (
+        {!puede('reglas') && !edicion.archivadaEn && !nadaEditable ? (
           <p className="text-sm text-muted-foreground">
             Con la liga en juego las reglas quedan congeladas. Solo se cambian el nombre, el fin
             estimado y los costos.
@@ -274,11 +266,16 @@ export function LigaFormulario(props: Props) {
         <ReglasCampos register={register} errors={errors} registraFaltas={registraFaltas} />
       </fieldset>
 
-      <fieldset className="grid gap-4" disabled={!puede('reglas') || isSubmitting}>
+      <fieldset className="grid gap-4" disabled={!puede('arranque') || isSubmitting}>
+        <legend className="mb-2 text-lg font-semibold">Arranque y eliminatorias</legend>
+        <ArranqueCampos register={register} errors={errors} />
+      </fieldset>
+
+      <fieldset className="grid gap-4" disabled={!puede('sanciones') || isSubmitting}>
         <legend className="mb-2 text-lg font-semibold">Sanciones y multas</legend>
         <p className="text-sm text-muted-foreground">
-          Valores habituales ya cargados. Se aplican al cerrar cada acta y se pueden ajustar hasta
-          que la liga empiece.
+          Valores habituales ya cargados. Hoy solo se guardan: se aplicarán al cerrar cada acta
+          (llega en próximas fases). Se ajustan hasta que la liga empiece.
         </p>
         <SancionesCampos register={register} errors={errors} />
       </fieldset>
@@ -289,18 +286,14 @@ export function LigaFormulario(props: Props) {
           register={register}
           errors={errors}
           costosEditables={puede('costos')}
-          reglasEditables={puede('reglas')}
+          reglasEditables={puede('finanzas')}
         />
       </fieldset>
 
-      {!soloLectura ? (
-        <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={isSubmitting || (props.modo === 'editar' && !isDirty)}>
-            {isSubmitting
-              ? 'Guardando…'
-              : props.modo === 'crear'
-                ? 'Crear liga'
-                : 'Guardar cambios'}
+      {!nadaEditable && !edicion.archivadaEn ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" disabled={isSubmitting || !isDirty}>
+            {isSubmitting ? 'Guardando…' : 'Guardar cambios'}
           </Button>
         </div>
       ) : null}

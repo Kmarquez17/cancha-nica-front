@@ -6,13 +6,22 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { ErrorCode } from './errorCode';
+import type { ProblemDetailsDtoCamposBloqueadosItem } from './problemDetailsDtoCamposBloqueadosItem';
+import type { ProblemDetailsDtoErroresReglasItem } from './problemDetailsDtoErroresReglasItem';
+import type { ProblemDetailsDtoIncumplimientosItem } from './problemDetailsDtoIncumplimientosItem';
 
 export interface ProblemDetailsDto {
+  /** Campos de la liga que no se pueden cambiar en su estado actual, cada uno con su `campo` y `codigo`. */
+  camposBloqueados?: ProblemDetailsDtoCamposBloqueadosItem[];
   /** Código estable de negocio (catálogo 4.9, B6) */
   code: ErrorCode;
   detail?: string;
+  /** Invariantes de la modalidad que se rompen (MODALIDAD_REGLAS_INVALIDAS), con `codigo`, `campo` y `mensaje`. */
+  erroresReglas?: ProblemDetailsDtoErroresReglasItem[];
   /** Mensajes de validación (solo VALIDATION_ERROR) */
   errors?: string[];
+  /** Condiciones que no se cumplen para un cambio de estado de la liga (EDICION_PRECONDICIONES_NO_CUMPLIDAS, EDICION_CATEGORIA_ABIERTA). Cada una trae `codigo`, `mensaje` y `forzable`. */
+  incumplimientos?: ProblemDetailsDtoIncumplimientosItem[];
   instance: string;
   /** Id de correlación (x-request-id) */
   requestId?: string;

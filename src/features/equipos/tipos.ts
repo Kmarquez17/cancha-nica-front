@@ -3,7 +3,10 @@
  * Delegado, EdicionEquipo; decisiones R12 y R13). El backend NO ha publicado aún ni la especificación de la fase
  * ni el contrato: todo es PROVISIONAL y se reemplaza por lo generado con Orval.
  */
-import type { EstadoEdicion, RegistradoPor } from '@/features/ediciones/tipos';
+import type {
+  EstadoEdicion,
+  UsuarioResumenDto as RegistradoPor,
+} from '@/shared/api/generated/models';
 
 export type EstadoEquipo = 'BORRADOR' | 'CONFIRMADO' | 'DECLINADO';
 

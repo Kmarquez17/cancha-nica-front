@@ -3,6 +3,11 @@ import { portalDeRuta, type Portal } from './portales';
 export class ApiError extends Error {
   /** Portal al que pertenecía la petición (lo fija apiFetch); sirve para decidir a dónde redirigir. */
   portal?: Portal;
+  /**
+   * Cuerpo completo del problem+json. Trae los campos extra del contrato (`incumplimientos`, `erroresReglas`,
+   * `camposBloqueados`) que el resto del error no modela.
+   */
+  cuerpo?: Record<string, unknown>;
 
   constructor(
     public status: number,
@@ -21,7 +26,7 @@ export class ApiError extends Error {
 export function problemToApiError(status: number, body: unknown): ApiError {
   const p = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
-  return new ApiError(
+  const error = new ApiError(
     typeof p.status === 'number' ? p.status : status,
     str(p.code) ?? 'UNKNOWN',
     str(p.title) ?? 'Error',
@@ -29,6 +34,8 @@ export function problemToApiError(status: number, body: unknown): ApiError {
     str(p.requestId),
     Array.isArray(p.errors) ? p.errors.map(String) : undefined,
   );
+  error.cuerpo = p;
+  return error;
 }
 
 export type ResultadoRefresh = 'ok' | 'expirada' | 'bloqueada';

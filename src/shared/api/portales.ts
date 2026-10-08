@@ -2,8 +2,8 @@
 export const PORTALES = ['plataforma', 'admin', 'delegado', 'mesa'] as const;
 export type Portal = (typeof PORTALES)[number];
 
-/** Portales con login ya disponible en la API (delegado y mesa llegan en las fases 3 y 2). */
-export const PORTALES_CON_REFRESH: readonly Portal[] = ['plataforma', 'admin'];
+/** Portales con login y refresh ya disponibles en la API (el delegado llega en la Fase 3). */
+export const PORTALES_CON_REFRESH: readonly Portal[] = ['plataforma', 'admin', 'mesa'];
 
 /** Deduce el portal de una ruta del API (`/admin/me`) o de la app (`/admin/ediciones`). */
 export function portalDeRuta(ruta: string): Portal | null {

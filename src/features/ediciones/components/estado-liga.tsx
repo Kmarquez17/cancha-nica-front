@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { ESTADO_TEXTO, MODALIDAD_TEXTO } from '../lib/textos';
-import type { EstadoEdicion, Modalidad } from '../tipos';
+import type { EstadoEdicion, Modalidad } from '@/shared/api/generated/models';
 
 const ESTADOS: Record<EstadoEdicion, { clases: string; icono: LucideIcon }> = {
   CONFIGURACION: { clases: 'bg-pendiente text-pendiente-foreground', icono: Settings },

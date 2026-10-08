@@ -1,61 +1,62 @@
-# FASE 2 — Admin: ligas, categorías y mesas (prototipo con MSW)
+# FASE 2 — Admin: ligas, categorías y mesas
 
-> **Fuente de la verdad:** `PLAN_FRONTEND.md` (§4.9, §6, §10) y `FASE_02.md` del backend (`../cancha-nica-api/docs/fases/FASE_02.md`).
-> **Estado:** 🟡 **Prototipo contra MSW (2026-10-07).** El backend de la Fase 2 está en construcción (solo tiene las reglas internas: presets y máquina de estados) y todavía no existen el snapshot ni `FRONT_FASE_02.md`. Todo lo que dependa del contrato real es **provisional** y está marcado.
+> **Fuente de la verdad:** `PLAN_FRONTEND.md` (§4.9, §6, §10), `docs/contrato/FRONT_FASE_02.md` y `docs/contrato/openapi.snapshot.json` (copiados del backend, fase cerrada).
+> **Estado:** ✅ **Integrada con el contrato real (2026-10-08)**, antes prototipo con MSW. Probada de punta a punta contra el backend local.
 
-## 1. Qué se construyó
+## 1. Qué hay
 
 | Pantalla | Ruta | Qué hace |
 |---|---|---|
-| Inicio del admin | `/admin` | Guía «Para empezar» (categoría → liga → mesa, en ese orden porque cada paso necesita el anterior) y resumen de lo que existe |
-| Categorías | `/admin/categorias` | Catálogo del cliente: crear, editar, archivar y restaurar. Nombre único sin importar mayúsculas, tildes ni guiones |
+| Inicio del admin | `/admin` | Guía «Para empezar» (categoría → liga → mesa) y resumen |
+| Categorías | `/admin/categorias` | Crear, editar, archivar y restaurar. Edades de 5 a 80, cuántas ligas usa cada una. Nombre único sin importar mayúsculas, tildes ni signos |
 | Ligas | `/admin/ligas` | Listado con estado (píldora con icono y texto), modalidad y categoría; ver archivadas |
-| Nueva liga | `/admin/ligas/nueva` | Categoría + modalidad. Al elegir modalidad se **carga el preset** y se pueden ajustar las reglas |
-| Detalle de liga | `/admin/ligas/[id]` | Cambio de estado con **reporte de requisitos**, «forzar» solo para el dueño, **finalizar con confirmación irreversible**; edición con campos bloqueados según el estado (**sanciones y multas, bloqueo por deuda y costos incluidos**); archivar y restaurar (solo en configuración) |
-| Mesas | `/admin/mesas` | Hasta 6. Alta con **PIN visible una sola vez** (copiar PIN, copiar mensaje, WhatsApp), resetear PIN, desbloquear, activar/desactivar, **ligas que puede operar**, **cambiar el nombre del operador**, «bloqueada hasta…» |
-| Login de mesa | `/mesa/<slug-del-cliente>` | Usuario `MESAn` + PIN de 6 dígitos, controles grandes. Misma respuesta ante usuario inexistente, PIN errónea o mesa inactiva |
-| Inicio de la mesa | `/mesa` | `GET /mesa/me`: las ligas asignadas. Los partidos llegan con el calendario (Fase 5) y la consola (Fase 7) |
+| Nueva liga | `/admin/ligas/nueva` | **Solo lo básico** (nombre, categoría, modalidad, fechas): el servidor carga el preset, las edades de la categoría y los valores por defecto. Muestra un resumen del preset |
+| Detalle de liga | `/admin/ligas/[id]` | **Estado:** botones según `transicionesPosibles`, checklist de `incumplimientos` (forzables y no), «Forzar» solo para el dueño, finalizar con confirmación irreversible. **Configuración:** datos, edades, reglas de la modalidad, arranque y eliminatorias, sanciones y multas, dinero. Archivar y restaurar |
+| Mesas | `/admin/mesas` | Hasta 6. Alta con **PIN visible una sola vez** (copiar, mensaje completo, WhatsApp del API), resetear PIN, desbloquear, activar y desactivar, **ligas que opera**, nombre del operador |
+| Login de mesa | `/mesa/<slug-del-cliente>` | Usuario `MESAn` + PIN de 6 dígitos, controles grandes. **Sesión real con cookies** |
+| Inicio de la mesa | `/mesa` | `GET /mesa/me`: sus ligas. **Protegida en el servidor** (`(mesa)/(panel)/layout.tsx`) con refresh en `/mesa/refresh` |
+| Ficha del cliente (plataforma) | `/plataforma/clientes/[id]` | Sección «Lo que armó el cliente»: categorías, ligas y mesas **en solo lectura**, cargadas al abrir cada pestaña. Los conteos de la ficha ya traen valores |
 
-## 2. Cómo se probó sin backend
+## 2. Cómo se integró con el contrato real
 
-- **MSW simula solo los endpoints nuevos** (`src/mocks/fase2/`). Una base en memoria reproduce las reglas de `FASE_02.md`: categoría única normalizada, una sola liga abierta por categoría y modalidad, edición por estado, máximo 6 mesas, PIN de 6 dígitos, estado de la liga, login de mesa. Persiste en `sessionStorage` para sobrevivir a una recarga.
-- **Los guards de servidor no se pueden simular** (MSW solo intercepta en el navegador). Para ver el admin hace falta **el backend de la Fase 1 levantado** con `NEXT_PUBLIC_USE_MSW=true`: la sesión pasa a la API real y MSW responde lo nuevo.
-- **La sesión de la mesa es simulada** (no hay cookie real): con MSW el proxy deja pasar `/mesa`. Es solo para desarrollo y desaparece con el backend real.
+- **Cliente generado:** `pnpm api:generate` con el snapshot nuevo. Los hooks son los de Orval; `features/ediciones/api.ts` y `features/mesas/api.ts` solo son fachadas finas que agregan el refresco de datos tras una escritura (el generador no lo hace).
+- **La API manda, el front no duplica reglas.** Los campos editables salen de `camposEditables` y los botones de estado de `transicionesPosibles`. Se borraron la matriz de estados y la tabla de campos por estado que había escrito a mano.
+- **El `PATCH` es «todo o nada».** Si toca un solo campo bloqueado no aplica ninguno, así que el formulario envía **solo lo que cambió** (`cambiosDeEdicion`, con pruebas) y no reenvía campos que siguen igual aunque estén bloqueados.
+- **Errores con campos extra.** `ApiError` ahora conserva el cuerpo completo (`cuerpo`) para leer `incumplimientos`, `erroresReglas` y `camposBloqueados`. Las reglas rotas se marcan en su campo; el checklist de arranque distingue lo que se puede saltar.
+- **Fechas.** El contrato usa `date-time`; la pantalla pide solo el día y lo guarda a medianoche UTC, mostrándolo en UTC para que no se corra un día según la zona.
+- **Reglas de la modalidad, sanciones y finanzas** son objetos libres en el snapshot (`{ [key: string]: unknown }`); `features/ediciones/tipos.ts` les da forma según `FRONT_FASE_02.md`.
+- **Cambiar la modalidad** recarga el preset del servidor; el formulario ya lo muestra y avisa de que se reemplazan los ajustes de reglas.
+- **Mesa con sesión real:** `POST /auth/mesa/:orgSlug/login`, `GET /mesa/me`, cierre con `POST /auth/logout?portal=mesa`. El prototipo usaba rutas inventadas para el cierre.
 
-```
-# terminal 1: backend de la Fase 1        # terminal 2:
-NEXT_PUBLIC_USE_MSW=true pnpm dev
-```
+## 3. Lo que cambió respecto del prototipo (supuestos que el contrato corrigió)
 
-Usuario de prueba de la mesa (solo MSW): `MESA1` / `123456` en `/mesa/sopa`. `MESA2` aparece bloqueada para probar «Desbloquear».
+| Supuesto del prototipo | Contrato real |
+|---|---|
+| Crear la liga enviaba reglas y costos | Solo `nombre`, `categoriaId`, `modalidad` y fechas; lo demás se ajusta con `PATCH` |
+| Activar y desactivar mesa con `PATCH { activa }` | `POST …/activar` y `POST …/desactivar` |
+| Respuesta del alta de mesa = mesa + PIN planos | `{ mesa, pin, loginUrl, waMeUrl }` |
+| Estado de la mesa por `activa` y `bloqueadaHasta` | `activo` y `acceso { estado, bloqueadaHasta }` |
+| Categoría archivada = `archivada` | `activa: false` (+ `ediciones`: cuántas ligas la usan) |
+| `EN_CURSO → FINALIZADA` no existía | Existe si la liga no tiene eliminatorias (`EDICION_CON_PLAYOFFS`, no forzable) |
+| Un solo código de requisitos | `EDICION_PRECONDICIONES_NO_CUMPLIDAS` con lista `{ codigo, mensaje, forzable }` |
+| Códigos `EDICION_TRANSICION_INVALIDA`, `EDICION_PRECONDICIONES` | `EDICION_ESTADO_INVALIDO`, `EDICION_PRECONDICIONES_NO_CUMPLIDAS`, más `EDICION_CAMPO_CONGELADO` y `EDICION_ARCHIVADA` |
+| Edades de 0 a 99 | De 5 a 80 |
+| Cierre de sesión de mesa en `/auth/mesa/logout` | `/auth/logout?portal=mesa` |
 
-## 3. Lo provisional (cambia cuando llegue el contrato)
+## 4. Pruebas
 
-- **Tipos e hooks escritos a mano** (`features/ediciones/tipos.ts`, `features/*/api.ts`) con las rutas de `FASE_02.md`. Se reemplazan por los generados con Orval (`pnpm api:generate`); las claves de query ya empiezan por la ruta, como las de Orval.
-- **Nombres de campos y códigos** supuestos: `CATEGORIA_DUPLICADA`, `EDICION_PRECONDICIONES`, `EDICION_TRANSICION_INVALIDA`, `FORBIDDEN` (admin que fuerza), `MESA_BLOQUEADA`, cuerpo de `PUT /admin/mesas/:id/ediciones` (`{ edicionIds }`), `POST …/activar|desactivar` (el prototipo usa `PATCH { activa }`). Los demás vienen escritos así en `FASE_02.md`.
-- **Reporte de incumplimientos:** el plan dice que se «devuelve», sin forma. Se asumió 409 con `errors: string[]`.
-- **Presets de FÚTBOL 9 y 11:** son provisionales también en el backend.
-- **Mesas:** `waMeUrl` puede venir `null` (no hay teléfono de la mesa); entonces el botón abre `wa.me/?text=…` para elegir contacto.
-- **Todo el mock se borra** (`src/mocks/fase2/`, el bypass del proxy y los hooks a mano) al integrar el contrato real.
+- **Vitest:** presets e invariantes; el formulario contra el contrato (`edicionAForm`, `cambiosDeEdicion`: solo lo que cambió, null para borrar, sanciones completas); lectura de los errores extra; fechas; la simulación fiel al contrato (todo o nada, forzables y no forzables, eliminatorias, alcance de mesas, login indistinguible); diálogo del PIN; ficha de plataforma en solo lectura.
+- **E2E sin backend (`pnpm test:e2e:mock`, también en el CI):** la interfaz contra una simulación **tipada con los DTO generados**, así que si la forma de los datos se aparta del contrato, falla el compilador. 34 pruebas de esta fase.
+- **E2E contra la API real (`pnpm test:e2e:api`, 13 pruebas de la fase):** crea un cliente nuevo y recorre categorías, ligas (preset, `camposEditables` reales, arrancar sin requisitos y forzar, categoría y modalidad ya abiertas, reglas congeladas, costos editables), mesas (PIN una sola vez, alcance, desactivar y activar, resetear), **login de mesa con cookies reales** y la lectura de plataforma. Necesita el backend en `localhost:3000` y las credenciales del seed en variables de entorno (nunca en archivos).
+  - **Límite de intentos:** el backend bloquea la red tras 5 logins fallidos (`IP_LOCKED`, ~15 min). Las suites reales hacen pocos a propósito; correrlas varias veces seguidas puede toparse con el bloqueo.
 
-## 4. Decisiones de implementación
+## 5. Lo que queda de simulación
 
-- **Reglas como datos** (§4.9): ninguna pantalla pregunta por el nombre de la modalidad; el formulario trabaja con los parámetros (`registraFaltas`, `relojModo`, `roja.inferioridadMs`…). Las invariantes de 4.14 se validan también en el cliente para marcar el campo correcto; el servidor manda.
-- **Minutos en pantalla, milisegundos en el API** para la inferioridad de la roja.
-- **El PIN nunca se guarda:** vive solo en el estado del diálogo que lo muestra; las mutaciones usan `gcTime: 0`. Al cerrar desaparece y no hay forma de recuperarlo (hay que resetear).
-- **Estados y accesos con forma + icono + texto**, nunca solo color (tokens de marca, contraste verificado).
-- **Sanciones, finanzas y costos:** los valores por defecto salen de `PLAN_BACKEND` 4.12 y H15 (`src/features/ediciones/lib/sanciones.ts`). Se ajustan hasta que la liga arranque; los **costos** se pueden cambiar siempre (aplican a cargos futuros). Los importes viajan como texto con dos decimales («12.50») y se acepta la coma al escribir. El marcador del W.O. se escribe como «goles al ganador» (el otro es siempre 0).
-- **Mesa en AAA:** la pantalla de login y el inicio de la mesa usan el perfil `.mesa` de la marca (7:1).
-
-## 5. Pruebas
-
-- **Vitest:** presets e invariantes (cada una por separado y en su campo), transiciones, campos editables por estado, normalización de nombres; la base simulada (categorías, ligas, estados, forzar y 403, finalizar con confirmación, pausa, una sola liga abierta, 7.ª mesa, PIN, login indistinguible, alcance al instante); proxy de la mesa; diálogo del PIN y estados de acceso.
-- **E2E automatizado sin backend (`pnpm test:e2e:mock`, también en el CI; 18 pruebas de esta fase):** una API falsa (`tests/e2e-mock/api-falsa.mjs`) responde solo la sesión del admin y MSW simula lo nuevo. Cubre categorías (duplicado, archivar), ligas (preset, invariante rota, valores por defecto del plan, importes, requisitos y forzar, reglas congeladas, costos editables en juego, finalizar con confirmación, archivar), mesas (PIN una sola vez y copiar, límite de 6, cambiar operador, desbloquear) y login de mesa (PIN errónea, otro cliente, bloqueada, validación). Cada prueba parte de los datos de ejemplo.
+`src/mocks/fase2/` **se conserva** como simulación fiel al contrato para el E2E sin backend y para explorar la interfaz sin servidor. Con el backend real y `NEXT_PUBLIC_USE_MSW=false` no interviene. El proxy y la guarda de la mesa tienen un desvío de **sesión simulada solo con MSW**.
 
 ## 6. Qué NO se hizo (a propósito)
 
-- **Efecto de las sanciones y multas:** solo se configuran; se aplican en las Fases 6 y 7.
-- **Color de la liga en la mesa y la página pública:** el componente `TemaCliente` ya existe; se conecta cuando esas pantallas lean el cliente.
-- **Lectura de plataforma** (`/plataforma/organizaciones/:id/categorias|ediciones|mesas`) y los conteos de la ficha: dependen del contrato.
-- **Guard de servidor de la mesa** (`GET /mesa/me` en el layout, como en los demás portales): hoy `/mesa` es un componente de cliente porque no hay API real.
-- **E2E contra la API real:** llega con el backend de la Fase 2 (`pnpm test:e2e:api`). El E2E con MSW se retira entonces.
+- **Efecto de las sanciones y multas:** hoy solo se guardan; se aplican en las Fases 6 y 7.
+- **Equipos, delegados y calendario:** Fases 3 a 5. Por eso arrancar una liga siempre devuelve incumplimientos y solo el dueño puede avanzar con «Forzar» (es lo esperado, lo dice el contrato).
+- **Probar a un `ADMIN` que intenta forzar (403):** lo cubre el backend; el front solo oculta el botón al que no es dueño.
+- **`GET /mesa/ediciones/:id`** (la liga con sus reglas, para la consola): llega con la Fase 7.

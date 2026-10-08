@@ -22,6 +22,7 @@ import { editarClienteSchema, type EditarClienteValues } from '../schemas';
 import { BloquearDialog, ReactivarDialog } from './bloqueo-dialogs';
 import { EnlaceInvitacionDialog } from './enlace-invitacion';
 import { EstadoBadge } from './estado-badge';
+import { ActividadCliente } from './ficha-actividad';
 import { ConteosCliente, TablaAdmins } from './ficha-secciones';
 import { InvitarDuenoDialog } from './invitar-dueno-dialog';
 
@@ -106,6 +107,13 @@ export function ClienteFicha({
           dueño.
         </p>
         <ConteosCliente conteos={cliente.conteos} />
+      </section>
+
+      <section aria-labelledby="actividad" className="grid gap-3">
+        <h2 id="actividad" className="text-lg font-medium">
+          Lo que armó el cliente
+        </h2>
+        <ActividadCliente clienteId={cliente.id} />
       </section>
 
       <section aria-labelledby="dueno" className="grid gap-3">

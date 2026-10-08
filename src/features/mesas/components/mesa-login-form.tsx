@@ -6,11 +6,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
+import { useMesaLogin } from '@/shared/api/generated/mesa/mesa';
 import { ApiError } from '@/shared/api/mutator';
 import { Button } from '@/shared/ui/button';
 import { AlertaError, Campo } from '@/shared/ui/campo';
 import { Input } from '@/shared/ui/input';
-import { useMesaLogin } from '../api';
 
 const schema = z.object({
   username: z
@@ -24,7 +24,7 @@ type Values = z.infer<typeof schema>;
 /** Login de la mesa por el slug del cliente: usuario MESAn + PIN de 6 dígitos. Controles grandes para usarse en la cancha. */
 export function MesaLoginForm({ orgSlug }: { orgSlug: string }) {
   const router = useRouter();
-  const login = useMesaLogin(orgSlug);
+  const login = useMesaLogin();
   const [error, setError] = useState<{ mensaje: string; code?: string } | null>(null);
   const {
     register,
@@ -35,7 +35,10 @@ export function MesaLoginForm({ orgSlug }: { orgSlug: string }) {
   async function onSubmit(v: Values) {
     setError(null);
     try {
-      await login.mutateAsync({ username: v.username.trim().toUpperCase(), pin: v.pin });
+      await login.mutateAsync({
+        orgSlug,
+        data: { username: v.username.trim().toUpperCase(), pin: v.pin },
+      });
       router.replace('/mesa');
     } catch (e) {
       if (!(e instanceof ApiError)) return setError({ mensaje: mensajeGenerico() });

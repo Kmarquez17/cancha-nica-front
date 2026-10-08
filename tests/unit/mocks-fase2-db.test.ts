@@ -1,12 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { presetDe } from '@/features/ediciones/lib/reglas';
-import {
-  COSTOS_POR_DEFECTO,
-  FINANZAS_POR_DEFECTO,
-  SANCIONES_POR_DEFECTO,
-} from '@/features/ediciones/lib/sanciones';
+import { SANCIONES_POR_DEFECTO } from '@/features/ediciones/lib/sanciones';
 import * as db from '@/mocks/fase2/db';
+import type { CrearEdicionDto } from '@/shared/api/generated/models';
 
+/** Código del error que lanza la operación (o `null` si no falla). */
 const codigo = (fn: () => unknown) => {
   try {
     fn();
@@ -16,24 +13,25 @@ const codigo = (fn: () => unknown) => {
   }
   return null;
 };
-
-const cuerpoLiga = (
-  categoriaId: string,
-  modalidad: 'FUTSAL' | 'FUTBOL_9' | 'FUTBOL_11' = 'FUTSAL',
-) => {
-  const { reglas, parametros } = presetDe(modalidad);
-  return {
-    nombre: 'Copa Nueva',
-    categoriaId,
-    modalidad,
-    fechaInicio: '2027-01-10',
-    reglasModalidad: reglas,
-    reglasSanciones: structuredClone(SANCIONES_POR_DEFECTO),
-    reglasFinancieras: { ...FINANZAS_POR_DEFECTO },
-    ...COSTOS_POR_DEFECTO,
-    ...parametros,
-  };
+/** Campos extra del error (`incumplimientos`, `erroresReglas`, `camposBloqueados`). */
+const extras = (fn: () => unknown) => {
+  try {
+    fn();
+  } catch (e) {
+    if (e instanceof db.Problema) return e.extras ?? {};
+    throw e;
+  }
+  return {};
 };
+
+const nueva = (
+  categoriaId: string,
+  modalidad: CrearEdicionDto['modalidad'] = 'FUTSAL',
+): CrearEdicionDto => ({
+  nombre: 'Copa Nueva',
+  categoriaId,
+  modalidad,
+});
 
 beforeEach(() => db.reiniciarDb());
 
@@ -41,145 +39,222 @@ describe('categorías', () => {
   it('«sub 18» choca con «Sub-18» (409)', () => {
     expect(codigo(() => db.crearCategoria({ nombre: 'sub 18' }))).toBe('CATEGORIA_DUPLICADA');
   });
-  it('rango de edad invertido (400)', () => {
+  it('«SUB.18» también es la misma', () => {
+    expect(codigo(() => db.crearCategoria({ nombre: 'SUB.18' }))).toBe('CATEGORIA_DUPLICADA');
+  });
+  it('rango invertido, edades fuera de 5 a 80 y nombre sin letras (400)', () => {
     expect(
       codigo(() => db.crearCategoria({ nombre: 'Veteranos', edadMinima: 40, edadMaxima: 30 })),
     ).toBe('VALIDATION_ERROR');
+    expect(codigo(() => db.crearCategoria({ nombre: 'Niños', edadMaxima: 3 }))).toBe(
+      'VALIDATION_ERROR',
+    );
+    expect(codigo(() => db.crearCategoria({ nombre: '---' }))).toBe('VALIDATION_ERROR');
   });
-  it('archivar oculta del listado y restaurar la devuelve', () => {
+  it('cuenta las ligas que la usan', () => {
+    expect(db.listarCategorias().find((c) => c.nombre === 'Libre')?.ediciones).toBe(1);
+  });
+  it('archivar oculta del listado, restaurar la devuelve y ambos son idempotentes', () => {
+    db.archivarCategoria('cat-1', true);
     db.archivarCategoria('cat-1', true);
     expect(db.listarCategorias(false).some((c) => c.id === 'cat-1')).toBe(false);
-    expect(db.listarCategorias(true).some((c) => c.id === 'cat-1')).toBe(true);
+    const archivada = db.listarCategorias(true).find((c) => c.id === 'cat-1');
+    expect(archivada?.activa).toBe(false);
     db.archivarCategoria('cat-1', false);
     expect(db.listarCategorias(false).some((c) => c.id === 'cat-1')).toBe(true);
   });
+  it('en el PATCH, null borra un límite y omitirlo lo deja', () => {
+    expect(db.actualizarCategoria('cat-2', { nombre: 'Sub-18' }).edadMaxima).toBe(17);
+    expect(db.actualizarCategoria('cat-2', { edadMaxima: null }).edadMaxima).toBeNull();
+  });
   it('una categoría archivada no admite ligas nuevas', () => {
-    expect(codigo(() => db.crearEdicion(cuerpoLiga('cat-3')))).toBe('CATEGORIA_ARCHIVADA');
+    expect(codigo(() => db.crearEdicion(nueva('cat-3')))).toBe('CATEGORIA_ARCHIVADA');
   });
 });
 
 describe('ligas', () => {
-  it('crea en configuración con slug automático y la edad de la categoría', () => {
-    const l = db.crearEdicion(cuerpoLiga('cat-2', 'FUTBOL_9'));
+  it('crea en configuración con preset, edades de la categoría y valores por defecto', () => {
+    const l = db.crearEdicion({
+      ...nueva('cat-2', 'FUTBOL_9'),
+      fechaInicio: '2027-01-10T00:00:00.000Z',
+    });
     expect(l.estado).toBe('CONFIGURACION');
     expect(l.slug).toBe('copa-nueva');
     expect(l.edadMaxima).toBe(17);
+    expect(l.rosterMax).toBe(22);
+    expect(l.reglasSanciones).toEqual(SANCIONES_POR_DEFECTO);
+    expect(l.costoInscripcion).toBe('0.00');
+    expect(l.minEquiposArranque).toBe(4);
+    expect(l.clasificadosPlayoff).toBeNull();
   });
   it('un slug repetido se resuelve con sufijo, sin error', () => {
-    db.crearEdicion(cuerpoLiga('cat-2', 'FUTBOL_9'));
-    expect(db.crearEdicion(cuerpoLiga('cat-2', 'FUTBOL_11')).slug).toBe('copa-nueva-2');
+    db.crearEdicion(nueva('cat-2', 'FUTBOL_9'));
+    expect(db.crearEdicion(nueva('cat-2', 'FUTBOL_11')).slug).toBe('copa-nueva-2');
   });
-  it('reglas incoherentes se rechazan con el detalle', () => {
-    const malo = cuerpoLiga('cat-1');
-    malo.rosterMax = 3;
-    try {
-      db.crearEdicion(malo);
-      expect.unreachable();
-    } catch (e) {
-      expect((e as db.Problema).code).toBe('MODALIDAD_REGLAS_INVALIDAS');
-      expect((e as db.Problema).errors?.join(' ')).toContain('rosterMax');
-    }
+  it('la respuesta trae camposEditables y transicionesPosibles', () => {
+    const l = db.obtenerEdicion('ed-2');
+    expect(l.camposEditables).toContain('slug');
+    expect(l.transicionesPosibles).toEqual(['EN_REGISTRO']);
   });
-  it('en juego solo se cambian nombre y fin estimado', () => {
+  it('reglas incoherentes se rechazan con erroresReglas y su campo', () => {
+    expect(codigo(() => db.actualizarEdicion('ed-2', { rosterMax: 3 }))).toBe(
+      'MODALIDAD_REGLAS_INVALIDAS',
+    );
+    const lista = extras(() => db.actualizarEdicion('ed-2', { rosterMax: 3 })).erroresReglas as {
+      campo: string;
+    }[];
+    expect(lista.map((r) => r.campo)).toContain('rosterMax');
+  });
+  it('cambiar la modalidad recarga el preset y lo enviado se respeta encima', () => {
+    const l = db.actualizarEdicion('ed-2', { modalidad: 'FUTBOL_11', rosterMax: 28 });
+    expect(l.modalidad).toBe('FUTBOL_11');
+    expect(l.rosterMin).toBe(14);
+    expect(l.rosterMax).toBe(28);
+  });
+  it('todo o nada: un campo bloqueado impide aplicar los demás', () => {
+    // ed-1 está en inscripciones: el slug y la fecha de inicio están fijos.
+    expect(
+      codigo(() => db.actualizarEdicion('ed-1', { nombre: 'Otro nombre', slug: 'nuevo' })),
+    ).toBe('EDICION_CAMPO_CONGELADO');
+    expect(db.obtenerEdicion('ed-1').nombre).toBe('Apertura 2026');
+    const bloqueados = extras(() => db.actualizarEdicion('ed-1', { slug: 'nuevo' }))
+      .camposBloqueados as { campo: string }[];
+    expect(bloqueados.map((c) => c.campo)).toEqual(['slug']);
+  });
+  it('en juego solo se cambian nombre, fin estimado y costos', () => {
     db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true });
     expect(
-      db.actualizarEdicion('ed-1', { nombre: 'Apertura', fechaFinEstimada: null }).nombre,
-    ).toBe('Apertura');
+      db.actualizarEdicion('ed-1', { nombre: 'Apertura', costoArbitraje: '12.5' }),
+    ).toMatchObject({ nombre: 'Apertura', costoArbitraje: '12.50' });
     expect(codigo(() => db.actualizarEdicion('ed-1', { rosterMax: 20 }))).toBe(
-      'EDICION_SOLO_LECTURA',
+      'EDICION_CAMPO_CONGELADO',
     );
     expect(codigo(() => db.actualizarEdicion('ed-1', { modalidad: 'FUTBOL_9' }))).toBe(
       'MODALIDAD_BLOQUEADA',
     );
-  });
-  it('en juego las sanciones se congelan pero los costos se pueden cambiar', () => {
-    db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true });
     expect(
-      db.actualizarEdicion('ed-1', { costoInscripcion: '25.00', costoArbitraje: '10.00' }),
-    ).toMatchObject({ costoInscripcion: '25.00', costoArbitraje: '10.00' });
-    const sanciones = { ...SANCIONES_POR_DEFECTO, multaRoja: '5.00' };
-    expect(codigo(() => db.actualizarEdicion('ed-1', { reglasSanciones: sanciones }))).toBe(
-      'EDICION_SOLO_LECTURA',
+      codigo(() => db.actualizarEdicion('ed-1', { reglasSanciones: SANCIONES_POR_DEFECTO })),
+    ).toBe('EDICION_CAMPO_CONGELADO');
+  });
+  it('un campo que el PATCH no admite (estado, organizacionId) es un 400', () => {
+    expect(codigo(() => db.actualizarEdicion('ed-2', { estado: 'EN_CURSO' } as never))).toBe(
+      'VALIDATION_ERROR',
     );
-    expect(
-      codigo(() =>
-        db.actualizarEdicion('ed-1', {
-          reglasFinancieras: { ...FINANZAS_POR_DEFECTO, bloquearEquipoPorDeudaArbitraje: true },
-        }),
-      ),
-    ).toBe('EDICION_SOLO_LECTURA');
   });
-  it('antes de empezar las sanciones sí se ajustan', () => {
-    const sanciones = { ...SANCIONES_POR_DEFECTO, multaRoja: '5.00' };
-    expect(
-      db.actualizarEdicion('ed-1', { reglasSanciones: sanciones }).reglasSanciones.multaRoja,
-    ).toBe('5.00');
-  });
-  it('una liga nueva nace con los valores del plan', () => {
-    const l = db.crearEdicion(cuerpoLiga('cat-1', 'FUTBOL_9'));
-    expect(l.reglasSanciones).toEqual(SANCIONES_POR_DEFECTO);
-    expect(l.reglasFinancieras).toEqual(FINANZAS_POR_DEFECTO);
-    expect(l.costoInscripcion).toBe('0.00');
-  });
-  it('archivar solo en configuración', () => {
-    expect(codigo(() => db.archivarEdicion('ed-1', true))).toBe('EDICION_SOLO_LECTURA');
+  it('archivar solo en configuración y una liga archivada no se edita ni cambia de estado', () => {
+    expect(codigo(() => db.archivarEdicion('ed-1', true))).toBe('EDICION_ESTADO_INVALIDO');
     expect(db.archivarEdicion('ed-2', true).archivadaEn).not.toBeNull();
     expect(db.listarEdiciones(false).some((l) => l.id === 'ed-2')).toBe(false);
+    expect(codigo(() => db.actualizarEdicion('ed-2', { nombre: 'x1x' }))).toBe('EDICION_ARCHIVADA');
+    expect(codigo(() => db.cambiarEstado('ed-2', { a: 'EN_REGISTRO' }))).toBe('EDICION_ARCHIVADA');
     expect(db.archivarEdicion('ed-2', false).archivadaEn).toBeNull();
   });
 });
 
 describe('estado de la liga', () => {
-  it('rechaza un salto que el plan no permite', () => {
-    expect(codigo(() => db.cambiarEstado('ed-2', { a: 'FINALIZADA', confirmar: true }))).toBe(
-      'EDICION_TRANSICION_INVALIDA',
+  it('rechaza un salto que no existe', () => {
+    expect(codigo(() => db.cambiarEstado('ed-2', { a: 'EN_CURSO' }))).toBe(
+      'EDICION_ESTADO_INVALIDO',
     );
   });
-  it('empezar sin requisitos devuelve el reporte; forzar lo permite al dueño', () => {
-    try {
-      db.cambiarEstado('ed-1', { a: 'EN_CURSO' });
-      expect.unreachable();
-    } catch (e) {
-      expect((e as db.Problema).code).toBe('EDICION_PRECONDICIONES');
-      expect((e as db.Problema).errors?.length).toBeGreaterThan(0);
-    }
+  it('empezar sin requisitos devuelve el checklist con lo forzable; forzar lo permite al dueño', () => {
+    expect(codigo(() => db.cambiarEstado('ed-1', { a: 'EN_CURSO' }))).toBe(
+      'EDICION_PRECONDICIONES_NO_CUMPLIDAS',
+    );
+    const lista = extras(() => db.cambiarEstado('ed-1', { a: 'EN_CURSO' })).incumplimientos as {
+      codigo: string;
+      forzable: boolean;
+    }[];
+    expect(lista.map((i) => i.codigo)).toEqual(
+      expect.arrayContaining(['EQUIPOS_INSUFICIENTES', 'FIXTURE_NO_GENERADO']),
+    );
+    expect(lista.every((i) => i.forzable)).toBe(true);
     expect(db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true }).estado).toBe('EN_CURSO');
   });
-  it('un admin que intenta forzar recibe 403', () => {
-    expect(codigo(() => db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true }, false))).toBe(
+  it('un admin que manda forzar recibe 403, incluso si no hacía falta', () => {
+    expect(codigo(() => db.cambiarEstado('ed-2', { a: 'EN_REGISTRO', forzar: true }, false))).toBe(
       'FORBIDDEN',
     );
   });
-  it('finalizar exige confirmación explícita', () => {
+  it('lo no forzable nunca se salta, ni siquiera con forzar', () => {
     db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true });
-    db.cambiarEstado('ed-1', { a: 'EN_ELIMINATORIAS' });
+    // Sin clasificados definidos no se puede pasar a eliminatorias.
+    expect(codigo(() => db.cambiarEstado('ed-1', { a: 'EN_ELIMINATORIAS', forzar: true }))).toBe(
+      'EDICION_PRECONDICIONES_NO_CUMPLIDAS',
+    );
+    const lista = extras(() => db.cambiarEstado('ed-1', { a: 'EN_ELIMINATORIAS', forzar: true }))
+      .incumplimientos as { codigo: string; forzable: boolean }[];
+    expect(lista.find((i) => i.codigo === 'CLASIFICADOS_NO_DEFINIDOS')?.forzable).toBe(false);
+  });
+  it('una liga con eliminatorias no se finaliza desde «en juego»', () => {
+    db.actualizarEdicion('ed-1', { clasificadosPlayoff: 8 });
+    db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true });
+    expect(
+      codigo(() => db.cambiarEstado('ed-1', { a: 'FINALIZADA', confirmar: true, forzar: true })),
+    ).toBe('EDICION_PRECONDICIONES_NO_CUMPLIDAS');
+  });
+  it('finalizar exige confirmación y es irreversible', () => {
+    db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true });
     expect(codigo(() => db.cambiarEstado('ed-1', { a: 'FINALIZADA' }))).toBe(
       'CONFIRMACION_REQUERIDA',
     );
-    expect(db.cambiarEstado('ed-1', { a: 'FINALIZADA', confirmar: true }).estado).toBe(
-      'FINALIZADA',
-    );
+    const l = db.cambiarEstado('ed-1', { a: 'FINALIZADA', confirmar: true });
+    expect(l.estado).toBe('FINALIZADA');
+    expect(l.transicionesPosibles).toEqual([]);
+    expect(l.camposEditables).toEqual([]);
+    expect(codigo(() => db.cambiarEstado('ed-1', { a: 'EN_CURSO' }))).toBe('EDICION_SOLO_LECTURA');
   });
   it('pausar guarda el estado previo y reanudar lo restaura', () => {
     const pausada = db.cambiarEstado('ed-1', { a: 'PAUSADA' });
     expect(pausada.estadoPrevioPausa).toBe('EN_REGISTRO');
+    expect(pausada.transicionesPosibles).toEqual(['EN_REGISTRO']);
     const vuelve = db.cambiarEstado('ed-1', { a: 'EN_REGISTRO' });
     expect(vuelve.estado).toBe('EN_REGISTRO');
     expect(vuelve.estadoPrevioPausa).toBeNull();
   });
-  it('una sola liga abierta por categoría y modalidad, pero otra modalidad sí', () => {
-    const otra = db.crearEdicion({ ...cuerpoLiga('cat-1'), nombre: 'Otra Libre' });
+  it('una sola liga abierta por categoría y modalidad, pero otra modalidad sí; pausar no libera', () => {
+    const otra = db.crearEdicion({ ...nueva('cat-1'), nombre: 'Otra Libre' });
     expect(codigo(() => db.cambiarEstado(otra.id, { a: 'EN_REGISTRO' }))).toBe(
       'EDICION_CATEGORIA_ABIERTA',
     );
-    const f9 = db.crearEdicion({ ...cuerpoLiga('cat-1', 'FUTBOL_9'), nombre: 'Libre F9' });
+    db.cambiarEstado('ed-1', { a: 'PAUSADA' });
+    expect(codigo(() => db.cambiarEstado(otra.id, { a: 'EN_REGISTRO' }))).toBe(
+      'EDICION_CATEGORIA_ABIERTA',
+    );
+    const f9 = db.crearEdicion({ ...nueva('cat-1', 'FUTBOL_9'), nombre: 'Libre F9' });
     expect(db.cambiarEstado(f9.id, { a: 'EN_REGISTRO' }).estado).toBe('EN_REGISTRO');
+  });
+  it('una mesa activa asignada quita el requisito «sin mesa»', () => {
+    const lista = (extras(() => db.cambiarEstado('ed-1', { a: 'EN_CURSO' })).incumplimientos ??
+      []) as {
+      codigo: string;
+    }[];
+    expect(lista.map((i) => i.codigo)).not.toContain('SIN_MESA_ACTIVA');
+    db.definirAlcance('mesa-1', []);
+    const sin = (extras(() => db.cambiarEstado('ed-1', { a: 'EN_CURSO' })).incumplimientos ??
+      []) as {
+      codigo: string;
+    }[];
+    expect(sin.map((i) => i.codigo)).toContain('SIN_MESA_ACTIVA');
   });
 });
 
 describe('mesas', () => {
-  it('la 7.ª mesa se rechaza y los usuarios son MESA1 a MESA6', () => {
-    for (let i = 0; i < 4; i++) db.crearMesa({});
+  it('el listado trae el acceso de cada mesa y nunca el PIN', () => {
+    const lista = db.listarMesas();
+    expect(lista.find((m) => m.username === 'MESA1')?.acceso.estado).toBe('ACTIVA');
+    const bloqueada = lista.find((m) => m.username === 'MESA2')!;
+    expect(bloqueada.acceso.estado).toBe('BLOQUEADA');
+    expect(bloqueada.acceso.bloqueadaHasta).not.toBeNull();
+    expect(JSON.stringify(lista)).not.toMatch(/123456|654321|"pin"/);
+  });
+  it('el alta devuelve { mesa, pin, loginUrl, waMeUrl } y la 7.ª mesa se rechaza', () => {
+    const r = db.crearMesa({ nombreOperador: 'Ana' });
+    expect(r.pin).toMatch(/^\d{6}$/);
+    expect(r.mesa.username).toBe('MESA3');
+    expect(r.loginUrl).toMatch(/\/mesa\/sopa$/);
+    expect(r.waMeUrl).toContain('https://wa.me/');
+    for (let i = 0; i < 3; i++) db.crearMesa({});
     expect(db.listarMesas().map((m) => m.username)).toEqual([
       'MESA1',
       'MESA2',
@@ -190,51 +265,77 @@ describe('mesas', () => {
     ]);
     expect(codigo(() => db.crearMesa({}))).toBe('MESA_LIMIT_REACHED');
   });
-  it('el PIN tiene 6 dígitos, se ve en el alta y no en el listado', () => {
-    const m = db.crearMesa({ nombreOperador: 'Ana' });
-    expect(m.pin).toMatch(/^\d{6}$/);
-    expect(JSON.stringify(db.listarMesas())).not.toContain(m.pin);
+  it('desactivar no libera el lugar y es idempotente; activar la devuelve', () => {
+    db.activarMesa('mesa-1', false);
+    db.activarMesa('mesa-1', false);
+    expect(db.listarMesas().find((m) => m.id === 'mesa-1')?.acceso.estado).toBe('DESACTIVADA');
+    for (let i = 0; i < 4; i++) db.crearMesa({});
+    expect(codigo(() => db.crearMesa({}))).toBe('MESA_LIMIT_REACHED');
+    expect(db.activarMesa('mesa-1', true).activo).toBe(true);
   });
-  it('resetear invalida el PIN anterior', () => {
-    const m = db.crearMesa({});
-    const nuevo = db.resetearPin(m.id);
-    expect(codigo(() => db.loginMesa('sopa', m.username, m.pin))).toBe(
-      nuevo.pin === m.pin ? null : 'INVALID_CREDENTIALS',
+  it('resetear invalida el PIN anterior y levanta el bloqueo', () => {
+    const r = db.resetearPin('mesa-2');
+    expect(r.mesa.acceso.estado).toBe('ACTIVA');
+    expect(codigo(() => db.loginMesa('sopa', 'MESA2', r.pin))).toBeNull();
+    expect(codigo(() => db.loginMesa('sopa', 'MESA2', '654321'))).toBe(
+      r.pin === '654321' ? null : 'INVALID_CREDENTIALS',
     );
-    expect(codigo(() => db.loginMesa('sopa', m.username, nuevo.pin))).toBeNull();
   });
-  it('asigna ligas y rechaza una que no existe', () => {
-    expect(db.asignarEdiciones('mesa-1', ['ed-1', 'ed-2']).ediciones).toHaveLength(2);
-    expect(codigo(() => db.asignarEdiciones('mesa-1', ['ed-x']))).toBe('NOT_FOUND');
+  it('el alcance reemplaza y rechaza una liga que no existe', () => {
+    expect(db.definirAlcance('mesa-1', ['ed-1', 'ed-2']).ediciones).toHaveLength(2);
+    expect(db.definirAlcance('mesa-1', []).ediciones).toEqual([]);
+    expect(codigo(() => db.definirAlcance('mesa-1', ['ed-x']))).toBe('NOT_FOUND');
+  });
+  it('una liga nueva en el alcance no puede estar archivada ni finalizada; las que ya tenía se conservan', () => {
+    db.archivarEdicion('ed-2', true);
+    expect(codigo(() => db.definirAlcance('mesa-1', ['ed-1', 'ed-2']))).toBe('EDICION_ARCHIVADA');
+    db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true });
+    db.cambiarEstado('ed-1', { a: 'FINALIZADA', confirmar: true });
+    expect(db.definirAlcance('mesa-1', ['ed-1']).ediciones).toHaveLength(1);
+    expect(codigo(() => db.definirAlcance('mesa-2', ['ed-1']))).toBe('EDICION_SOLO_LECTURA');
+  });
+  it('el operador se cambia y se borra con null', () => {
+    expect(db.actualizarMesa('mesa-1', { nombreOperador: 'María' }).nombreOperador).toBe('María');
+    expect(db.actualizarMesa('mesa-1', { nombreOperador: null }).nombreOperador).toBeNull();
   });
 });
 
 describe('login de mesa', () => {
   it('entra con el PIN correcto y /mesa/me trae sus ligas no finalizadas', () => {
-    db.loginMesa('sopa', 'MESA1', '123456');
+    const p = db.loginMesa('sopa', 'mesa1', '123456');
+    expect(p.organizacion.slug).toBe('sopa');
     const yo = db.mesaMe();
     expect(yo.username).toBe('MESA1');
     expect(yo.ediciones.map((e) => e.slug)).toEqual(['apertura-2026']);
+    expect(yo.ediciones[0].categoria.nombre).toBe('Libre');
   });
-  it('cuenta inexistente, PIN errónea, cliente inexistente y mesa inactiva responden igual', () => {
-    db.actualizarMesa('mesa-1', { activa: false });
+  it('PIN errada, mesa inexistente, cliente inexistente y mesa desactivada responden igual', () => {
+    db.activarMesa('mesa-1', false);
     const casos = [
       () => db.loginMesa('sopa', 'MESA9', '123456'),
-      () => db.loginMesa('sopa', 'MESA1', '000000'),
+      () => db.loginMesa('sopa', 'MESA2', '000000'),
       () => db.loginMesa('otro', 'MESA1', '123456'),
       () => db.loginMesa('sopa', 'MESA1', '123456'),
     ];
-    expect(casos.map(codigo)).toEqual(Array(4).fill('INVALID_CREDENTIALS'));
+    // MESA2 está bloqueada (429); las demás, indistinguibles.
+    expect(casos.map(codigo)).toEqual([
+      'INVALID_CREDENTIALS',
+      'MESA_BLOQUEADA',
+      'INVALID_CREDENTIALS',
+      'INVALID_CREDENTIALS',
+    ]);
   });
   it('una mesa bloqueada responde MESA_BLOQUEADA hasta que se desbloquea', () => {
     expect(codigo(() => db.loginMesa('sopa', 'MESA2', '654321'))).toBe('MESA_BLOQUEADA');
     db.desbloquearMesa('mesa-2');
     expect(codigo(() => db.loginMesa('sopa', 'MESA2', '654321'))).toBeNull();
   });
-  it('quitarle una liga a la mesa surte efecto al instante', () => {
+  it('quitarle una liga o desactivarla surte efecto al instante', () => {
     db.loginMesa('sopa', 'MESA1', '123456');
-    db.asignarEdiciones('mesa-1', []);
+    db.definirAlcance('mesa-1', []);
     expect(db.mesaMe().ediciones).toEqual([]);
+    db.activarMesa('mesa-1', false);
+    expect(codigo(() => db.mesaMe())).toBe('UNAUTHORIZED');
   });
   it('sin sesión /mesa/me da 401', () => {
     expect(codigo(() => db.mesaMe())).toBe('UNAUTHORIZED');

@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, UserRoundCog } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEdicion } from '@/features/ediciones/api';
 import { EstadoLiga } from '@/features/ediciones/components/estado-liga';
-import type { EdicionDto } from '@/features/ediciones/tipos';
+import type { EdicionDto } from '@/shared/api/generated/models';
 import { EntregaPinDelegado } from '@/features/delegados/components/entrega-pin-delegado';
 import { campoDeError, mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import { ApiError } from '@/shared/api/mutator';

@@ -1,4 +1,4 @@
-import type { EstadoEdicion, Modalidad } from '../tipos';
+import type { EstadoEdicion, Modalidad } from '@/shared/api/generated/models';
 
 export const MODALIDAD_TEXTO: Record<Modalidad, string> = {
   FUTSAL: 'Fútbol sala',

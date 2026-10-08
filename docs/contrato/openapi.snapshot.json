@@ -1,6 +1,25 @@
 {
   "components": {
     "schemas": {
+      "AccesoMesaDto": {
+        "properties": {
+          "bloqueadaHasta": {
+            "description": "Hasta cuándo está bloqueada por intentos fallidos (solo en BLOQUEADA)",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoAccesoMesa"
+              }
+            ]
+          }
+        },
+        "required": ["estado", "bloqueadaHasta"],
+        "type": "object"
+      },
       "AceptarInvitacionDto": {
         "properties": {
           "password": {
@@ -15,6 +34,28 @@
           }
         },
         "required": ["token", "password"],
+        "type": "object"
+      },
+      "ActualizarCategoriaDto": {
+        "properties": {
+          "edadMaxima": {
+            "maximum": 80,
+            "minimum": 5,
+            "nullable": true,
+            "type": "number"
+          },
+          "edadMinima": {
+            "maximum": 80,
+            "minimum": 5,
+            "nullable": true,
+            "type": "number"
+          },
+          "nombre": {
+            "example": "Sub-18",
+            "maxLength": 60,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "ActualizarConfigDto": {
@@ -35,6 +76,134 @@
           },
           "zonaHoraria": {
             "example": "America/Managua",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ActualizarEdicionDto": {
+        "properties": {
+          "categoriaId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "clasificadosPlayoff": {
+            "description": "null = la liga no tiene playoffs",
+            "enum": [4, 8, 16],
+            "nullable": true,
+            "type": "number"
+          },
+          "costoArbitraje": {
+            "description": "Monto decimal como texto",
+            "example": "5.00",
+            "type": "string"
+          },
+          "costoInscripcion": {
+            "description": "Monto decimal como texto",
+            "example": "15.00",
+            "type": "string"
+          },
+          "duracionTiempoEliminatoria": {
+            "maximum": 180,
+            "minimum": 1,
+            "type": "number"
+          },
+          "duracionTiempoRegular": {
+            "maximum": 180,
+            "minimum": 1,
+            "type": "number"
+          },
+          "edadMaxima": {
+            "maximum": 80,
+            "minimum": 5,
+            "nullable": true,
+            "type": "number"
+          },
+          "edadMinima": {
+            "maximum": 80,
+            "minimum": 5,
+            "nullable": true,
+            "type": "number"
+          },
+          "fechaFinEstimada": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "fechaInicio": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "limiteFaltasAcumuladas": {
+            "maximum": 50,
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "maxEquiposPorJugador": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "number"
+          },
+          "minEquiposArranque": {
+            "maximum": 64,
+            "minimum": 2,
+            "type": "number"
+          },
+          "modalidad": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Modalidad"
+              }
+            ],
+            "description": "Cambiarla recarga el preset de la nueva modalidad"
+          },
+          "nombre": {
+            "maxLength": 80,
+            "type": "string"
+          },
+          "reglasFinancieras": {
+            "additionalProperties": true,
+            "description": "Reglas financieras completas (H15)",
+            "type": "object"
+          },
+          "reglasModalidad": {
+            "additionalProperties": true,
+            "description": "Reglas de la modalidad completas (se validan con sus invariantes)",
+            "type": "object"
+          },
+          "reglasSanciones": {
+            "additionalProperties": true,
+            "description": "Reglas de sanción completas (PLAN 4.12); se validan con Zod",
+            "type": "object"
+          },
+          "rosterMax": {
+            "maximum": 60,
+            "minimum": 1,
+            "type": "number"
+          },
+          "rosterMin": {
+            "maximum": 60,
+            "minimum": 1,
+            "type": "number"
+          },
+          "slug": {
+            "example": "futsal-libre-2026",
+            "type": "string"
+          },
+          "tercerPuesto": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ActualizarMesaDto": {
+        "properties": {
+          "nombreOperador": {
+            "description": "Quién opera la mesa (informativo). `null` lo borra.",
+            "maxLength": 80,
+            "nullable": true,
             "type": "string"
           }
         },
@@ -121,6 +290,104 @@
           }
         },
         "required": ["motivo"],
+        "type": "object"
+      },
+      "CambiarEstadoDto": {
+        "properties": {
+          "a": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ]
+          },
+          "confirmar": {
+            "description": "Obligatorio para FINALIZADA, que no tiene vuelta atrás",
+            "type": "boolean"
+          },
+          "forzar": {
+            "description": "Saltarse las precondiciones forzables. Solo el dueño (OWNER); queda auditado.",
+            "type": "boolean"
+          }
+        },
+        "required": ["a"],
+        "type": "object"
+      },
+      "CategoriaDto": {
+        "properties": {
+          "activa": {
+            "description": "Archivada: no admite ligas nuevas",
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "description": "Quién la registró (R16)"
+          },
+          "edadMaxima": {
+            "nullable": true,
+            "type": "number"
+          },
+          "edadMinima": {
+            "nullable": true,
+            "type": "number"
+          },
+          "ediciones": {
+            "description": "Ligas (ediciones) que usan esta categoría",
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "example": "Sub-18",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "edadMinima",
+          "edadMaxima",
+          "activa",
+          "ediciones",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
+      "CategoriaMesaDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
+        "type": "object"
+      },
+      "CategoriaResumenDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
         "type": "object"
       },
       "ClienteFichaDto": {
@@ -261,6 +528,72 @@
         "required": ["admins", "adminsActivos", "invitacionesAdminPendientes"],
         "type": "object"
       },
+      "CrearCategoriaDto": {
+        "properties": {
+          "edadMaxima": {
+            "maximum": 80,
+            "minimum": 5,
+            "nullable": true,
+            "type": "number"
+          },
+          "edadMinima": {
+            "maximum": 80,
+            "minimum": 5,
+            "nullable": true,
+            "type": "number"
+          },
+          "nombre": {
+            "example": "Sub-18",
+            "maxLength": 60,
+            "type": "string"
+          }
+        },
+        "required": ["nombre"],
+        "type": "object"
+      },
+      "CrearEdicionDto": {
+        "properties": {
+          "categoriaId": {
+            "description": "Categoría activa de mi cliente",
+            "format": "uuid",
+            "type": "string"
+          },
+          "fechaFinEstimada": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fechaInicio": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "modalidad": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Modalidad"
+              }
+            ],
+            "description": "Carga el preset de reglas de esa modalidad"
+          },
+          "nombre": {
+            "example": "Futsal Libre 2026",
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "required": ["nombre", "categoriaId", "modalidad"],
+        "type": "object"
+      },
+      "CrearMesaDto": {
+        "properties": {
+          "nombreOperador": {
+            "description": "Quién opera la mesa (informativo). `null` lo borra.",
+            "maxLength": 80,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "CrearOrganizacionDto": {
         "properties": {
           "colorPrimario": {
@@ -298,6 +631,213 @@
         "required": ["nombre", "slug"],
         "type": "object"
       },
+      "DefinirAlcanceMesaDto": {
+        "properties": {
+          "edicionIds": {
+            "description": "Ligas del cliente que la mesa puede operar. Reemplaza el alcance anterior; [] la deja sin ligas.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["edicionIds"],
+        "type": "object"
+      },
+      "EdicionDeMesaDto": {
+        "properties": {
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "estado"],
+        "type": "object"
+      },
+      "EdicionDto": {
+        "properties": {
+          "archivadaEn": {
+            "description": "Liga descartada (solo se puede desde CONFIGURACION)",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "camposEditables": {
+            "description": "Campos que se pueden editar con la liga en este estado",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaResumenDto"
+          },
+          "clasificadosPlayoff": {
+            "nullable": true,
+            "type": "number"
+          },
+          "costoArbitraje": {
+            "example": "5.00",
+            "type": "string"
+          },
+          "costoInscripcion": {
+            "example": "15.00",
+            "type": "string"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "description": "Quién la registró (R16)"
+          },
+          "duracionTiempoEliminatoria": {
+            "type": "number"
+          },
+          "duracionTiempoRegular": {
+            "type": "number"
+          },
+          "edadMaxima": {
+            "nullable": true,
+            "type": "number"
+          },
+          "edadMinima": {
+            "nullable": true,
+            "type": "number"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ]
+          },
+          "estadoPrevioPausa": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ],
+            "description": "Estado al que vuelve la liga al reanudarse (solo en PAUSADA)",
+            "nullable": true
+          },
+          "fechaFinEstimada": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "fechaInicio": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "limiteFaltasAcumuladas": {
+            "nullable": true,
+            "type": "number"
+          },
+          "maxEquiposPorJugador": {
+            "type": "number"
+          },
+          "minEquiposArranque": {
+            "type": "number"
+          },
+          "modalidad": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Modalidad"
+              }
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "reglasFinancieras": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "reglasModalidad": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "reglasSanciones": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "rosterMax": {
+            "type": "number"
+          },
+          "rosterMin": {
+            "type": "number"
+          },
+          "slug": {
+            "example": "futsal-libre-2026",
+            "type": "string"
+          },
+          "tercerPuesto": {
+            "type": "boolean"
+          },
+          "transicionesPosibles": {
+            "description": "Estados a los que se puede pasar desde el actual (para los botones)",
+            "items": {
+              "$ref": "#/components/schemas/EstadoEdicion"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "slug",
+          "categoria",
+          "modalidad",
+          "estado",
+          "estadoPrevioPausa",
+          "transicionesPosibles",
+          "camposEditables",
+          "reglasModalidad",
+          "duracionTiempoRegular",
+          "duracionTiempoEliminatoria",
+          "limiteFaltasAcumuladas",
+          "rosterMin",
+          "rosterMax",
+          "maxEquiposPorJugador",
+          "minEquiposArranque",
+          "edadMinima",
+          "edadMaxima",
+          "fechaInicio",
+          "fechaFinEstimada",
+          "clasificadosPlayoff",
+          "tercerPuesto",
+          "reglasSanciones",
+          "reglasFinancieras",
+          "costoInscripcion",
+          "costoArbitraje",
+          "archivadaEn",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
       "ErrorCode": {
         "description": "Código estable de negocio (catálogo 4.9, B6)",
         "enum": [
@@ -314,6 +854,11 @@
           "EDICION_PRECONDICIONES_NO_CUMPLIDAS",
           "EDICION_CATEGORIA_ABIERTA",
           "EDICION_PAUSADA",
+          "EDICION_CAMPO_CONGELADO",
+          "EDICION_ARCHIVADA",
+          "CONFIRMACION_REQUERIDA",
+          "CATEGORIA_DUPLICADA",
+          "CATEGORIA_ARCHIVADA",
           "MESA_LIMIT_REACHED",
           "MESA_BLOQUEADA",
           "DELEGADO_PHONE_DUPLICATED",
@@ -359,8 +904,23 @@
         ],
         "type": "string"
       },
+      "EstadoAccesoMesa": {
+        "enum": ["ACTIVA", "DESACTIVADA", "BLOQUEADA"],
+        "type": "string"
+      },
       "EstadoAdminFicha": {
         "enum": ["ACTIVO", "INACTIVO", "INVITACION_PENDIENTE"],
+        "type": "string"
+      },
+      "EstadoEdicion": {
+        "enum": [
+          "CONFIGURACION",
+          "EN_REGISTRO",
+          "EN_CURSO",
+          "EN_ELIMINATORIAS",
+          "FINALIZADA",
+          "PAUSADA"
+        ],
         "type": "string"
       },
       "EstadoOrganizacion": {
@@ -469,6 +1029,104 @@
         "required": ["email", "nombre"],
         "type": "object"
       },
+      "LigaMesaDetalleDto": {
+        "properties": {
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaMesaDto"
+          },
+          "duracionTiempoEliminatoria": {
+            "type": "number"
+          },
+          "duracionTiempoRegular": {
+            "type": "number"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "limiteFaltasAcumuladas": {
+            "nullable": true,
+            "type": "number"
+          },
+          "modalidad": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Modalidad"
+              }
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "reglasModalidad": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "slug",
+          "modalidad",
+          "estado",
+          "categoria",
+          "reglasModalidad",
+          "duracionTiempoRegular",
+          "duracionTiempoEliminatoria",
+          "limiteFaltasAcumuladas"
+        ],
+        "type": "object"
+      },
+      "LigaMesaDto": {
+        "properties": {
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaMesaDto"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "modalidad": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Modalidad"
+              }
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "slug",
+          "modalidad",
+          "estado",
+          "categoria"
+        ],
+        "type": "object"
+      },
       "LoginDto": {
         "properties": {
           "email": {
@@ -482,6 +1140,134 @@
         },
         "required": ["email", "password"],
         "type": "object"
+      },
+      "LoginMesaDto": {
+        "properties": {
+          "pin": {
+            "description": "PIN de 6 dígitos",
+            "example": "004821",
+            "type": "string"
+          },
+          "username": {
+            "description": "No distingue mayúsculas",
+            "example": "MESA1",
+            "type": "string"
+          }
+        },
+        "required": ["username", "pin"],
+        "type": "object"
+      },
+      "MesaConPinDto": {
+        "properties": {
+          "loginUrl": {
+            "example": "http://localhost:3001/mesa/sopa",
+            "type": "string"
+          },
+          "mesa": {
+            "$ref": "#/components/schemas/MesaDto"
+          },
+          "pin": {
+            "description": "PIN de 6 dígitos. Se muestra una sola vez y no se puede recuperar; si se pierde, se resetea.",
+            "example": "004821",
+            "type": "string"
+          },
+          "waMeUrl": {
+            "description": "Abre WhatsApp con el acceso escrito para enviarlo a quien opera la mesa",
+            "type": "string"
+          }
+        },
+        "required": ["mesa", "pin", "loginUrl", "waMeUrl"],
+        "type": "object"
+      },
+      "MesaDto": {
+        "properties": {
+          "acceso": {
+            "$ref": "#/components/schemas/AccesoMesaDto"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "description": "Quién la registró (R16)"
+          },
+          "ediciones": {
+            "description": "Ligas que puede operar",
+            "items": {
+              "$ref": "#/components/schemas/EdicionDeMesaDto"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombreOperador": {
+            "nullable": true,
+            "type": "string"
+          },
+          "username": {
+            "example": "MESA1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "nombreOperador",
+          "activo",
+          "acceso",
+          "ediciones",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
+      "MesaPrincipalDto": {
+        "properties": {
+          "ediciones": {
+            "description": "Ligas que puede operar ahora (sin las finalizadas)",
+            "items": {
+              "$ref": "#/components/schemas/LigaMesaDto"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombreOperador": {
+            "nullable": true,
+            "type": "string"
+          },
+          "organizacion": {
+            "$ref": "#/components/schemas/OrganizacionMesaDto"
+          },
+          "username": {
+            "example": "MESA1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "nombreOperador",
+          "organizacion",
+          "ediciones"
+        ],
+        "type": "object"
+      },
+      "Modalidad": {
+        "enum": ["FUTSAL", "FUTBOL_9", "FUTBOL_11"],
+        "type": "string"
       },
       "OlvideContrasenaDto": {
         "properties": {
@@ -634,6 +1420,22 @@
         ],
         "type": "object"
       },
+      "OrganizacionMesaDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "slug"],
+        "type": "object"
+      },
       "OrganizacionResumenDto": {
         "properties": {
           "id": {
@@ -706,6 +1508,14 @@
       },
       "ProblemDetailsDto": {
         "properties": {
+          "camposBloqueados": {
+            "description": "Campos de la liga que no se pueden cambiar en su estado actual, cada uno con su `campo` y `codigo`.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
           "code": {
             "allOf": [
               {
@@ -719,10 +1529,26 @@
             "example": "El equipo ya tiene 18 jugadores activos.",
             "type": "string"
           },
+          "erroresReglas": {
+            "description": "Invariantes de la modalidad que se rompen (MODALIDAD_REGLAS_INVALIDAS), con `codigo`, `campo` y `mensaje`.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
           "errors": {
             "description": "Mensajes de validación (solo VALIDATION_ERROR)",
             "items": {
               "type": "string"
+            },
+            "type": "array"
+          },
+          "incumplimientos": {
+            "description": "Condiciones que no se cumplen para un cambio de estado de la liga (EDICION_PRECONDICIONES_NO_CUMPLIDAS, EDICION_CATEGORIA_ABIERTA). Cada una trae `codigo`, `mensaje` y `forzable`.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
             },
             "type": "array"
           },
@@ -766,6 +1592,19 @@
         },
         "required": ["token", "password"],
         "type": "object"
+      },
+      "UsuarioResumenDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
+        "type": "object"
       }
     }
   },
@@ -777,6 +1616,498 @@
   },
   "openapi": "3.0.0",
   "paths": {
+    "/admin/categorias": {
+      "get": {
+        "operationId": "listarCategorias",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "archivadas",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoriaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Categorías de mi cliente (las archivadas solo con ?archivadas=true)",
+        "tags": ["Admin"]
+      },
+      "post": {
+        "description": "El nombre se compara sin mayúsculas, tildes ni signos: «Sub-18» y «sub 18» chocan.",
+        "operationId": "crearCategoria",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearCategoriaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "CATEGORIA_DUPLICADA"
+          }
+        },
+        "summary": "Crea una categoría",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/categorias/{id}": {
+      "patch": {
+        "description": "Las ligas ya creadas conservan su propio rango de edad.",
+        "operationId": "actualizarCategoria",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarCategoriaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "CATEGORIA_DUPLICADA"
+          }
+        },
+        "summary": "Cambia el nombre o el rango de edad",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/categorias/{id}/archivar": {
+      "post": {
+        "operationId": "archivarCategoria",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Archiva una categoría (no admite ligas nuevas; las existentes siguen)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/categorias/{id}/restaurar": {
+      "post": {
+        "operationId": "restaurarCategoria",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Restaura una categoría archivada",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones": {
+      "get": {
+        "operationId": "listarEdiciones",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoEdicion"
+            }
+          },
+          {
+            "in": "query",
+            "name": "modalidad",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Modalidad"
+            }
+          },
+          {
+            "in": "query",
+            "name": "categoriaId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Incluir las ligas archivadas (descartadas)",
+            "in": "query",
+            "name": "archivadas",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EdicionDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Ligas de mi cliente (las archivadas solo con ?archivadas=true)",
+        "tags": ["Admin"]
+      },
+      "post": {
+        "description": "Precarga las reglas de la modalidad, el rango de edad de la categoría y las reglas de sanción y financieras por defecto. El enlace (slug) se genera del nombre y recibe un sufijo si ya existe.",
+        "operationId": "crearEdicion",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearEdicionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdicionDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "CATEGORIA_ARCHIVADA"
+          }
+        },
+        "summary": "Crea una liga en CONFIGURACION con el preset de su modalidad",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{id}": {
+      "get": {
+        "operationId": "getEdicion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdicionDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Una liga, con sus transiciones posibles y los campos editables",
+        "tags": ["Admin"]
+      },
+      "patch": {
+        "description": "CONFIGURACION: todo. EN_REGISTRO: todo menos slug, fechaInicio y categoría. Con la liga en curso o pausada: solo nombre, fechaFinEstimada y costos. FINALIZADA: nada. Los campos bloqueados se devuelven en `camposBloqueados`.",
+        "operationId": "actualizarEdicion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarEdicionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdicionDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "MODALIDAD_REGLAS_INVALIDAS o VALIDATION_ERROR"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "MODALIDAD_BLOQUEADA, EDICION_CAMPO_CONGELADO, EDICION_SOLO_LECTURA, EDICION_ARCHIVADA o EDICION_CATEGORIA_ABIERTA"
+          }
+        },
+        "summary": "Edita una liga; lo que se puede cambiar depende de su estado",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{id}/archivar": {
+      "post": {
+        "operationId": "archivarEdicion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdicionDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EDICION_ESTADO_INVALIDO"
+          }
+        },
+        "summary": "Descarta una liga creada por error (solo en CONFIGURACION)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{id}/estado": {
+      "post": {
+        "description": "Si no se cumplen las condiciones responde 409 con la lista en `incumplimientos` (cada una dice si es `forzable`). `forzar: true` solo lo puede el dueño. Finalizar exige `confirmar: true` y no tiene vuelta atrás.",
+        "operationId": "cambiarEstadoEdicion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarEstadoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdicionDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "CONFIRMACION_REQUERIDA"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EDICION_ESTADO_INVALIDO, EDICION_PRECONDICIONES_NO_CUMPLIDAS, EDICION_CATEGORIA_ABIERTA, EDICION_SOLO_LECTURA o EDICION_ARCHIVADA"
+          }
+        },
+        "summary": "Cambia el estado de la liga (abrir inscripciones, arrancar, pausar, finalizar…)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{id}/restaurar": {
+      "post": {
+        "operationId": "restaurarEdicion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdicionDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Restaura una liga archivada",
+        "tags": ["Admin"]
+      }
+    },
     "/admin/me": {
       "get": {
         "operationId": "getAdminMe",
@@ -794,6 +2125,265 @@
           }
         },
         "summary": "Cuenta y cliente de la sesión de admin actual",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/mesas": {
+      "get": {
+        "description": "El estado de acceso dice si la mesa está activa, desactivada o bloqueada por intentos fallidos (y hasta qué hora). Nunca incluye el PIN.",
+        "operationId": "listarMesas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MesaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Mesas de mi cliente, con su estado de acceso y sus ligas",
+        "tags": ["Admin"]
+      },
+      "post": {
+        "operationId": "crearMesa",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearMesaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaConPinDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "MESA_LIMIT_REACHED"
+          }
+        },
+        "summary": "Crea la siguiente mesa libre (MESA1…MESA6) y devuelve su PIN una sola vez",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/mesas/{id}": {
+      "patch": {
+        "operationId": "actualizarMesa",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarMesaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Cambia el nombre de quien opera la mesa",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/mesas/{id}/activar": {
+      "post": {
+        "operationId": "activarMesa",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Reactiva una mesa desactivada",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/mesas/{id}/desactivar": {
+      "post": {
+        "description": "Sigue ocupando su lugar de las 6 y se puede reactivar.",
+        "operationId": "desactivarMesa",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Desactiva una mesa: pierde el acceso al instante, también con la sesión abierta",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/mesas/{id}/desbloquear": {
+      "post": {
+        "operationId": "desbloquearMesa",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Levanta el bloqueo por intentos fallidos sin cambiar el PIN",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/mesas/{id}/ediciones": {
+      "put": {
+        "description": "Surte efecto al instante, incluso con la sesión de la mesa abierta. Solo ligas de mi cliente; las nuevas no pueden estar archivadas ni finalizadas.",
+        "operationId": "definirAlcanceMesa",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirAlcanceMesaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Define qué ligas puede operar la mesa (reemplaza el alcance anterior)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/mesas/{id}/pin/reset": {
+      "post": {
+        "description": "Cierra las sesiones abiertas de la mesa y levanta su bloqueo por intentos.",
+        "operationId": "resetearPinMesa",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaConPinDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Genera un PIN nuevo (el anterior deja de servir) y lo devuelve una sola vez",
         "tags": ["Admin"]
       }
     },
@@ -1031,6 +2621,76 @@
         },
         "summary": "Cierra la sesión del portal y revoca su familia de refresh",
         "tags": ["Auth"]
+      }
+    },
+    "/auth/mesa/{orgSlug}/login": {
+      "post": {
+        "description": "Emite las cookies at_mesa y rt_mesa (12 h). Un cliente inexistente, una mesa inexistente, un PIN errado o una mesa desactivada responden exactamente igual (401).",
+        "operationId": "mesaLogin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orgSlug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginMesaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIALS"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_BLOQUEADA (solo tras validar el PIN)"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "MESA_BLOQUEADA, IP_LOCKED o TOO_MANY_REQUESTS"
+          }
+        },
+        "summary": "Inicia sesión como mesa con el usuario (MESA1…) y el PIN",
+        "tags": ["Mesa"]
       }
     },
     "/auth/olvide-contrasena": {
@@ -1380,6 +3040,87 @@
         "tags": ["Sistema"]
       }
     },
+    "/mesa/ediciones/{edicionId}": {
+      "get": {
+        "description": "EdicionScopeGuard decide el acceso en cada petición: 404 si la liga es de otro cliente, 403 si no está en el alcance de la mesa, 409 EDICION_SOLO_LECTURA si ya finalizó.",
+        "operationId": "getMesaEdicion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LigaMesaDetalleDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "La liga no está en el alcance"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "No existe o es de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EDICION_SOLO_LECTURA"
+          }
+        },
+        "summary": "Una liga dentro del alcance de la mesa, con sus reglas",
+        "tags": ["Mesa"]
+      }
+    },
+    "/mesa/me": {
+      "get": {
+        "description": "Solo lista las ligas no finalizadas dentro de su alcance.",
+        "operationId": "getMesaMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "La mesa de la sesión y las ligas que puede operar",
+        "tags": ["Mesa"]
+      }
+    },
     "/ping": {
       "get": {
         "operationId": "getPing",
@@ -1625,6 +3366,70 @@
         "tags": ["Plataforma"]
       }
     },
+    "/plataforma/organizaciones/{id}/categorias": {
+      "get": {
+        "operationId": "listarCategoriasDeOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoriaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Categorías del cliente (solo lectura), con quién las registró",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones/{id}/ediciones": {
+      "get": {
+        "operationId": "listarEdicionesDeOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EdicionDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Ligas del cliente (solo lectura), con su estado y quién las registró",
+        "tags": ["Plataforma"]
+      }
+    },
     "/plataforma/organizaciones/{id}/invitacion": {
       "post": {
         "description": "Anula la invitación pendiente anterior (si la hay). Devuelve el enlace UNA sola vez, con el botón de WhatsApp si se indicó teléfono, y opcionalmente envía el correo.",
@@ -1672,6 +3477,39 @@
           }
         },
         "summary": "Crea o reenvía la invitación del dueño del cliente",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones/{id}/mesas": {
+      "get": {
+        "description": "Nunca incluye PIN.",
+        "operationId": "listarMesasDeOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MesaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Mesas del cliente (solo lectura): estado de acceso, ligas asignadas y quién las registró",
         "tags": ["Plataforma"]
       }
     },

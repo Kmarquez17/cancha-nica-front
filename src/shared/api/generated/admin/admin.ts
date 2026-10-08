@@ -25,11 +25,25 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActualizarCategoriaDto,
   ActualizarConfigDto,
+  ActualizarEdicionDto,
+  ActualizarMesaDto,
   AdminPrincipalDto,
+  CambiarEstadoDto,
+  CategoriaDto,
+  CrearCategoriaDto,
+  CrearEdicionDto,
+  CrearMesaDto,
+  DefinirAlcanceMesaDto,
+  EdicionDto,
   InvitacionCreadaDto,
   InvitarAdminDto,
+  ListarCategoriasParams,
+  ListarEdicionesParams,
   LoginDto,
+  MesaConPinDto,
+  MesaDto,
   OrganizacionConfigDto,
   ProblemDetailsDto
 } from '../models';
@@ -56,7 +70,1056 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetAdminMeUrl = () => {
+export const getListarCategoriasUrl = (params?: ListarCategoriasParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/admin/categorias?${stringifiedParams}` : `/admin/categorias`
+}
+
+/**
+ * @summary Categorías de mi cliente (las archivadas solo con ?archivadas=true)
+ */
+export const listarCategorias = async (params?: ListarCategoriasParams, options?: Parameters<typeof apiFetch>[1]): Promise<CategoriaDto[]> => {
+
+  return apiFetch<CategoriaDto[]>(getListarCategoriasUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarCategoriasQueryKey = (params?: ListarCategoriasParams,) => {
+    return [
+    `/admin/categorias`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListarCategoriasQueryOptions = <TData = Awaited<ReturnType<typeof listarCategorias>>, TError = unknown>(params?: ListarCategoriasParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarCategorias>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarCategoriasQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarCategorias>>> = ({ signal }) => listarCategorias(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarCategorias>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarCategoriasQueryResult = NonNullable<Awaited<ReturnType<typeof listarCategorias>>>
+export type ListarCategoriasQueryError = unknown
+
+
+export function useListarCategorias<TData = Awaited<ReturnType<typeof listarCategorias>>, TError = unknown>(
+ params: undefined |  ListarCategoriasParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarCategorias>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarCategorias>>,
+          TError,
+          Awaited<ReturnType<typeof listarCategorias>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarCategorias<TData = Awaited<ReturnType<typeof listarCategorias>>, TError = unknown>(
+ params?: ListarCategoriasParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarCategorias>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarCategorias>>,
+          TError,
+          Awaited<ReturnType<typeof listarCategorias>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarCategorias<TData = Awaited<ReturnType<typeof listarCategorias>>, TError = unknown>(
+ params?: ListarCategoriasParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarCategorias>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Categorías de mi cliente (las archivadas solo con ?archivadas=true)
+ */
+
+export function useListarCategorias<TData = Awaited<ReturnType<typeof listarCategorias>>, TError = unknown>(
+ params?: ListarCategoriasParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarCategorias>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarCategoriasQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getCrearCategoriaUrl = () => {
+
+
+
+
+  return `/admin/categorias`
+}
+
+/**
+ * El nombre se compara sin mayúsculas, tildes ni signos: «Sub-18» y «sub 18» chocan.
+ * @summary Crea una categoría
+ */
+export const crearCategoria = async (crearCategoriaDto: CrearCategoriaDto, options?: Parameters<typeof apiFetch>[1]): Promise<CategoriaDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<CategoriaDto>(getCrearCategoriaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crearCategoriaDto)
+  }
+);}
+
+
+
+
+
+export const getCrearCategoriaMutationKey = () => ['crearCategoria'] as const;
+
+export const getCrearCategoriaMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearCategoria>>, TError,CrearCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof crearCategoria>>, TError,CrearCategoriaMutationVariables, TContext> => {
+
+const mutationKey = getCrearCategoriaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof crearCategoria>>, CrearCategoriaMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  crearCategoria(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CrearCategoriaMutationResult = NonNullable<Awaited<ReturnType<typeof crearCategoria>>>
+    export type CrearCategoriaMutationBody = CrearCategoriaDto
+    export type CrearCategoriaMutationError = ProblemDetailsDto
+    export type CrearCategoriaMutationVariables = {data: CrearCategoriaDto}
+
+    /**
+ * @summary Crea una categoría
+ */
+export const useCrearCategoria = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearCategoria>>, TError,CrearCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof crearCategoria>>,
+        TError,
+        CrearCategoriaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCrearCategoriaMutationOptions(options), queryClient);
+    }
+    export const getActualizarCategoriaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/categorias/${id}`
+}
+
+/**
+ * Las ligas ya creadas conservan su propio rango de edad.
+ * @summary Cambia el nombre o el rango de edad
+ */
+export const actualizarCategoria = async (id: string,
+    actualizarCategoriaDto: ActualizarCategoriaDto, options?: Parameters<typeof apiFetch>[1]): Promise<CategoriaDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<CategoriaDto>(getActualizarCategoriaUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(actualizarCategoriaDto)
+  }
+);}
+
+
+
+
+
+export const getActualizarCategoriaMutationKey = () => ['actualizarCategoria'] as const;
+
+export const getActualizarCategoriaMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarCategoria>>, TError,ActualizarCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actualizarCategoria>>, TError,ActualizarCategoriaMutationVariables, TContext> => {
+
+const mutationKey = getActualizarCategoriaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actualizarCategoria>>, ActualizarCategoriaMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actualizarCategoria(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActualizarCategoriaMutationResult = NonNullable<Awaited<ReturnType<typeof actualizarCategoria>>>
+    export type ActualizarCategoriaMutationBody = ActualizarCategoriaDto
+    export type ActualizarCategoriaMutationError = ProblemDetailsDto
+    export type ActualizarCategoriaMutationVariables = {id: string;data: ActualizarCategoriaDto}
+
+    /**
+ * @summary Cambia el nombre o el rango de edad
+ */
+export const useActualizarCategoria = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarCategoria>>, TError,ActualizarCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actualizarCategoria>>,
+        TError,
+        ActualizarCategoriaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActualizarCategoriaMutationOptions(options), queryClient);
+    }
+    export const getArchivarCategoriaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/categorias/${id}/archivar`
+}
+
+/**
+ * @summary Archiva una categoría (no admite ligas nuevas; las existentes siguen)
+ */
+export const archivarCategoria = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<CategoriaDto> => {
+
+  return apiFetch<CategoriaDto>(getArchivarCategoriaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getArchivarCategoriaMutationKey = () => ['archivarCategoria'] as const;
+
+export const getArchivarCategoriaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archivarCategoria>>, TError,ArchivarCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archivarCategoria>>, TError,ArchivarCategoriaMutationVariables, TContext> => {
+
+const mutationKey = getArchivarCategoriaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archivarCategoria>>, ArchivarCategoriaMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  archivarCategoria(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchivarCategoriaMutationResult = NonNullable<Awaited<ReturnType<typeof archivarCategoria>>>
+
+    export type ArchivarCategoriaMutationError = unknown
+    export type ArchivarCategoriaMutationVariables = {id: string}
+
+    /**
+ * @summary Archiva una categoría (no admite ligas nuevas; las existentes siguen)
+ */
+export const useArchivarCategoria = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archivarCategoria>>, TError,ArchivarCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof archivarCategoria>>,
+        TError,
+        ArchivarCategoriaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getArchivarCategoriaMutationOptions(options), queryClient);
+    }
+    export const getRestaurarCategoriaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/categorias/${id}/restaurar`
+}
+
+/**
+ * @summary Restaura una categoría archivada
+ */
+export const restaurarCategoria = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<CategoriaDto> => {
+
+  return apiFetch<CategoriaDto>(getRestaurarCategoriaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRestaurarCategoriaMutationKey = () => ['restaurarCategoria'] as const;
+
+export const getRestaurarCategoriaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restaurarCategoria>>, TError,RestaurarCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restaurarCategoria>>, TError,RestaurarCategoriaMutationVariables, TContext> => {
+
+const mutationKey = getRestaurarCategoriaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restaurarCategoria>>, RestaurarCategoriaMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  restaurarCategoria(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestaurarCategoriaMutationResult = NonNullable<Awaited<ReturnType<typeof restaurarCategoria>>>
+
+    export type RestaurarCategoriaMutationError = unknown
+    export type RestaurarCategoriaMutationVariables = {id: string}
+
+    /**
+ * @summary Restaura una categoría archivada
+ */
+export const useRestaurarCategoria = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restaurarCategoria>>, TError,RestaurarCategoriaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restaurarCategoria>>,
+        TError,
+        RestaurarCategoriaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestaurarCategoriaMutationOptions(options), queryClient);
+    }
+    export const getListarEdicionesUrl = (params?: ListarEdicionesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/admin/ediciones?${stringifiedParams}` : `/admin/ediciones`
+}
+
+/**
+ * @summary Ligas de mi cliente (las archivadas solo con ?archivadas=true)
+ */
+export const listarEdiciones = async (params?: ListarEdicionesParams, options?: Parameters<typeof apiFetch>[1]): Promise<EdicionDto[]> => {
+
+  return apiFetch<EdicionDto[]>(getListarEdicionesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarEdicionesQueryKey = (params?: ListarEdicionesParams,) => {
+    return [
+    `/admin/ediciones`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListarEdicionesQueryOptions = <TData = Awaited<ReturnType<typeof listarEdiciones>>, TError = unknown>(params?: ListarEdicionesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEdiciones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarEdicionesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarEdiciones>>> = ({ signal }) => listarEdiciones(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarEdiciones>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarEdicionesQueryResult = NonNullable<Awaited<ReturnType<typeof listarEdiciones>>>
+export type ListarEdicionesQueryError = unknown
+
+
+export function useListarEdiciones<TData = Awaited<ReturnType<typeof listarEdiciones>>, TError = unknown>(
+ params: undefined |  ListarEdicionesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEdiciones>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarEdiciones>>,
+          TError,
+          Awaited<ReturnType<typeof listarEdiciones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarEdiciones<TData = Awaited<ReturnType<typeof listarEdiciones>>, TError = unknown>(
+ params?: ListarEdicionesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEdiciones>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarEdiciones>>,
+          TError,
+          Awaited<ReturnType<typeof listarEdiciones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarEdiciones<TData = Awaited<ReturnType<typeof listarEdiciones>>, TError = unknown>(
+ params?: ListarEdicionesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEdiciones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Ligas de mi cliente (las archivadas solo con ?archivadas=true)
+ */
+
+export function useListarEdiciones<TData = Awaited<ReturnType<typeof listarEdiciones>>, TError = unknown>(
+ params?: ListarEdicionesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEdiciones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarEdicionesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getCrearEdicionUrl = () => {
+
+
+
+
+  return `/admin/ediciones`
+}
+
+/**
+ * Precarga las reglas de la modalidad, el rango de edad de la categoría y las reglas de sanción y financieras por defecto. El enlace (slug) se genera del nombre y recibe un sufijo si ya existe.
+ * @summary Crea una liga en CONFIGURACION con el preset de su modalidad
+ */
+export const crearEdicion = async (crearEdicionDto: CrearEdicionDto, options?: Parameters<typeof apiFetch>[1]): Promise<EdicionDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EdicionDto>(getCrearEdicionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crearEdicionDto)
+  }
+);}
+
+
+
+
+
+export const getCrearEdicionMutationKey = () => ['crearEdicion'] as const;
+
+export const getCrearEdicionMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearEdicion>>, TError,CrearEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof crearEdicion>>, TError,CrearEdicionMutationVariables, TContext> => {
+
+const mutationKey = getCrearEdicionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof crearEdicion>>, CrearEdicionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  crearEdicion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CrearEdicionMutationResult = NonNullable<Awaited<ReturnType<typeof crearEdicion>>>
+    export type CrearEdicionMutationBody = CrearEdicionDto
+    export type CrearEdicionMutationError = ProblemDetailsDto
+    export type CrearEdicionMutationVariables = {data: CrearEdicionDto}
+
+    /**
+ * @summary Crea una liga en CONFIGURACION con el preset de su modalidad
+ */
+export const useCrearEdicion = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearEdicion>>, TError,CrearEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof crearEdicion>>,
+        TError,
+        CrearEdicionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCrearEdicionMutationOptions(options), queryClient);
+    }
+    export const getGetEdicionUrl = (id: string,) => {
+
+
+
+
+  return `/admin/ediciones/${id}`
+}
+
+/**
+ * @summary Una liga, con sus transiciones posibles y los campos editables
+ */
+export const getEdicion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<EdicionDto> => {
+
+  return apiFetch<EdicionDto>(getGetEdicionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEdicionQueryKey = (id: string,) => {
+    return [
+    `/admin/ediciones/${id}`
+    ] as const;
+    }
+
+
+export const getGetEdicionQueryOptions = <TData = Awaited<ReturnType<typeof getEdicion>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEdicion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEdicionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEdicion>>> = ({ signal }) => getEdicion(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEdicion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEdicionQueryResult = NonNullable<Awaited<ReturnType<typeof getEdicion>>>
+export type GetEdicionQueryError = unknown
+
+
+export function useGetEdicion<TData = Awaited<ReturnType<typeof getEdicion>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEdicion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEdicion>>,
+          TError,
+          Awaited<ReturnType<typeof getEdicion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEdicion<TData = Awaited<ReturnType<typeof getEdicion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEdicion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEdicion>>,
+          TError,
+          Awaited<ReturnType<typeof getEdicion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEdicion<TData = Awaited<ReturnType<typeof getEdicion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEdicion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Una liga, con sus transiciones posibles y los campos editables
+ */
+
+export function useGetEdicion<TData = Awaited<ReturnType<typeof getEdicion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEdicion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEdicionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getActualizarEdicionUrl = (id: string,) => {
+
+
+
+
+  return `/admin/ediciones/${id}`
+}
+
+/**
+ * CONFIGURACION: todo. EN_REGISTRO: todo menos slug, fechaInicio y categoría. Con la liga en curso o pausada: solo nombre, fechaFinEstimada y costos. FINALIZADA: nada. Los campos bloqueados se devuelven en `camposBloqueados`.
+ * @summary Edita una liga; lo que se puede cambiar depende de su estado
+ */
+export const actualizarEdicion = async (id: string,
+    actualizarEdicionDto: ActualizarEdicionDto, options?: Parameters<typeof apiFetch>[1]): Promise<EdicionDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EdicionDto>(getActualizarEdicionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(actualizarEdicionDto)
+  }
+);}
+
+
+
+
+
+export const getActualizarEdicionMutationKey = () => ['actualizarEdicion'] as const;
+
+export const getActualizarEdicionMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarEdicion>>, TError,ActualizarEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actualizarEdicion>>, TError,ActualizarEdicionMutationVariables, TContext> => {
+
+const mutationKey = getActualizarEdicionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actualizarEdicion>>, ActualizarEdicionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actualizarEdicion(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActualizarEdicionMutationResult = NonNullable<Awaited<ReturnType<typeof actualizarEdicion>>>
+    export type ActualizarEdicionMutationBody = ActualizarEdicionDto
+    export type ActualizarEdicionMutationError = ProblemDetailsDto
+    export type ActualizarEdicionMutationVariables = {id: string;data: ActualizarEdicionDto}
+
+    /**
+ * @summary Edita una liga; lo que se puede cambiar depende de su estado
+ */
+export const useActualizarEdicion = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarEdicion>>, TError,ActualizarEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actualizarEdicion>>,
+        TError,
+        ActualizarEdicionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActualizarEdicionMutationOptions(options), queryClient);
+    }
+    export const getArchivarEdicionUrl = (id: string,) => {
+
+
+
+
+  return `/admin/ediciones/${id}/archivar`
+}
+
+/**
+ * @summary Descarta una liga creada por error (solo en CONFIGURACION)
+ */
+export const archivarEdicion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<EdicionDto> => {
+
+  return apiFetch<EdicionDto>(getArchivarEdicionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getArchivarEdicionMutationKey = () => ['archivarEdicion'] as const;
+
+export const getArchivarEdicionMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archivarEdicion>>, TError,ArchivarEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archivarEdicion>>, TError,ArchivarEdicionMutationVariables, TContext> => {
+
+const mutationKey = getArchivarEdicionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archivarEdicion>>, ArchivarEdicionMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  archivarEdicion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchivarEdicionMutationResult = NonNullable<Awaited<ReturnType<typeof archivarEdicion>>>
+
+    export type ArchivarEdicionMutationError = ProblemDetailsDto
+    export type ArchivarEdicionMutationVariables = {id: string}
+
+    /**
+ * @summary Descarta una liga creada por error (solo en CONFIGURACION)
+ */
+export const useArchivarEdicion = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archivarEdicion>>, TError,ArchivarEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof archivarEdicion>>,
+        TError,
+        ArchivarEdicionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getArchivarEdicionMutationOptions(options), queryClient);
+    }
+    export const getCambiarEstadoEdicionUrl = (id: string,) => {
+
+
+
+
+  return `/admin/ediciones/${id}/estado`
+}
+
+/**
+ * Si no se cumplen las condiciones responde 409 con la lista en `incumplimientos` (cada una dice si es `forzable`). `forzar: true` solo lo puede el dueño. Finalizar exige `confirmar: true` y no tiene vuelta atrás.
+ * @summary Cambia el estado de la liga (abrir inscripciones, arrancar, pausar, finalizar…)
+ */
+export const cambiarEstadoEdicion = async (id: string,
+    cambiarEstadoDto: CambiarEstadoDto, options?: Parameters<typeof apiFetch>[1]): Promise<EdicionDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EdicionDto>(getCambiarEstadoEdicionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(cambiarEstadoDto)
+  }
+);}
+
+
+
+
+
+export const getCambiarEstadoEdicionMutationKey = () => ['cambiarEstadoEdicion'] as const;
+
+export const getCambiarEstadoEdicionMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cambiarEstadoEdicion>>, TError,CambiarEstadoEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cambiarEstadoEdicion>>, TError,CambiarEstadoEdicionMutationVariables, TContext> => {
+
+const mutationKey = getCambiarEstadoEdicionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cambiarEstadoEdicion>>, CambiarEstadoEdicionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  cambiarEstadoEdicion(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CambiarEstadoEdicionMutationResult = NonNullable<Awaited<ReturnType<typeof cambiarEstadoEdicion>>>
+    export type CambiarEstadoEdicionMutationBody = CambiarEstadoDto
+    export type CambiarEstadoEdicionMutationError = ProblemDetailsDto
+    export type CambiarEstadoEdicionMutationVariables = {id: string;data: CambiarEstadoDto}
+
+    /**
+ * @summary Cambia el estado de la liga (abrir inscripciones, arrancar, pausar, finalizar…)
+ */
+export const useCambiarEstadoEdicion = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cambiarEstadoEdicion>>, TError,CambiarEstadoEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cambiarEstadoEdicion>>,
+        TError,
+        CambiarEstadoEdicionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCambiarEstadoEdicionMutationOptions(options), queryClient);
+    }
+    export const getRestaurarEdicionUrl = (id: string,) => {
+
+
+
+
+  return `/admin/ediciones/${id}/restaurar`
+}
+
+/**
+ * @summary Restaura una liga archivada
+ */
+export const restaurarEdicion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<EdicionDto> => {
+
+  return apiFetch<EdicionDto>(getRestaurarEdicionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRestaurarEdicionMutationKey = () => ['restaurarEdicion'] as const;
+
+export const getRestaurarEdicionMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restaurarEdicion>>, TError,RestaurarEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restaurarEdicion>>, TError,RestaurarEdicionMutationVariables, TContext> => {
+
+const mutationKey = getRestaurarEdicionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restaurarEdicion>>, RestaurarEdicionMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  restaurarEdicion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestaurarEdicionMutationResult = NonNullable<Awaited<ReturnType<typeof restaurarEdicion>>>
+
+    export type RestaurarEdicionMutationError = unknown
+    export type RestaurarEdicionMutationVariables = {id: string}
+
+    /**
+ * @summary Restaura una liga archivada
+ */
+export const useRestaurarEdicion = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restaurarEdicion>>, TError,RestaurarEdicionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restaurarEdicion>>,
+        TError,
+        RestaurarEdicionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestaurarEdicionMutationOptions(options), queryClient);
+    }
+    export const getGetAdminMeUrl = () => {
 
 
 
@@ -156,7 +1219,666 @@ export function useGetAdminMe<TData = Awaited<ReturnType<typeof getAdminMe>>, TE
 
 
 
-export const getGetAdminOrganizacionUrl = () => {
+export const getListarMesasUrl = () => {
+
+
+
+
+  return `/admin/mesas`
+}
+
+/**
+ * El estado de acceso dice si la mesa está activa, desactivada o bloqueada por intentos fallidos (y hasta qué hora). Nunca incluye el PIN.
+ * @summary Mesas de mi cliente, con su estado de acceso y sus ligas
+ */
+export const listarMesas = async ( options?: Parameters<typeof apiFetch>[1]): Promise<MesaDto[]> => {
+
+  return apiFetch<MesaDto[]>(getListarMesasUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarMesasQueryKey = () => {
+    return [
+    `/admin/mesas`
+    ] as const;
+    }
+
+
+export const getListarMesasQueryOptions = <TData = Awaited<ReturnType<typeof listarMesas>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarMesas>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarMesasQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarMesas>>> = ({ signal }) => listarMesas({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarMesas>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarMesasQueryResult = NonNullable<Awaited<ReturnType<typeof listarMesas>>>
+export type ListarMesasQueryError = unknown
+
+
+export function useListarMesas<TData = Awaited<ReturnType<typeof listarMesas>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarMesas>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarMesas>>,
+          TError,
+          Awaited<ReturnType<typeof listarMesas>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarMesas<TData = Awaited<ReturnType<typeof listarMesas>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarMesas>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarMesas>>,
+          TError,
+          Awaited<ReturnType<typeof listarMesas>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarMesas<TData = Awaited<ReturnType<typeof listarMesas>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarMesas>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Mesas de mi cliente, con su estado de acceso y sus ligas
+ */
+
+export function useListarMesas<TData = Awaited<ReturnType<typeof listarMesas>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarMesas>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarMesasQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getCrearMesaUrl = () => {
+
+
+
+
+  return `/admin/mesas`
+}
+
+/**
+ * @summary Crea la siguiente mesa libre (MESA1…MESA6) y devuelve su PIN una sola vez
+ */
+export const crearMesa = async (crearMesaDto: CrearMesaDto, options?: Parameters<typeof apiFetch>[1]): Promise<MesaConPinDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MesaConPinDto>(getCrearMesaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crearMesaDto)
+  }
+);}
+
+
+
+
+
+export const getCrearMesaMutationKey = () => ['crearMesa'] as const;
+
+export const getCrearMesaMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearMesa>>, TError,CrearMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof crearMesa>>, TError,CrearMesaMutationVariables, TContext> => {
+
+const mutationKey = getCrearMesaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof crearMesa>>, CrearMesaMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  crearMesa(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CrearMesaMutationResult = NonNullable<Awaited<ReturnType<typeof crearMesa>>>
+    export type CrearMesaMutationBody = CrearMesaDto
+    export type CrearMesaMutationError = ProblemDetailsDto
+    export type CrearMesaMutationVariables = {data: CrearMesaDto}
+
+    /**
+ * @summary Crea la siguiente mesa libre (MESA1…MESA6) y devuelve su PIN una sola vez
+ */
+export const useCrearMesa = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearMesa>>, TError,CrearMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof crearMesa>>,
+        TError,
+        CrearMesaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCrearMesaMutationOptions(options), queryClient);
+    }
+    export const getActualizarMesaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/mesas/${id}`
+}
+
+/**
+ * @summary Cambia el nombre de quien opera la mesa
+ */
+export const actualizarMesa = async (id: string,
+    actualizarMesaDto: ActualizarMesaDto, options?: Parameters<typeof apiFetch>[1]): Promise<MesaDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MesaDto>(getActualizarMesaUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(actualizarMesaDto)
+  }
+);}
+
+
+
+
+
+export const getActualizarMesaMutationKey = () => ['actualizarMesa'] as const;
+
+export const getActualizarMesaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarMesa>>, TError,ActualizarMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actualizarMesa>>, TError,ActualizarMesaMutationVariables, TContext> => {
+
+const mutationKey = getActualizarMesaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actualizarMesa>>, ActualizarMesaMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actualizarMesa(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActualizarMesaMutationResult = NonNullable<Awaited<ReturnType<typeof actualizarMesa>>>
+    export type ActualizarMesaMutationBody = ActualizarMesaDto
+    export type ActualizarMesaMutationError = unknown
+    export type ActualizarMesaMutationVariables = {id: string;data: ActualizarMesaDto}
+
+    /**
+ * @summary Cambia el nombre de quien opera la mesa
+ */
+export const useActualizarMesa = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarMesa>>, TError,ActualizarMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actualizarMesa>>,
+        TError,
+        ActualizarMesaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActualizarMesaMutationOptions(options), queryClient);
+    }
+    export const getActivarMesaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/mesas/${id}/activar`
+}
+
+/**
+ * @summary Reactiva una mesa desactivada
+ */
+export const activarMesa = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<MesaDto> => {
+
+  return apiFetch<MesaDto>(getActivarMesaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getActivarMesaMutationKey = () => ['activarMesa'] as const;
+
+export const getActivarMesaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activarMesa>>, TError,ActivarMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activarMesa>>, TError,ActivarMesaMutationVariables, TContext> => {
+
+const mutationKey = getActivarMesaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activarMesa>>, ActivarMesaMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  activarMesa(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivarMesaMutationResult = NonNullable<Awaited<ReturnType<typeof activarMesa>>>
+
+    export type ActivarMesaMutationError = unknown
+    export type ActivarMesaMutationVariables = {id: string}
+
+    /**
+ * @summary Reactiva una mesa desactivada
+ */
+export const useActivarMesa = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activarMesa>>, TError,ActivarMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof activarMesa>>,
+        TError,
+        ActivarMesaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActivarMesaMutationOptions(options), queryClient);
+    }
+    export const getDesactivarMesaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/mesas/${id}/desactivar`
+}
+
+/**
+ * Sigue ocupando su lugar de las 6 y se puede reactivar.
+ * @summary Desactiva una mesa: pierde el acceso al instante, también con la sesión abierta
+ */
+export const desactivarMesa = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<MesaDto> => {
+
+  return apiFetch<MesaDto>(getDesactivarMesaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDesactivarMesaMutationKey = () => ['desactivarMesa'] as const;
+
+export const getDesactivarMesaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desactivarMesa>>, TError,DesactivarMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof desactivarMesa>>, TError,DesactivarMesaMutationVariables, TContext> => {
+
+const mutationKey = getDesactivarMesaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof desactivarMesa>>, DesactivarMesaMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  desactivarMesa(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DesactivarMesaMutationResult = NonNullable<Awaited<ReturnType<typeof desactivarMesa>>>
+
+    export type DesactivarMesaMutationError = unknown
+    export type DesactivarMesaMutationVariables = {id: string}
+
+    /**
+ * @summary Desactiva una mesa: pierde el acceso al instante, también con la sesión abierta
+ */
+export const useDesactivarMesa = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desactivarMesa>>, TError,DesactivarMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof desactivarMesa>>,
+        TError,
+        DesactivarMesaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDesactivarMesaMutationOptions(options), queryClient);
+    }
+    export const getDesbloquearMesaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/mesas/${id}/desbloquear`
+}
+
+/**
+ * @summary Levanta el bloqueo por intentos fallidos sin cambiar el PIN
+ */
+export const desbloquearMesa = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<MesaDto> => {
+
+  return apiFetch<MesaDto>(getDesbloquearMesaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDesbloquearMesaMutationKey = () => ['desbloquearMesa'] as const;
+
+export const getDesbloquearMesaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desbloquearMesa>>, TError,DesbloquearMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof desbloquearMesa>>, TError,DesbloquearMesaMutationVariables, TContext> => {
+
+const mutationKey = getDesbloquearMesaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof desbloquearMesa>>, DesbloquearMesaMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  desbloquearMesa(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DesbloquearMesaMutationResult = NonNullable<Awaited<ReturnType<typeof desbloquearMesa>>>
+
+    export type DesbloquearMesaMutationError = unknown
+    export type DesbloquearMesaMutationVariables = {id: string}
+
+    /**
+ * @summary Levanta el bloqueo por intentos fallidos sin cambiar el PIN
+ */
+export const useDesbloquearMesa = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desbloquearMesa>>, TError,DesbloquearMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof desbloquearMesa>>,
+        TError,
+        DesbloquearMesaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDesbloquearMesaMutationOptions(options), queryClient);
+    }
+    export const getDefinirAlcanceMesaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/mesas/${id}/ediciones`
+}
+
+/**
+ * Surte efecto al instante, incluso con la sesión de la mesa abierta. Solo ligas de mi cliente; las nuevas no pueden estar archivadas ni finalizadas.
+ * @summary Define qué ligas puede operar la mesa (reemplaza el alcance anterior)
+ */
+export const definirAlcanceMesa = async (id: string,
+    definirAlcanceMesaDto: DefinirAlcanceMesaDto, options?: Parameters<typeof apiFetch>[1]): Promise<MesaDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MesaDto>(getDefinirAlcanceMesaUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(definirAlcanceMesaDto)
+  }
+);}
+
+
+
+
+
+export const getDefinirAlcanceMesaMutationKey = () => ['definirAlcanceMesa'] as const;
+
+export const getDefinirAlcanceMesaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof definirAlcanceMesa>>, TError,DefinirAlcanceMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof definirAlcanceMesa>>, TError,DefinirAlcanceMesaMutationVariables, TContext> => {
+
+const mutationKey = getDefinirAlcanceMesaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof definirAlcanceMesa>>, DefinirAlcanceMesaMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  definirAlcanceMesa(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DefinirAlcanceMesaMutationResult = NonNullable<Awaited<ReturnType<typeof definirAlcanceMesa>>>
+    export type DefinirAlcanceMesaMutationBody = DefinirAlcanceMesaDto
+    export type DefinirAlcanceMesaMutationError = unknown
+    export type DefinirAlcanceMesaMutationVariables = {id: string;data: DefinirAlcanceMesaDto}
+
+    /**
+ * @summary Define qué ligas puede operar la mesa (reemplaza el alcance anterior)
+ */
+export const useDefinirAlcanceMesa = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof definirAlcanceMesa>>, TError,DefinirAlcanceMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof definirAlcanceMesa>>,
+        TError,
+        DefinirAlcanceMesaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDefinirAlcanceMesaMutationOptions(options), queryClient);
+    }
+    export const getResetearPinMesaUrl = (id: string,) => {
+
+
+
+
+  return `/admin/mesas/${id}/pin/reset`
+}
+
+/**
+ * Cierra las sesiones abiertas de la mesa y levanta su bloqueo por intentos.
+ * @summary Genera un PIN nuevo (el anterior deja de servir) y lo devuelve una sola vez
+ */
+export const resetearPinMesa = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<MesaConPinDto> => {
+
+  return apiFetch<MesaConPinDto>(getResetearPinMesaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResetearPinMesaMutationKey = () => ['resetearPinMesa'] as const;
+
+export const getResetearPinMesaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetearPinMesa>>, TError,ResetearPinMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetearPinMesa>>, TError,ResetearPinMesaMutationVariables, TContext> => {
+
+const mutationKey = getResetearPinMesaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetearPinMesa>>, ResetearPinMesaMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  resetearPinMesa(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetearPinMesaMutationResult = NonNullable<Awaited<ReturnType<typeof resetearPinMesa>>>
+
+    export type ResetearPinMesaMutationError = unknown
+    export type ResetearPinMesaMutationVariables = {id: string}
+
+    /**
+ * @summary Genera un PIN nuevo (el anterior deja de servir) y lo devuelve una sola vez
+ */
+export const useResetearPinMesa = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetearPinMesa>>, TError,ResetearPinMesaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resetearPinMesa>>,
+        TError,
+        ResetearPinMesaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResetearPinMesaMutationOptions(options), queryClient);
+    }
+    export const getGetAdminOrganizacionUrl = () => {
 
 
 

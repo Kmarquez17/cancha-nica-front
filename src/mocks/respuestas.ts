@@ -2,14 +2,14 @@ import { HttpResponse, type HttpResponseInit } from 'msw';
 import { Problema, persistir as persistirFase2 } from './fase2/db';
 import { persistir as persistirFase3 } from './fase3/db';
 
-/** Respuesta problem+json, igual que la API real. */
+/** Respuesta problem+json, igual que la API real (con sus campos extra: `incumplimientos`, `erroresReglas`…). */
 export function problema(e: Problema) {
   return HttpResponse.json(
     {
       status: e.status,
       code: e.code,
       title: e.title,
-      errors: e.errors,
+      ...e.extras,
       requestId: 'req_mock',
     },
     { status: e.status, headers: { 'Content-Type': 'application/problem+json' } },

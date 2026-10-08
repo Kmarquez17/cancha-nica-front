@@ -1,7 +1,29 @@
 # FASE 3 — Clubes, delegados y equipos (prototipo con MSW)
 
 > **Fuente de la verdad:** `PLAN_FRONTEND.md` (§6, §10) y `PLAN_BACKEND.md` (modelos `Club`, `Delegado`, `EdicionEquipo`; decisiones R12, R13).
-> **Estado:** 🟡 **Prototipo contra MSW (2026-10-07).** El backend **no ha publicado** `FASE_03.md`, ni endpoints, ni snapshot, ni `FRONT_FASE_03.md`. A diferencia de la Fase 2 (que tenía su especificación), aquí **las rutas, los nombres de campos y los códigos de error son suposiciones mías** a partir del plan. Todo lo marcado como provisional puede cambiar.
+> **Estado:** 🟡 **Prototipo contra MSW (2026-10-07), desactualizado.** Se construyó antes de que el backend publicara su especificación. Ahora existe `../cancha-nica-api/docs/fases/FASE_03.md` (decisiones R18) pero **todavía no hay endpoints, snapshot ni `FRONT_FASE_03.md`**. Las rutas, los campos y los códigos de este prototipo siguen siendo suposiciones y, según esa especificación, **varias son incorrectas** (ver la sección siguiente). No se debe integrar tal cual: se rehace cuando el backend publique el contrato.
+> En el admin, Clubes y Delegados solo aparecen en el menú con MSW (`HAY_PROTOTIPOS`).
+
+## 0. Diferencias entre este prototipo y la especificación del backend (`FASE_03.md`, R18)
+
+| Tema | Este prototipo | Especificación del backend |
+|---|---|---|
+| Nombre del equipo | Es el nombre del club | El **equipo tiene su propio nombre en cada liga** (`EdicionEquipo.nombre`); renombrar en una liga no toca otra. Dos equipos de una misma liga no pueden llamarse igual (`409 EQUIPO_DUPLICADO`); entre ligas no se avisa nada |
+| Club | Se elige uno o se crea uno; error si el nombre se repite (`CLUB_DUPLICADO`) | **Silencioso**: si el nombre coincide con un club del cliente (normalizado) se reutiliza; si no, se crea. También se puede elegir por `club.id` |
+| Delegado con teléfono repetido | Error `TELEFONO_DUPLICADO`: hay que elegir al existente | **Se reutiliza en silencio**: conserva su nombre y su PIN, no hay PIN nuevo y la respuesta trae `delegadoExistente: true` |
+| Regla del delegado | Un equipo por **categoría** | Un equipo por **liga** (`409 DELEGADO_PHONE_DUPLICATED`); en ligas distintas puede llevar uno en cada una |
+| Teléfono | Exige formato internacional (`+505…`) | El dueño escribe el número **local** (`8888 8888`) y se normaliza con el país del cliente; también acepta `+` o `00` |
+| PIN del delegado | Solo 6 dígitos | 6 dígitos y se **rechazan los PIN obvios** (`PIN_DEBIL`); cambiarlo en el primer ingreso es opcional; sesión de 30 días |
+| Retirar equipos | No existe | **`RETIRADO`** (nunca se borra), con fecha, motivo y quién; reincorporar solo antes de arrancar; con la liga en marcha solo el dueño |
+| Equipo tardío | No existe | Con la liga `EN_CURSO` solo el dueño puede inscribir |
+| Inscribir según estado | Solo con `EN_REGISTRO` | `CONFIGURACION`, `EN_REGISTRO` (dueño y admin) y `EN_CURSO` (solo dueño); no en `PAUSADA`, `EN_ELIMINATORIAS`, `FINALIZADA` ni archivada |
+| Desactivar un delegado | No existe | Existe; no se puede con equipos en ligas no finalizadas (`409 DELEGADO_CON_EQUIPOS_ACTIVOS`) |
+| Desbloquear delegado | No existe | Existe; el listado muestra «bloqueado hasta…» |
+| Qué ve el delegado | Todos sus equipos | Solo los de ligas no finalizadas; el retirado sale marcado |
+| Estado de la liga | Requisitos con equipos simulados | Usa equipos reales (conteos del arranque y `excluirEquipos`) |
+| Lectura de plataforma | No existe | `GET …/delegados` y `…/equipos` y los conteos de la ficha |
+
+**Lo que sí coincide:** formulario único que crea club y delegado (R12), PIN de 6 dígitos que se ve una sola vez con copiar y WhatsApp, «PIN aún no usado» (`ultimoAccesoEn`), cambio de PIN por el propio delegado pidiendo el actual (R13), login por `POST /auth/delegado/:orgSlug/login` con URL `/delegado/<slug-del-cliente>`, «registrado por», y reasignar con `PATCH …/equipos/:equipoId/delegado`.
 
 ## 1. Qué se construyó
 

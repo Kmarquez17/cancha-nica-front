@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Archive, ArchiveRestore, ArrowLeft, Users } from 'lucide-react';
+import { Archive, ArchiveRestore, ArrowLeft, Ban, Check, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import { useGetAdminMe } from '@/shared/api/generated/admin/admin';
+import type { EdicionDto, EstadoEdicion } from '@/shared/api/generated/models';
 import { ApiError } from '@/shared/api/mutator';
+import { HAY_PROTOTIPOS } from '@/shared/config/prototipos';
 import { Button } from '@/shared/ui/button';
 import { AlertaError } from '@/shared/ui/campo';
 import {
@@ -23,17 +25,18 @@ import {
   useCambiarEstado,
   useCategorias,
   useEdicion,
+  useRestaurarEdicion,
 } from '../api';
-import { transicionesDe } from '../lib/reglas';
+import { incumplimientosDe, sePuedeForzar } from '../lib/errores';
 import { accionDeEstado, ESTADO_TEXTO } from '../lib/textos';
-import type { EdicionDto, EstadoEdicion } from '../tipos';
+import type { Incumplimiento } from '../tipos';
 import { EstadoLiga, ModalidadInsignia } from './estado-liga';
 import { LigaFormulario } from './liga-formulario';
 
 export function LigaDetalle({ id }: { id: string }) {
   const { data: liga, isLoading, error } = useEdicion(id);
   const { data: categorias } = useCategorias(true);
-  const actualizar = useActualizarEdicion(id);
+  const actualizar = useActualizarEdicion();
 
   if (isLoading) return <p role="status">Cargando liga…</p>;
   if (error || !liga)
@@ -67,37 +70,41 @@ export function LigaDetalle({ id }: { id: string }) {
         </div>
       </div>
 
-      <Button variant="outline" className="w-fit" asChild>
-        <Link href={`/admin/ligas/${liga.id}/equipos`}>
-          <Users data-icon="inline-start" />
-          Equipos inscritos
-        </Link>
-      </Button>
+      {HAY_PROTOTIPOS ? (
+        <Button variant="outline" className="w-fit" asChild>
+          <Link href={`/admin/ligas/${liga.id}/equipos`}>
+            <Users data-icon="inline-start" />
+            Equipos inscritos
+          </Link>
+        </Button>
+      ) : null}
 
-      <PanelEstado liga={liga} />
+      {!liga.archivadaEn ? <PanelEstado liga={liga} /> : null}
 
       <div className="grid gap-3">
         <h2 className="text-2xl">Configuración</h2>
         <LigaFormulario
-          key={`${liga.id}-${liga.estado}-${liga.modalidad}`}
-          modo="editar"
+          // Si cambia el estado o se archiva, el formulario se arma de nuevo con lo que la API ahora permite.
+          key={`${liga.id}-${liga.estado}-${liga.archivadaEn ?? ''}`}
           edicion={liga}
           categorias={categorias ?? []}
           onGuardar={async (cambios) => {
-            await actualizar.mutateAsync(cambios);
+            const nueva = await actualizar.mutateAsync({ id: liga.id, data: cambios });
             toast.success('Cambios guardados.');
+            return nueva;
           }}
         />
       </div>
 
-      {liga.estado === 'CONFIGURACION' ? <Archivar liga={liga} /> : null}
+      {liga.estado === 'CONFIGURACION' || liga.archivadaEn ? <Archivar liga={liga} /> : null}
     </section>
   );
 }
 
 function PanelEstado({ liga }: { liga: EdicionDto }) {
   const [destino, setDestino] = useState<EstadoEdicion | null>(null);
-  const siguientes = transicionesDe(liga.estado, liga.estadoPrevioPausa);
+  // Los botones salen de lo que la API dice que se puede hacer: no se duplica la matriz de estados.
+  const siguientes = liga.transicionesPosibles;
 
   return (
     <div className="grid gap-3 rounded-lg border bg-card p-4">
@@ -131,6 +138,8 @@ function PanelEstado({ liga }: { liga: EdicionDto }) {
   );
 }
 
+type Fallo = { mensaje: string; incumplimientos: Incumplimiento[]; code: string };
+
 function CambioEstadoDialog({
   liga,
   destino,
@@ -140,32 +149,30 @@ function CambioEstadoDialog({
   destino: EstadoEdicion | null;
   onCerrar: () => void;
 }) {
-  const cambiar = useCambiarEstado(liga.id);
+  const cambiar = useCambiarEstado();
   const { data: yo } = useGetAdminMe();
   const [entiendo, setEntiendo] = useState(false);
-  const [fallo, setFallo] = useState<{
-    mensaje: string;
-    requisitos?: string[];
-    code: string;
-  } | null>(null);
+  const [fallo, setFallo] = useState<Fallo | null>(null);
   const esDueno = yo?.role === 'OWNER';
   const finaliza = destino === 'FINALIZADA';
+  const faltantes = fallo?.incumplimientos ?? [];
+  const forzable =
+    fallo?.code === 'EDICION_PRECONDICIONES_NO_CUMPLIDAS' && sePuedeForzar(faltantes);
 
   async function aplicar(forzar = false) {
     if (!destino) return;
     setFallo(null);
     try {
       await cambiar.mutateAsync({
-        a: destino,
-        forzar: forzar || undefined,
-        confirmar: finaliza || undefined,
+        id: liga.id,
+        data: { a: destino, forzar: forzar || undefined, confirmar: finaliza || undefined },
       });
       toast.success(`La liga ahora está: ${ESTADO_TEXTO[destino].toLowerCase()}.`);
       onCerrar();
     } catch (e) {
       if (!(e instanceof ApiError))
-        return setFallo({ mensaje: mensajeGenerico(), code: 'UNKNOWN' });
-      setFallo({ mensaje: mensajeDeError(e), requisitos: e.errors, code: e.code });
+        return setFallo({ mensaje: mensajeGenerico(), incumplimientos: [], code: 'UNKNOWN' });
+      setFallo({ mensaje: mensajeDeError(e), incumplimientos: incumplimientosDe(e), code: e.code });
     }
   }
 
@@ -183,17 +190,26 @@ function CambioEstadoDialog({
               </DialogDescription>
             </DialogHeader>
 
-            {fallo ? (
-              <AlertaError>
-                {fallo.mensaje}
-                {fallo.requisitos?.length ? (
-                  <ul className="mt-1 list-disc pl-5">
-                    {fallo.requisitos.map((r) => (
-                      <li key={r}>{r}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </AlertaError>
+            {fallo ? <AlertaError>{fallo.mensaje}</AlertaError> : null}
+
+            {faltantes.length > 0 ? (
+              <ul aria-label="Requisitos" className="grid gap-2 text-sm">
+                {faltantes.map((i) => (
+                  <li key={`${i.codigo}-${i.mensaje}`} className="flex items-start gap-2">
+                    {i.forzable ? (
+                      <Check className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+                    ) : (
+                      <Ban className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+                    )}
+                    <span>
+                      {i.mensaje}{' '}
+                      <span className="text-muted-foreground">
+                        {i.forzable ? '(se puede saltar)' : '(no se puede saltar)'}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             ) : null}
 
             {finaliza ? (
@@ -208,16 +224,18 @@ function CambioEstadoDialog({
               </label>
             ) : null}
 
-            {fallo?.code === 'EDICION_PRECONDICIONES' ? (
+            {fallo?.code === 'EDICION_PRECONDICIONES_NO_CUMPLIDAS' ? (
               <p className="text-sm text-muted-foreground">
-                {esDueno
-                  ? 'Como dueño puedes forzar el cambio; quedará registrado en la auditoría.'
-                  : 'Solo el dueño puede forzar el cambio.'}
+                {!forzable
+                  ? 'Hay requisitos que no se pueden saltar: resuélvelos para continuar.'
+                  : esDueno
+                    ? 'Como dueño puedes forzar el cambio; quedará registrado en la auditoría.'
+                    : 'Solo el dueño puede forzar el cambio.'}
               </p>
             ) : null}
 
             <DialogFooter showCloseButton>
-              {fallo?.code === 'EDICION_PRECONDICIONES' && esDueno ? (
+              {forzable && esDueno ? (
                 <Button
                   variant="destructive"
                   onClick={() => aplicar(true)}
@@ -242,12 +260,15 @@ function CambioEstadoDialog({
 }
 
 function Archivar({ liga }: { liga: EdicionDto }) {
-  const archivar = useArchivarEdicion(liga.id);
+  const archivar = useArchivarEdicion();
+  const restaurar = useRestaurarEdicion();
   const archivada = liga.archivadaEn !== null;
+  const pendiente = archivar.isPending || restaurar.isPending;
 
   async function alternar() {
     try {
-      await archivar.mutateAsync(!archivada);
+      if (archivada) await restaurar.mutateAsync({ id: liga.id });
+      else await archivar.mutateAsync({ id: liga.id });
       toast.success(archivada ? 'Liga restaurada.' : 'Liga archivada.');
     } catch (e) {
       toast.error(e instanceof ApiError ? mensajeDeError(e) : mensajeGenerico());
@@ -259,10 +280,10 @@ function Archivar({ liga }: { liga: EdicionDto }) {
       <h2 className="text-xl">{archivada ? 'Liga archivada' : '¿Creaste esta liga por error?'}</h2>
       <p className="text-sm text-muted-foreground">
         {archivada
-          ? 'No aparece en el listado. Puedes restaurarla cuando quieras.'
+          ? 'No aparece en el listado y no se puede editar ni cambiar de estado. Puedes restaurarla cuando quieras.'
           : 'Archívala para ocultarla. Nada se borra y puedes restaurarla después.'}
       </p>
-      <Button variant="outline" className="w-fit" onClick={alternar} disabled={archivar.isPending}>
+      <Button variant="outline" className="w-fit" onClick={alternar} disabled={pendiente}>
         {archivada ? (
           <ArchiveRestore data-icon="inline-start" />
         ) : (

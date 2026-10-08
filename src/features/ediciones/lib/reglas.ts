@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { EstadoEdicion, Modalidad, ParametrosEdicion, ReglasModalidad } from '../tipos';
+import type { Modalidad, ParametrosEdicion, ReglasModalidad } from '../tipos';
 
 /** Presets de modalidad (espejo de `reglas-modalidad.ts` del backend, PLAN 4.14). FUTBOL_9 y FUTBOL_11 son provisionales. */
 export const PRESETS: Record<
@@ -127,11 +127,13 @@ export function formAReglas(f: ReglasForm): {
   };
 }
 
-const entero = (min: number) =>
-  z
+const entero = (min: number, max?: number) => {
+  const base = z
     .number({ error: 'Escribe un número.' })
     .int('Debe ser un número entero.')
     .min(min, `Mínimo ${min}.`);
+  return max === undefined ? base : base.max(max, `Máximo ${max}.`);
+};
 
 /**
  * Forma e invariantes del plan (4.14), validadas en el cliente para avisar en el campo correcto.
@@ -143,17 +145,17 @@ export const reglasObjeto = z.object({
   maxConvocados: entero(1),
   relojModo: z.enum(['REGRESIVO', 'PROGRESIVO']),
   registraFaltas: z.boolean(),
-  faltasPersonalesParaAmarilla: entero(1).nullable(),
+  faltasPersonalesParaAmarilla: entero(1, 50).nullable(),
   inferioridadMin: z
     .number({ error: 'Escribe un número.' })
     .positive('Debe ser mayor que 0.')
     .nullable(),
   cancelaPorGolRival: z.boolean(),
-  duracionTiempoRegular: entero(1),
-  duracionTiempoEliminatoria: entero(1),
-  limiteFaltasAcumuladas: entero(1).nullable(),
-  rosterMin: entero(1),
-  rosterMax: entero(1),
+  duracionTiempoRegular: entero(1, 180),
+  duracionTiempoEliminatoria: entero(1, 180),
+  limiteFaltasAcumuladas: entero(1, 50).nullable(),
+  rosterMin: entero(1, 60),
+  rosterMax: entero(1, 60),
 });
 
 export const refinarReglas = (v: ReglasForm, ctx: z.RefinementCtx) => {
@@ -185,52 +187,6 @@ export const refinarReglas = (v: ReglasForm, ctx: z.RefinementCtx) => {
 };
 
 export const reglasFormSchema = reglasObjeto.superRefine(refinarReglas);
-
-/** Transiciones que el panel ofrece (el servidor valida y puede rechazar). `PAUSADA` vuelve al estado previo. */
-export function transicionesDe(
-  estado: EstadoEdicion,
-  estadoPrevioPausa: EstadoEdicion | null,
-): EstadoEdicion[] {
-  switch (estado) {
-    case 'CONFIGURACION':
-      return ['EN_REGISTRO'];
-    case 'EN_REGISTRO':
-      return ['EN_CURSO', 'PAUSADA'];
-    case 'EN_CURSO':
-      return ['EN_ELIMINATORIAS', 'PAUSADA'];
-    case 'EN_ELIMINATORIAS':
-      return ['FINALIZADA'];
-    case 'PAUSADA':
-      return estadoPrevioPausa ? [estadoPrevioPausa] : [];
-    default:
-      return [];
-  }
-}
-
-export type CampoEditable =
-  'nombre' | 'slug' | 'fechaInicio' | 'fechaFinEstimada' | 'modalidad' | 'reglas' | 'costos';
-
-/** Qué campos admite cada estado (FASE_02, tarea 2.5). */
-export function camposEditables(estado: EstadoEdicion): ReadonlySet<CampoEditable> {
-  switch (estado) {
-    case 'CONFIGURACION':
-      return new Set([
-        'nombre',
-        'slug',
-        'fechaInicio',
-        'fechaFinEstimada',
-        'modalidad',
-        'reglas',
-        'costos',
-      ]);
-    case 'EN_REGISTRO':
-      return new Set(['nombre', 'fechaFinEstimada', 'modalidad', 'reglas', 'costos']);
-    case 'FINALIZADA':
-      return new Set();
-    default:
-      return new Set(['nombre', 'fechaFinEstimada', 'costos']);
-  }
-}
 
 const SIN_TILDES = /[̀-ͯ]/g;
 

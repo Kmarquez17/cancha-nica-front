@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { campoDeError, mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
+import type { CategoriaDto } from '@/shared/api/generated/models';
 import { ApiError } from '@/shared/api/mutator';
 import { Button } from '@/shared/ui/button';
 import { AlertaError, Campo } from '@/shared/ui/campo';
@@ -23,16 +24,16 @@ import {
   useArchivarCategoria,
   useCategorias,
   useCrearCategoria,
+  useRestaurarCategoria,
 } from '../api';
-import type { CategoriaDto } from '../tipos';
 
-/** Texto de un campo numérico opcional ('' = sin límite). */
+/** Edad opcional entre 5 y 80 (límites del contrato); vacío = sin límite. */
 const edad = z
   .string()
   .trim()
   .refine(
-    (v) => v === '' || (/^\d{1,2}$/.test(v) && Number(v) <= 99),
-    'Escribe una edad entre 0 y 99.',
+    (v) => v === '' || (/^\d{1,2}$/.test(v) && Number(v) >= 5 && Number(v) <= 80),
+    'Escribe una edad entre 5 y 80, o déjala vacía.',
   );
 
 const categoriaSchema = z
@@ -48,10 +49,7 @@ const categoriaSchema = z
   .refine(
     (v) =>
       v.edadMinima === '' || v.edadMaxima === '' || Number(v.edadMinima) <= Number(v.edadMaxima),
-    {
-      path: ['edadMinima'],
-      message: 'La edad mínima no puede ser mayor que la máxima.',
-    },
+    { path: ['edadMinima'], message: 'La edad mínima no puede ser mayor que la máxima.' },
   );
 type CategoriaValues = z.infer<typeof categoriaSchema>;
 
@@ -62,16 +60,21 @@ export function textoEdades(c: Pick<CategoriaDto, 'edadMinima' | 'edadMaxima'>):
   return c.edadMinima !== null ? `Desde ${c.edadMinima} años` : `Hasta ${c.edadMaxima} años`;
 }
 
+const textoLigas = (n: number) => (n === 0 ? 'Sin ligas' : n === 1 ? 'En 1 liga' : `En ${n} ligas`);
+
 export function CategoriasLista() {
   const [verArchivadas, setVerArchivadas] = useState(false);
   const [editando, setEditando] = useState<CategoriaDto | 'nueva' | null>(null);
   const { data, isLoading, error } = useCategorias(verArchivadas);
   const archivar = useArchivarCategoria();
+  const restaurar = useRestaurarCategoria();
+  const pendiente = archivar.isPending || restaurar.isPending;
 
   async function cambiarArchivo(c: CategoriaDto) {
     try {
-      await archivar.mutateAsync({ id: c.id, archivar: !c.archivada });
-      toast.success(c.archivada ? 'Categoría restaurada.' : 'Categoría archivada.');
+      if (c.activa) await archivar.mutateAsync({ id: c.id });
+      else await restaurar.mutateAsync({ id: c.id });
+      toast.success(c.activa ? 'Categoría archivada.' : 'Categoría restaurada.');
     } catch (e) {
       toast.error(e instanceof ApiError ? mensajeDeError(e) : mensajeGenerico());
     }
@@ -126,14 +129,14 @@ export function CategoriasLista() {
               <div className="grid gap-0.5">
                 <p className="font-semibold">
                   {c.nombre}
-                  {c.archivada ? (
+                  {!c.activa ? (
                     <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                       Archivada
                     </span>
                   ) : null}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {textoEdades(c)} · registrada por {c.creadoPor.nombre}
+                  {textoEdades(c)} · {textoLigas(c.ediciones)} · registrada por {c.creadoPor.nombre}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -141,7 +144,7 @@ export function CategoriasLista() {
                   variant="outline"
                   size="sm"
                   onClick={() => setEditando(c)}
-                  disabled={c.archivada}
+                  disabled={!c.activa}
                 >
                   <Pencil data-icon="inline-start" />
                   Editar
@@ -150,14 +153,14 @@ export function CategoriasLista() {
                   variant="outline"
                   size="sm"
                   onClick={() => cambiarArchivo(c)}
-                  disabled={archivar.isPending}
+                  disabled={pendiente}
                 >
-                  {c.archivada ? (
-                    <ArchiveRestore data-icon="inline-start" />
-                  ) : (
+                  {c.activa ? (
                     <Archive data-icon="inline-start" />
+                  ) : (
+                    <ArchiveRestore data-icon="inline-start" />
                   )}
-                  {c.archivada ? 'Restaurar' : 'Archivar'}
+                  {c.activa ? 'Archivar' : 'Restaurar'}
                 </Button>
               </div>
             </li>
@@ -206,6 +209,7 @@ function FormularioCategoria({
 
   async function onSubmit(v: CategoriaValues) {
     setError(null);
+    // En el PATCH, `null` borra el límite y omitirlo lo deja como estaba: aquí siempre se envía el valor.
     const data = {
       nombre: v.nombre.trim(),
       edadMinima: v.edadMinima === '' ? null : Number(v.edadMinima),
@@ -213,7 +217,7 @@ function FormularioCategoria({
     };
     try {
       if (categoria) await actualizar.mutateAsync({ id: categoria.id, data });
-      else await crear.mutateAsync(data);
+      else await crear.mutateAsync({ data });
       toast.success(categoria ? 'Categoría actualizada.' : 'Categoría creada.');
       onListo();
     } catch (e) {
@@ -231,7 +235,8 @@ function FormularioCategoria({
       <DialogHeader>
         <DialogTitle>{categoria ? 'Editar categoría' : 'Nueva categoría'}</DialogTitle>
         <DialogDescription>
-          Las edades son opcionales. Cada liga las copia al crearse y puede ajustarlas.
+          Las edades (de 5 a 80) son opcionales. Cada liga las copia al crearse y puede ajustarlas;
+          cambiarlas aquí no toca las ligas que ya existen.
         </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4">

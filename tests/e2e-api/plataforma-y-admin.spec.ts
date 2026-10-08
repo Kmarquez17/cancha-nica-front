@@ -96,7 +96,7 @@ test('crear cliente, invitar al dueño, aceptar, bloquear (corte inmediato) y re
   await dueno.page.getByLabel('Repite la contraseña').fill(CLAVE_DUENO);
   await dueno.page.getByRole('button', { name: 'Crear contraseña y entrar' }).click();
   await expect(dueno.page).toHaveURL(/\/admin$/);
-  await expect(dueno.page.getByText(`Liga E2E ${slug}`)).toBeVisible();
+  await expect(dueno.page.getByRole('banner').getByText(`Liga E2E ${slug}`)).toBeVisible();
   await expect(dueno.page.getByText('Dueño', { exact: false }).first()).toBeVisible();
 
   // El enlace ya usado deja de servir.
@@ -135,7 +135,7 @@ test('crear cliente, invitar al dueño, aceptar, bloquear (corte inmediato) y re
 
   await dueno.page.getByRole('button', { name: 'Reintentar' }).click();
   await expect(dueno.page).toHaveURL(/\/admin$/);
-  await expect(dueno.page.getByText(`Liga E2E ${slug}`)).toBeVisible();
+  await expect(dueno.page.getByRole('banner').getByText(`Liga E2E ${slug}`)).toBeVisible();
 
   // Cerrar sesión del dueño.
   await dueno.page.getByRole('button', { name: 'Cerrar sesión' }).click();
@@ -276,11 +276,20 @@ test('1b: ficha de solo lectura con admins y conteos; el admin configura el clie
   await expect(fila).toContainText('Invitación pendiente');
   await expect(fila).toContainText('Vence');
 
-  // Conteos aún no disponibles: «—» y nunca 0.
-  for (const titulo of ['Categorías', 'Ligas', 'Mesas', 'Delegados', 'Equipos']) {
-    const tarjeta = page.getByText(titulo, { exact: true }).locator('xpath=..');
-    await expect(tarjeta).toContainText('—');
-    await expect(tarjeta).toContainText('Aún no disponible');
+  // Fase 2: categorías, ligas y mesas ya traen su conteo (un cliente nuevo parte en 0). Delegados y equipos
+  // son de la Fase 3: siguen «—» y nunca 0.
+  const tarjetaDe = (titulo: string) =>
+    page
+      .locator('dt')
+      .filter({ hasText: new RegExp(`^${titulo}$`) })
+      .locator('xpath=..');
+  for (const titulo of ['Categorías', 'Ligas', 'Mesas']) {
+    await expect(tarjetaDe(titulo)).toContainText('0');
+    await expect(tarjetaDe(titulo)).not.toContainText('Aún no disponible');
+  }
+  for (const titulo of ['Delegados', 'Equipos']) {
+    await expect(tarjetaDe(titulo)).toContainText('—');
+    await expect(tarjetaDe(titulo)).toContainText('Aún no disponible');
   }
   // El admin invitado aún no tiene cuenta: cuenta como invitación pendiente, no como admin.
   // Las fichas son <dt>/<dd>; «Admins» también es un título de sección, por eso se filtra por <dt>.

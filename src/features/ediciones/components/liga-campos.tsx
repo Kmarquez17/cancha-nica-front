@@ -4,9 +4,7 @@ import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Campo } from '@/shared/ui/campo';
 import { Input } from '@/shared/ui/input';
 import { Select } from '@/shared/ui/select';
-import type { ReglasForm } from '../lib/reglas';
-import type { DineroForm } from '../lib/sanciones';
-import type { LigaValues } from './liga-schema';
+import type { LigaValues } from '../lib/edicion-form';
 
 type Props = { register: UseFormRegister<LigaValues>; errors: FieldErrors<LigaValues> };
 
@@ -75,7 +73,7 @@ function Casilla({
 }: Pick<Props, 'register'> & {
   id: string;
   texto: string;
-  nombre: Extract<keyof LigaValues, keyof ReglasForm | keyof DineroForm>;
+  nombre: { [K in keyof LigaValues]: LigaValues[K] extends boolean ? K : never }[keyof LigaValues];
   error?: string;
 }) {
   return (
@@ -317,6 +315,78 @@ export function DineroCampos({
           Si no marcas estas opciones, la mesa solo recibe un aviso antes del partido.
         </p>
       </fieldset>
+    </div>
+  );
+}
+
+/** Edad de los jugadores de esta liga: se copia de la categoría y se puede ajustar. */
+export function EdadesCampos({ register, errors }: Props) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Campo
+        id="e-edad-min"
+        etiqueta="Edad mínima"
+        ayuda="De 5 a 80 años. Vacía = sin límite."
+        error={errors.edadMinima?.message}
+      >
+        <Input
+          id="e-edad-min"
+          inputMode="numeric"
+          aria-invalid={!!errors.edadMinima}
+          {...register('edadMinima')}
+        />
+      </Campo>
+      <Campo id="e-edad-max" etiqueta="Edad máxima" error={errors.edadMaxima?.message}>
+        <Input
+          id="e-edad-max"
+          inputMode="numeric"
+          aria-invalid={!!errors.edadMaxima}
+          {...register('edadMaxima')}
+        />
+      </Campo>
+    </div>
+  );
+}
+
+/** Arranque de la liga y eliminatorias. */
+export function ArranqueCampos({ register, errors }: Props) {
+  const p = { register, errors };
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Numero
+        id="a-min-equipos"
+        etiqueta="Equipos mínimos para empezar"
+        ayuda="Entre 2 y 64."
+        nombre="minEquiposArranque"
+        {...p}
+      />
+      <Numero
+        id="a-max-equipos"
+        etiqueta="Equipos distintos por jugador"
+        ayuda="Máximo de equipos en los que puede jugar una persona (1 a 10)."
+        nombre="maxEquiposPorJugador"
+        {...p}
+      />
+      <Campo
+        id="a-playoff"
+        etiqueta="Clasificados a eliminatorias"
+        error={errors.clasificadosPlayoff?.message}
+      >
+        <Select id="a-playoff" {...register('clasificadosPlayoff')}>
+          <option value="">Sin eliminatorias</option>
+          <option value="4">Los 4 mejores</option>
+          <option value="8">Los 8 mejores</option>
+          <option value="16">Los 16 mejores</option>
+        </Select>
+      </Campo>
+      <div className="pt-6">
+        <Casilla
+          id="a-tercer"
+          texto="Jugar partido por el tercer puesto"
+          register={register}
+          nombre="tercerPuesto"
+        />
+      </div>
     </div>
   );
 }

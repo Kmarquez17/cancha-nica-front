@@ -8,6 +8,7 @@ import { ApiError } from '@/shared/api/mutator';
 import { Button } from '@/shared/ui/button';
 import { AlertaError } from '@/shared/ui/campo';
 import { useEdiciones } from '../api';
+import { fechaLarga } from '../lib/fechas';
 import { EstadoLiga, ModalidadInsignia } from './estado-liga';
 
 export function LigasLista() {
@@ -69,7 +70,10 @@ export function LigasLista() {
                 <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <ModalidadInsignia modalidad={l.modalidad} />
                   <span>{l.categoria.nombre}</span>
-                  <span>· inicia {l.fechaInicio}</span>
+                  <span>
+                    ·{' '}
+                    {l.fechaInicio ? `inicia ${fechaLarga(l.fechaInicio)}` : 'sin fecha de inicio'}
+                  </span>
                   {l.archivadaEn ? <span>· archivada</span> : null}
                 </div>
                 <p className="text-xs text-muted-foreground">Registrada por {l.creadoPor.nombre}</p>

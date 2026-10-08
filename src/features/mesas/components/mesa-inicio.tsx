@@ -7,17 +7,19 @@ import { EstadoLiga } from '@/features/ediciones/components/estado-liga';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import { ApiError } from '@/shared/api/mutator';
 import { Logo } from '@/shared/ui/logo';
-import { useMesaLogout, useMesaMe } from '../api';
+import { useLogout } from '@/shared/api/generated/auth/auth';
+import { useGetMesaMe } from '@/shared/api/generated/mesa/mesa';
+import { MODALIDAD_TEXTO } from '@/features/ediciones/lib/textos';
 
 /** Inicio de la mesa: las ligas que puede operar. Los partidos llegan con el calendario (Fase 5) y la consola (Fase 7). */
 export function MesaInicio() {
   const router = useRouter();
-  const { data, isLoading, error } = useMesaMe();
-  const salir = useMesaLogout();
+  const { data, isLoading, error } = useGetMesaMe();
+  const salir = useLogout();
 
   async function cerrarSesion() {
     try {
-      await salir.mutateAsync();
+      await salir.mutateAsync({ params: { portal: 'mesa' } });
     } finally {
       router.replace('/');
     }
@@ -66,6 +68,9 @@ export function MesaInicio() {
                       <p className="font-heading text-xl font-extrabold italic">{l.nombre}</p>
                       <EstadoLiga estado={l.estado} />
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      {l.categoria.nombre} · {MODALIDAD_TEXTO[l.modalidad]}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Los partidos de hoy aparecerán aquí cuando el organizador arme el calendario.
                     </p>
