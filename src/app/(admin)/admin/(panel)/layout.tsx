@@ -14,6 +14,9 @@ export default async function PanelAdminLayout({ children }: LayoutProps<'/admin
         marca={yo.organizacion.nombre}
         nav={[
           { href: '/admin', etiqueta: 'Inicio' },
+          { href: '/admin/ligas', etiqueta: 'Ligas' },
+          { href: '/admin/categorias', etiqueta: 'Categorías' },
+          { href: '/admin/mesas', etiqueta: 'Mesas' },
           { href: '/admin/configuracion', etiqueta: 'Configuración' },
         ]}
         usuario={`${yo.nombre} · ${yo.role === 'OWNER' ? 'Dueño' : 'Admin'}`}

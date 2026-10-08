@@ -7,7 +7,9 @@ const USE_MSW = process.env.NEXT_PUBLIC_USE_MSW === 'true';
 // Una sola promesa por pestaña: StrictMode ejecuta los efectos dos veces y worker.start() no es reentrante.
 let starting: Promise<unknown> | null = null;
 function startWorker() {
-  starting ??= import('./browser').then(({ worker }) => worker.start());
+  starting ??= import('./browser').then(({ worker }) =>
+    worker.start({ onUnhandledFrame: 'bypass' }),
+  );
   return starting;
 }
 
