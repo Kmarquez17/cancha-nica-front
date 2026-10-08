@@ -240,7 +240,7 @@
     @apply font-heading font-extrabold italic;
   }
   .marcador {
-    font-family: var(--font-mono);
+    font-family: var(--font-atkinson-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     font-weight: 700;
   }

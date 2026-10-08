@@ -57,3 +57,23 @@ export async function exigirSesion<T>(portal: Portal): Promise<T> {
       redirect(rutaLogin(portal));
   }
 }
+
+/**
+ * Color principal del cliente (`GET /admin/organizacion`) para teñir el portal. Es cosmético: si falla por
+ * cualquier motivo devuelve null y el portal se queda con la marca de Cancha Nica.
+ */
+export async function leerColorCliente(portal: 'admin'): Promise<string | null> {
+  try {
+    const access = (await cookies()).get(`at_${portal}`)?.value;
+    if (!access) return null;
+    const res = await fetch(`${env.API_URL}/${portal}/organizacion`, {
+      headers: { cookie: `at_${portal}=${access}`, accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { colorPrimario?: unknown };
+    return typeof data.colorPrimario === 'string' ? data.colorPrimario : null;
+  } catch {
+    return null;
+  }
+}

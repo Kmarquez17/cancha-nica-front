@@ -31,6 +31,8 @@ const envolver = (ui: ReactNode) => (
   </QueryClientProvider>
 );
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 describe('cambiosDeConfig', () => {
   const igual = {
     zonaHoraria: config.zonaHoraria,

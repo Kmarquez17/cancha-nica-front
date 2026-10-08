@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,6 +56,7 @@ export function ConfiguracionCliente() {
 
 function Formulario({ cliente }: { cliente: OrganizacionConfigDto }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const actualizar = useActualizarAdminOrganizacion();
   const [error, setError] = useState<string | null>(null);
 
@@ -88,6 +90,7 @@ function Formulario({ cliente }: { cliente: OrganizacionConfigDto }) {
         colorPrimario: guardado.colorPrimario,
       });
       toast.success('Configuración guardada.');
+      router.refresh(); // el layout vuelve a leer el color del cliente
     } catch (e) {
       if (!(e instanceof ApiError)) return setError(mensajeGenerico());
       setError(e.errors?.length ? `${mensajeDeError(e)} ${e.errors.join(' ')}` : mensajeDeError(e));

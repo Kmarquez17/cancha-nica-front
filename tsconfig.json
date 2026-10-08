@@ -32,7 +32,9 @@
     ".next-e2e/types/**/*.ts",
     ".next-e2e/dev/types/**/*.ts",
     ".next-brand/types/**/*.ts",
-    ".next-brand/dev/types/**/*.ts"
+    ".next-brand/dev/types/**/*.ts",
+    ".next-dev/types/**/*.ts",
+    ".next-dev/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
