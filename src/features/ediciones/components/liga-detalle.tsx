@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Archive, ArchiveRestore, ArrowLeft } from 'lucide-react';
+import { Archive, ArchiveRestore, ArrowLeft, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import { useGetAdminMe } from '@/shared/api/generated/admin/admin';
@@ -66,6 +66,13 @@ export function LigaDetalle({ id }: { id: string }) {
           <EstadoLiga estado={liga.estado} />
         </div>
       </div>
+
+      <Button variant="outline" className="w-fit" asChild>
+        <Link href={`/admin/ligas/${liga.id}/equipos`}>
+          <Users data-icon="inline-start" />
+          Equipos inscritos
+        </Link>
+      </Button>
 
       <PanelEstado liga={liga} />
 

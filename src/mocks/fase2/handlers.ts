@@ -1,4 +1,4 @@
-import { http, HttpResponse, type HttpResponseInit } from 'msw';
+import { http } from 'msw';
 import type {
   ActualizarEdicionBody,
   CambiarEstadoBody,
@@ -6,40 +6,11 @@ import type {
   CrearEdicionBody,
   MesaLoginBody,
 } from '@/features/ediciones/tipos';
+import { cuerpo, responder, ruta } from '../respuestas';
 import * as db from './db';
 
-/** Respuesta problem+json, igual que la API real. */
-function problema(e: db.Problema) {
-  return HttpResponse.json(
-    {
-      status: e.status,
-      code: e.code,
-      title: e.title,
-      errors: e.errors,
-      requestId: 'req_mock_fase2',
-    },
-    { status: e.status, headers: { 'Content-Type': 'application/problem+json' } },
-  );
-}
-
-/** Ejecuta la operación de la base y traduce `Problema` a problem+json; cualquier otro error se relanza. */
-function responder<T>(operacion: () => T, init?: HttpResponseInit) {
-  try {
-    const dato = operacion();
-    db.persistir();
-    return dato === undefined
-      ? new HttpResponse(null, { status: 204 })
-      : HttpResponse.json(dato, init);
-  } catch (e) {
-    if (e instanceof db.Problema) return problema(e);
-    throw e;
-  }
-}
-
-const ruta = (p: string) => `/api${p}`;
 const archivadas = (request: Request) =>
   new URL(request.url).searchParams.get('archivadas') === 'true';
-const cuerpo = async <T>(request: Request) => (await request.json().catch(() => ({}))) as T;
 
 /** Endpoints simulados de la Fase 2. Todo lo demás (sesión, /admin/me, plataforma) pasa a la API real. */
 export const handlersFase2 = [

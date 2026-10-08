@@ -16,6 +16,8 @@ export default async function PanelAdminLayout({ children }: LayoutProps<'/admin
           { href: '/admin', etiqueta: 'Inicio' },
           { href: '/admin/ligas', etiqueta: 'Ligas' },
           { href: '/admin/categorias', etiqueta: 'Categorías' },
+          { href: '/admin/clubes', etiqueta: 'Clubes' },
+          { href: '/admin/delegados', etiqueta: 'Delegados' },
           { href: '/admin/mesas', etiqueta: 'Mesas' },
           { href: '/admin/configuracion', etiqueta: 'Configuración' },
         ]}

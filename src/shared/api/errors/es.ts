@@ -63,6 +63,24 @@ export const mensajesEs: Record<string, { message: string; field?: string }> = {
   FORBIDDEN: { message: 'No tienes permiso para hacer esto.' },
   NOT_FOUND: { message: 'No encontramos lo que buscas. Puede que ya no exista.' },
 
+  // Clubes, delegados y equipos (Fase 3; nombres provisionales hasta el contrato)
+  CLUB_DUPLICADO: {
+    message: 'Ya existe un club con ese nombre (no importan mayúsculas, tildes ni guiones).',
+    field: 'clubNombre',
+  },
+  CLUB_INACTIVO: { message: 'Ese club está desactivado. Actívalo para inscribirlo.' },
+  EQUIPO_DUPLICADO: { message: 'Ese club ya está inscrito en esta liga.' },
+  TELEFONO_DUPLICADO: {
+    message: 'Ya hay un delegado con ese teléfono. Elígelo de la lista de delegados.',
+    field: 'delegadoTelefono',
+  },
+  DELEGADO_MISMA_CATEGORIA: {
+    message: 'Ese delegado ya tiene un equipo en esta categoría. Elige a otra persona.',
+  },
+  EDICION_NO_ACEPTA_INSCRIPCIONES: {
+    message: 'Esta liga no tiene las inscripciones abiertas.',
+  },
+
   // Transporte
   VALIDATION_ERROR: { message: 'Revisa los datos del formulario.' },
   PAYLOAD_TOO_LARGE: { message: 'Los datos enviados son demasiado grandes.' },

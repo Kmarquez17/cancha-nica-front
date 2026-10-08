@@ -50,7 +50,7 @@ Usuario de prueba de la mesa (solo MSW): `MESA1` / `123456` en `/mesa/sopa`. `ME
 ## 5. Pruebas
 
 - **Vitest:** presets e invariantes (cada una por separado y en su campo), transiciones, campos editables por estado, normalización de nombres; la base simulada (categorías, ligas, estados, forzar y 403, finalizar con confirmación, pausa, una sola liga abierta, 7.ª mesa, PIN, login indistinguible, alcance al instante); proxy de la mesa; diálogo del PIN y estados de acceso.
-- **E2E automatizado sin backend (`pnpm test:e2e:mock`, 18 pruebas, también en el CI):** una API falsa (`tests/e2e-mock/api-falsa.mjs`) responde solo la sesión del admin y MSW simula lo nuevo. Cubre categorías (duplicado, archivar), ligas (preset, invariante rota, valores por defecto del plan, importes, requisitos y forzar, reglas congeladas, costos editables en juego, finalizar con confirmación, archivar), mesas (PIN una sola vez y copiar, límite de 6, cambiar operador, desbloquear) y login de mesa (PIN errónea, otro cliente, bloqueada, validación). Cada prueba parte de los datos de ejemplo.
+- **E2E automatizado sin backend (`pnpm test:e2e:mock`, también en el CI; 18 pruebas de esta fase):** una API falsa (`tests/e2e-mock/api-falsa.mjs`) responde solo la sesión del admin y MSW simula lo nuevo. Cubre categorías (duplicado, archivar), ligas (preset, invariante rota, valores por defecto del plan, importes, requisitos y forzar, reglas congeladas, costos editables en juego, finalizar con confirmación, archivar), mesas (PIN una sola vez y copiar, límite de 6, cambiar operador, desbloquear) y login de mesa (PIN errónea, otro cliente, bloqueada, validación). Cada prueba parte de los datos de ejemplo.
 
 ## 6. Qué NO se hizo (a propósito)
 

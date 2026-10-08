@@ -20,7 +20,8 @@ async function empezarForzando(page: Page) {
   await page.getByRole('button', { name: 'Confirmar' }).click();
   await expect(page.getByText('Falta generar el calendario.')).toBeVisible();
   await page.getByRole('button', { name: 'Forzar de todos modos' }).click();
-  await expect(page.getByText('En juego').first()).toBeVisible();
+  // La insignia del estado (no el aviso emergente, que sale antes de que la liga se refresque).
+  await expect(page.locator('[data-estado="EN_CURSO"]')).toBeVisible();
 }
 
 test.describe('admin: categorías', () => {
@@ -131,7 +132,7 @@ test.describe('admin: ligas', () => {
     await empezarForzando(page);
     await page.getByRole('button', { name: 'Pasar a eliminatorias' }).click();
     await page.getByRole('button', { name: 'Confirmar' }).click();
-    await expect(page.getByText('Eliminatorias').first()).toBeVisible();
+    await expect(page.locator('[data-estado="EN_ELIMINATORIAS"]')).toBeVisible();
 
     await page.getByRole('button', { name: 'Finalizar liga' }).click();
     const confirmar = page.getByRole('button', { name: 'Confirmar' });

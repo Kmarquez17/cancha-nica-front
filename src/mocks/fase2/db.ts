@@ -43,7 +43,7 @@ export class Problema extends Error {
 }
 
 const ABIERTAS: EstadoEdicion[] = ['EN_REGISTRO', 'EN_CURSO', 'EN_ELIMINATORIAS', 'PAUSADA'];
-const DUENO = { id: 'u-dueno', nombre: 'Dueño de la liga' };
+export const DUENO = { id: 'u-dueno', nombre: 'Dueño de la liga' };
 export const SLUG_CLIENTE = 'sopa';
 export const NOMBRE_CLIENTE = 'Liga SOPA';
 const MAX_MESAS = 6;
@@ -448,7 +448,7 @@ function buscarMesa(mid: string) {
   return m;
 }
 
-const nuevoPin = () => String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
+export const nuevoPin = () => String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
 const conPin = (m: MesaDto & { pin: string }): MesaConPinDto => ({
   ...sinPin(m),
   pin: m.pin,

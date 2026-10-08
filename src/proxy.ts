@@ -13,14 +13,18 @@ export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const [, portal, ...resto] = pathname.split('/') as [string, Portal, ...string[]];
 
-  // El login de la mesa es /mesa/<slug-del-cliente> (R15): un solo segmento. /mesa/bloqueada es global.
-  const esLoginMesa = portal === 'mesa' && resto.length === 1 && resto[0] !== '';
-  const esPublica = esLoginMesa || (resto[0] !== undefined && PUBLICAS.has(resto[0]));
+  // El login de la mesa y del delegado es /<portal>/<slug-del-cliente>: un solo segmento (R15).
+  // /<portal>/bloqueada y /<portal>/login son globales y están en PUBLICAS.
+  const esLoginPorSlug =
+    (portal === 'mesa' || portal === 'delegado') && resto.length === 1 && resto[0] !== '';
+  const esPublica = esLoginPorSlug || (resto[0] !== undefined && PUBLICAS.has(resto[0]));
 
-  // Con MSW la sesión de la mesa es simulada (no hay cookie real): solo en desarrollo, mientras no exista el backend de la Fase 2.
-  const mesaSimulada = portal === 'mesa' && process.env.NEXT_PUBLIC_USE_MSW === 'true';
+  // Con MSW la sesión de la mesa y del delegado es simulada (no hay cookie real): solo en desarrollo, mientras
+  // el backend de las Fases 2 y 3 no exista.
+  const sesionSimulada =
+    (portal === 'mesa' || portal === 'delegado') && process.env.NEXT_PUBLIC_USE_MSW === 'true';
   const haySesion =
-    mesaSimulada || request.cookies.has(`at_${portal}`) || request.cookies.has(`rt_${portal}`);
+    sesionSimulada || request.cookies.has(`at_${portal}`) || request.cookies.has(`rt_${portal}`);
 
   if (!esPublica && !haySesion) {
     const login = portal === 'mesa' ? '/' : `/${portal}/login`;
