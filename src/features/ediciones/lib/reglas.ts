@@ -208,19 +208,27 @@ export function transicionesDe(
 }
 
 export type CampoEditable =
-  'nombre' | 'slug' | 'fechaInicio' | 'fechaFinEstimada' | 'modalidad' | 'reglas';
+  'nombre' | 'slug' | 'fechaInicio' | 'fechaFinEstimada' | 'modalidad' | 'reglas' | 'costos';
 
 /** Qué campos admite cada estado (FASE_02, tarea 2.5). */
 export function camposEditables(estado: EstadoEdicion): ReadonlySet<CampoEditable> {
   switch (estado) {
     case 'CONFIGURACION':
-      return new Set(['nombre', 'slug', 'fechaInicio', 'fechaFinEstimada', 'modalidad', 'reglas']);
+      return new Set([
+        'nombre',
+        'slug',
+        'fechaInicio',
+        'fechaFinEstimada',
+        'modalidad',
+        'reglas',
+        'costos',
+      ]);
     case 'EN_REGISTRO':
-      return new Set(['nombre', 'fechaFinEstimada', 'modalidad', 'reglas']);
+      return new Set(['nombre', 'fechaFinEstimada', 'modalidad', 'reglas', 'costos']);
     case 'FINALIZADA':
       return new Set();
     default:
-      return new Set(['nombre', 'fechaFinEstimada']);
+      return new Set(['nombre', 'fechaFinEstimada', 'costos']);
   }
 }
 

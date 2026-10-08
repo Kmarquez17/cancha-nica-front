@@ -10,6 +10,7 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     '.next/**',
     '.next-e2e/**', // build del E2E contra la API real (playwright.api.config.ts)
+    '.next-e2e-mock/**', // build del E2E con MSW (playwright.mock.config.ts)
     'out/**',
     'build/**',
     'next-env.d.ts',

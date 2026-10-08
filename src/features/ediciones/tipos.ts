@@ -34,6 +34,31 @@ export type ParametrosEdicion = {
   rosterMax: number;
 };
 
+/** Reglas de sanción por liga (PLAN_BACKEND 4.12). Los importes son decimales como texto («0.00»). */
+export type ReglasSanciones = {
+  rojaDirectaFechas: number;
+  dobleAmarillaFechas: number;
+  amarillasAcumuladasParaFecha: number;
+  conteoAmarillasEnEliminatorias: 'MANTIENE' | 'REINICIA';
+  multaAmarilla: string;
+  multaRoja: string;
+  multaBloqueaConvocatoria: boolean;
+  walkover: {
+    marcador: [number, number];
+    multaInfractor: string;
+    exclusionTrasNWalkovers: number | null;
+  };
+  inferioridadNumerica: { multaInfractor: string };
+};
+
+/** Reglas financieras por liga (PLAN_BACKEND H15). */
+export type ReglasFinancieras = {
+  bloquearEquipoPorDeudaInscripcion: boolean;
+  bloquearEquipoPorDeudaArbitraje: boolean;
+};
+
+export type CostosEdicion = { costoInscripcion: string; costoArbitraje: string };
+
 export type RegistradoPor = { id: string; nombre: string };
 
 export type CategoriaDto = {
@@ -46,23 +71,26 @@ export type CategoriaDto = {
   creadaEn: string;
 };
 
-export type EdicionDto = ParametrosEdicion & {
-  id: string;
-  nombre: string;
-  slug: string;
-  modalidad: Modalidad;
-  categoria: { id: string; nombre: string };
-  estado: EstadoEdicion;
-  estadoPrevioPausa: EstadoEdicion | null;
-  fechaInicio: string; // YYYY-MM-DD
-  fechaFinEstimada: string | null;
-  edadMinima: number | null;
-  edadMaxima: number | null;
-  reglasModalidad: ReglasModalidad;
-  archivadaEn: string | null;
-  creadoPor: RegistradoPor;
-  creadaEn: string;
-};
+export type EdicionDto = ParametrosEdicion &
+  CostosEdicion & {
+    reglasSanciones: ReglasSanciones;
+    reglasFinancieras: ReglasFinancieras;
+    id: string;
+    nombre: string;
+    slug: string;
+    modalidad: Modalidad;
+    categoria: { id: string; nombre: string };
+    estado: EstadoEdicion;
+    estadoPrevioPausa: EstadoEdicion | null;
+    fechaInicio: string; // YYYY-MM-DD
+    fechaFinEstimada: string | null;
+    edadMinima: number | null;
+    edadMaxima: number | null;
+    reglasModalidad: ReglasModalidad;
+    archivadaEn: string | null;
+    creadoPor: RegistradoPor;
+    creadaEn: string;
+  };
 
 export type MesaDto = {
   id: string;
@@ -84,16 +112,19 @@ export type CrearCategoriaBody = {
   edadMaxima?: number | null;
 };
 
-export type CrearEdicionBody = ParametrosEdicion & {
-  nombre: string;
-  categoriaId: string;
-  modalidad: Modalidad;
-  fechaInicio: string;
-  fechaFinEstimada?: string | null;
-  edadMinima?: number | null;
-  edadMaxima?: number | null;
-  reglasModalidad: ReglasModalidad;
-};
+export type CrearEdicionBody = ParametrosEdicion &
+  CostosEdicion & {
+    reglasSanciones: ReglasSanciones;
+    reglasFinancieras: ReglasFinancieras;
+    nombre: string;
+    categoriaId: string;
+    modalidad: Modalidad;
+    fechaInicio: string;
+    fechaFinEstimada?: string | null;
+    edadMinima?: number | null;
+    edadMaxima?: number | null;
+    reglasModalidad: ReglasModalidad;
+  };
 
 export type ActualizarEdicionBody = Partial<Omit<CrearEdicionBody, 'categoriaId'>> & {
   slug?: string;

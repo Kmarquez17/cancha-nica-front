@@ -51,6 +51,9 @@ jobs:
       - name: Playwright de humo (MSW, sin API)
         run: pnpm test:e2e
 
+      - name: Playwright de la Fase 2 (MSW y API falsa de sesión)
+        run: pnpm test:e2e:mock
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useWatch, type FieldErrors, type UseFormRegister } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import { ApiError } from '@/shared/api/mutator';
 import { Button } from '@/shared/ui/button';
@@ -15,10 +14,9 @@ import {
   formAReglas,
   presetAForm,
   reglasAForm,
-  refinarReglas,
-  reglasObjeto,
   type ReglasForm,
 } from '../lib/reglas';
+import { dineroAForm, dineroPorDefecto, formADinero } from '../lib/sanciones';
 import { MODALIDAD_TEXTO } from '../lib/textos';
 import {
   MODALIDADES,
@@ -28,40 +26,10 @@ import {
   type EdicionDto,
   type Modalidad,
 } from '../tipos';
+import { DineroCampos, ReglasCampos, SancionesCampos } from './liga-campos';
+import { ligaSchema, type LigaValues } from './liga-schema';
 
-const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Elige una fecha.');
-
-const ligaSchema = reglasObjeto
-  .extend({
-    nombre: z
-      .string()
-      .trim()
-      .min(3, 'Escribe el nombre (mínimo 3 letras).')
-      .max(80, 'Máximo 80 caracteres.'),
-    categoriaId: z.string().min(1, 'Elige una categoría.'),
-    modalidad: z.enum(MODALIDADES),
-    fechaInicio: fecha,
-    fechaFinEstimada: z
-      .string()
-      .refine((v) => v === '' || /^\d{4}-\d{2}-\d{2}$/.test(v), 'Elige una fecha.'),
-    slug: z
-      .string()
-      .trim()
-      .refine(
-        (v) => v === '' || /^[a-z0-9]+(-[a-z0-9]+)*$/.test(v),
-        'Solo minúsculas, números y guiones.',
-      ),
-  })
-  .superRefine((v, ctx) => {
-    refinarReglas(v, ctx);
-    if (v.fechaFinEstimada !== '' && v.fechaFinEstimada < v.fechaInicio)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['fechaFinEstimada'],
-        message: 'No puede ser anterior al inicio.',
-      });
-  });
-export type LigaValues = z.infer<typeof ligaSchema>;
+export type { LigaValues } from './liga-schema';
 
 type Props =
   | {
@@ -103,6 +71,9 @@ export function LigaFormulario(props: Props) {
       fechaFinEstimada: edicion?.fechaFinEstimada ?? '',
       slug: edicion?.slug ?? '',
       ...(edicion ? reglasAForm(edicion.reglasModalidad, edicion) : presetAForm(inicial)),
+      ...(edicion
+        ? dineroAForm(edicion.reglasSanciones, edicion.reglasFinancieras, edicion)
+        : dineroPorDefecto()),
     },
   });
 
@@ -120,6 +91,7 @@ export function LigaFormulario(props: Props) {
   async function onSubmit(v: LigaValues) {
     setError(null);
     const { reglas, parametros } = formAReglas(v);
+    const { sanciones, finanzas, costos } = formADinero(v);
     try {
       if (props.modo === 'crear') {
         await props.onGuardar({
@@ -129,7 +101,10 @@ export function LigaFormulario(props: Props) {
           fechaInicio: v.fechaInicio,
           fechaFinEstimada: v.fechaFinEstimada || null,
           reglasModalidad: reglas,
+          reglasSanciones: sanciones,
+          reglasFinancieras: finanzas,
           ...parametros,
+          ...costos,
         });
       } else {
         const cambios: ActualizarEdicionBody = {};
@@ -139,7 +114,14 @@ export function LigaFormulario(props: Props) {
         if (puede('fechaFinEstimada')) cambios.fechaFinEstimada = v.fechaFinEstimada || null;
         if (puede('modalidad') && v.modalidad !== edicion!.modalidad)
           cambios.modalidad = v.modalidad;
-        if (puede('reglas')) Object.assign(cambios, { reglasModalidad: reglas, ...parametros });
+        if (puede('reglas'))
+          Object.assign(cambios, {
+            reglasModalidad: reglas,
+            reglasSanciones: sanciones,
+            reglasFinancieras: finanzas,
+            ...parametros,
+          });
+        if (puede('costos')) Object.assign(cambios, costos);
         await props.onGuardar(cambios);
       }
     } catch (e) {
@@ -149,6 +131,7 @@ export function LigaFormulario(props: Props) {
   }
 
   const bloqueado = (c: Parameters<typeof puede>[0]) => !puede(c) || isSubmitting;
+  const reglasCongeladas = !puede('reglas') && !soloLectura;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid max-w-3xl gap-8">
@@ -282,13 +265,32 @@ export function LigaFormulario(props: Props) {
             {aviso}
           </p>
         ) : null}
-        {!puede('reglas') && !soloLectura ? (
+        {reglasCongeladas ? (
           <p className="text-sm text-muted-foreground">
-            Con la liga en juego las reglas quedan congeladas. Solo se cambian el nombre y el fin
-            estimado.
+            Con la liga en juego las reglas quedan congeladas. Solo se cambian el nombre, el fin
+            estimado y los costos.
           </p>
         ) : null}
         <ReglasCampos register={register} errors={errors} registraFaltas={registraFaltas} />
+      </fieldset>
+
+      <fieldset className="grid gap-4" disabled={!puede('reglas') || isSubmitting}>
+        <legend className="mb-2 text-lg font-semibold">Sanciones y multas</legend>
+        <p className="text-sm text-muted-foreground">
+          Valores habituales ya cargados. Se aplican al cerrar cada acta y se pueden ajustar hasta
+          que la liga empiece.
+        </p>
+        <SancionesCampos register={register} errors={errors} />
+      </fieldset>
+
+      <fieldset className="grid gap-4" disabled={isSubmitting}>
+        <legend className="mb-2 text-lg font-semibold">Dinero</legend>
+        <DineroCampos
+          register={register}
+          errors={errors}
+          costosEditables={puede('costos')}
+          reglasEditables={puede('reglas')}
+        />
       </fieldset>
 
       {!soloLectura ? (
@@ -303,143 +305,5 @@ export function LigaFormulario(props: Props) {
         </div>
       ) : null}
     </form>
-  );
-}
-
-function Numero({
-  id,
-  etiqueta,
-  ayuda,
-  register,
-  errors,
-  nombre,
-  nulo,
-}: {
-  id: string;
-  etiqueta: string;
-  ayuda?: string;
-  register: UseFormRegister<LigaValues>;
-  errors: FieldErrors<LigaValues>;
-  nombre: keyof ReglasForm;
-  nulo?: boolean;
-}) {
-  return (
-    <Campo
-      id={id}
-      etiqueta={etiqueta}
-      ayuda={ayuda}
-      error={errors[nombre]?.message as string | undefined}
-    >
-      <Input
-        id={id}
-        inputMode="decimal"
-        aria-invalid={!!errors[nombre]}
-        {...register(nombre, {
-          setValueAs: (v) => (nulo && (v === '' || v == null) ? null : Number(v)),
-        })}
-      />
-    </Campo>
-  );
-}
-
-function ReglasCampos({
-  register,
-  errors,
-  registraFaltas,
-}: {
-  register: UseFormRegister<LigaValues>;
-  errors: FieldErrors<LigaValues>;
-  registraFaltas: boolean;
-}) {
-  const p = { register, errors };
-  return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Campo id="r-cancha" etiqueta="Jugadores en cancha" error={errors.jugadoresEnCancha?.message}>
-        <Select id="r-cancha" {...register('jugadoresEnCancha', { valueAsNumber: true })}>
-          <option value={5}>5</option>
-          <option value={9}>9</option>
-          <option value={11}>11</option>
-        </Select>
-      </Campo>
-      <Campo id="r-reloj" etiqueta="Reloj" error={errors.relojModo?.message}>
-        <Select id="r-reloj" {...register('relojModo')}>
-          <option value="REGRESIVO">Cuenta regresiva</option>
-          <option value="PROGRESIVO">Cuenta progresiva</option>
-        </Select>
-      </Campo>
-      <Numero
-        id="r-min-partido"
-        etiqueta="Mínimo de jugadores para jugar"
-        nombre="minJugadoresPartido"
-        {...p}
-      />
-      <Numero
-        id="r-convocados"
-        etiqueta="Máximo de convocados por partido"
-        nombre="maxConvocados"
-        {...p}
-      />
-      <Numero id="r-roster-min" etiqueta="Plantel mínimo" nombre="rosterMin" {...p} />
-      <Numero id="r-roster-max" etiqueta="Plantel máximo" nombre="rosterMax" {...p} />
-      <Numero
-        id="r-dur-reg"
-        etiqueta="Minutos por tiempo (fase regular)"
-        nombre="duracionTiempoRegular"
-        {...p}
-      />
-      <Numero
-        id="r-dur-elim"
-        etiqueta="Minutos por tiempo (eliminatorias)"
-        nombre="duracionTiempoEliminatoria"
-        {...p}
-      />
-
-      <label className="flex items-center gap-2 text-sm sm:col-span-2">
-        <input type="checkbox" className="size-4 accent-primary" {...register('registraFaltas')} />
-        Registrar faltas en la mesa
-      </label>
-      {registraFaltas ? (
-        <>
-          <Numero
-            id="r-faltas-limite"
-            etiqueta="Faltas acumuladas por equipo (tiro libre)"
-            nombre="limiteFaltasAcumuladas"
-            nulo
-            {...p}
-          />
-          <Numero
-            id="r-faltas-amarilla"
-            etiqueta="Faltas personales para amarilla"
-            nombre="faltasPersonalesParaAmarilla"
-            nulo
-            {...p}
-          />
-        </>
-      ) : null}
-
-      <Numero
-        id="r-roja-min"
-        etiqueta="Minutos con uno menos tras una roja"
-        ayuda="Déjalo vacío si el equipo queda con uno menos hasta el final del partido."
-        nombre="inferioridadMin"
-        nulo
-        {...p}
-      />
-      <div className="grid content-start gap-1.5">
-        <label className="flex items-center gap-2 pt-6 text-sm">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            {...register('cancelaPorGolRival')}
-          />
-          Un gol del rival termina la inferioridad
-        </label>
-        {errors.cancelaPorGolRival?.message ? (
-          <p role="alert" className="text-xs text-destructive">
-            {errors.cancelaPorGolRival.message}
-          </p>
-        ) : null}
-      </div>
-    </div>
   );
 }

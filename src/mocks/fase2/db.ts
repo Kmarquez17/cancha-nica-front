@@ -13,6 +13,11 @@ import {
   slugDeEdicion,
   transicionesDe,
 } from '@/features/ediciones/lib/reglas';
+import {
+  COSTOS_POR_DEFECTO,
+  FINANZAS_POR_DEFECTO,
+  SANCIONES_POR_DEFECTO,
+} from '@/features/ediciones/lib/sanciones';
 import type {
   ActualizarEdicionBody,
   CambiarEstadoBody,
@@ -73,7 +78,13 @@ function sembrar(): Estado {
   };
   const base = (m: 'FUTSAL' | 'FUTBOL_9' | 'FUTBOL_11') => {
     const { reglas, parametros } = presetDe(m);
-    return { reglasModalidad: reglas, ...parametros };
+    return {
+      reglasModalidad: reglas,
+      reglasSanciones: structuredClone(SANCIONES_POR_DEFECTO),
+      reglasFinancieras: { ...FINANZAS_POR_DEFECTO },
+      ...COSTOS_POR_DEFECTO,
+      ...parametros,
+    };
   };
   const apertura: EdicionDto = {
     id: 'ed-1',
@@ -309,6 +320,10 @@ export function crearEdicion(b: CrearEdicionBody) {
     edadMinima: b.edadMinima ?? cat.edadMinima,
     edadMaxima: b.edadMaxima ?? cat.edadMaxima,
     reglasModalidad,
+    reglasSanciones: b.reglasSanciones,
+    reglasFinancieras: b.reglasFinancieras,
+    costoInscripcion: b.costoInscripcion,
+    costoArbitraje: b.costoArbitraje,
     ...parametros,
     archivadaEn: null,
     creadoPor: DUENO,
@@ -334,7 +349,10 @@ export function actualizarEdicion(eid: string, b: ActualizarEdicionBody) {
       b.rosterMax !== undefined ||
       b.duracionTiempoRegular !== undefined ||
       b.duracionTiempoEliminatoria !== undefined ||
-      b.limiteFaltasAcumuladas !== undefined,
+      b.limiteFaltasAcumuladas !== undefined ||
+      b.reglasSanciones !== undefined ||
+      b.reglasFinancieras !== undefined,
+    costos: b.costoInscripcion !== undefined || b.costoArbitraje !== undefined,
   } as const;
   for (const [campo, quiere] of Object.entries(toca)) {
     if (quiere && !permitido.has(campo as never))
@@ -364,6 +382,10 @@ export function actualizarEdicion(eid: string, b: ActualizarEdicionBody) {
     fechaFinEstimada: b.fechaFinEstimada === undefined ? e.fechaFinEstimada : b.fechaFinEstimada,
     modalidad,
     reglasModalidad,
+    reglasSanciones: b.reglasSanciones ?? e.reglasSanciones,
+    reglasFinancieras: b.reglasFinancieras ?? e.reglasFinancieras,
+    costoInscripcion: b.costoInscripcion ?? e.costoInscripcion,
+    costoArbitraje: b.costoArbitraje ?? e.costoArbitraje,
     ...parametros,
   });
   return clonar(e);

@@ -96,7 +96,7 @@ describe('estados de la liga', () => {
 describe('campos editables por estado (tarea 2.5)', () => {
   it('en configuración se edita todo', () => {
     expect([...camposEditables('CONFIGURACION')].sort()).toEqual(
-      ['fechaFinEstimada', 'fechaInicio', 'modalidad', 'nombre', 'reglas', 'slug'].sort(),
+      ['costos', 'fechaFinEstimada', 'fechaInicio', 'modalidad', 'nombre', 'reglas', 'slug'].sort(),
     );
   });
   it('con inscripciones abiertas el slug y la fecha de inicio quedan fijos', () => {
@@ -106,9 +106,9 @@ describe('campos editables por estado (tarea 2.5)', () => {
     expect(c.has('reglas')).toBe(true);
   });
   it.each(['EN_CURSO', 'EN_ELIMINATORIAS', 'PAUSADA'] as const)(
-    'en %s solo se edita nombre y fin estimado',
+    'en %s solo se editan nombre, fin estimado y costos',
     (e) => {
-      expect([...camposEditables(e)].sort()).toEqual(['fechaFinEstimada', 'nombre']);
+      expect([...camposEditables(e)].sort()).toEqual(['costos', 'fechaFinEstimada', 'nombre']);
     },
   );
   it('finalizada no admite nada', () => {

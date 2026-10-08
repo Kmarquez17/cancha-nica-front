@@ -11,8 +11,8 @@
 | Categorías | `/admin/categorias` | Catálogo del cliente: crear, editar, archivar y restaurar. Nombre único sin importar mayúsculas, tildes ni guiones |
 | Ligas | `/admin/ligas` | Listado con estado (píldora con icono y texto), modalidad y categoría; ver archivadas |
 | Nueva liga | `/admin/ligas/nueva` | Categoría + modalidad. Al elegir modalidad se **carga el preset** y se pueden ajustar las reglas |
-| Detalle de liga | `/admin/ligas/[id]` | Cambio de estado con **reporte de requisitos**, «forzar» solo para el dueño, **finalizar con confirmación irreversible**; edición con campos bloqueados según el estado; archivar y restaurar (solo en configuración) |
-| Mesas | `/admin/mesas` | Hasta 6. Alta con **PIN visible una sola vez** (copiar PIN, copiar mensaje, WhatsApp), resetear PIN, desbloquear, activar/desactivar, **ligas que puede operar**, «bloqueada hasta…» |
+| Detalle de liga | `/admin/ligas/[id]` | Cambio de estado con **reporte de requisitos**, «forzar» solo para el dueño, **finalizar con confirmación irreversible**; edición con campos bloqueados según el estado (**sanciones y multas, bloqueo por deuda y costos incluidos**); archivar y restaurar (solo en configuración) |
+| Mesas | `/admin/mesas` | Hasta 6. Alta con **PIN visible una sola vez** (copiar PIN, copiar mensaje, WhatsApp), resetear PIN, desbloquear, activar/desactivar, **ligas que puede operar**, **cambiar el nombre del operador**, «bloqueada hasta…» |
 | Login de mesa | `/mesa/<slug-del-cliente>` | Usuario `MESAn` + PIN de 6 dígitos, controles grandes. Misma respuesta ante usuario inexistente, PIN errónea o mesa inactiva |
 | Inicio de la mesa | `/mesa` | `GET /mesa/me`: las ligas asignadas. Los partidos llegan con el calendario (Fase 5) y la consola (Fase 7) |
 
@@ -44,18 +44,18 @@ Usuario de prueba de la mesa (solo MSW): `MESA1` / `123456` en `/mesa/sopa`. `ME
 - **Minutos en pantalla, milisegundos en el API** para la inferioridad de la roja.
 - **El PIN nunca se guarda:** vive solo en el estado del diálogo que lo muestra; las mutaciones usan `gcTime: 0`. Al cerrar desaparece y no hay forma de recuperarlo (hay que resetear).
 - **Estados y accesos con forma + icono + texto**, nunca solo color (tokens de marca, contraste verificado).
+- **Sanciones, finanzas y costos:** los valores por defecto salen de `PLAN_BACKEND` 4.12 y H15 (`src/features/ediciones/lib/sanciones.ts`). Se ajustan hasta que la liga arranque; los **costos** se pueden cambiar siempre (aplican a cargos futuros). Los importes viajan como texto con dos decimales («12.50») y se acepta la coma al escribir. El marcador del W.O. se escribe como «goles al ganador» (el otro es siempre 0).
 - **Mesa en AAA:** la pantalla de login y el inicio de la mesa usan el perfil `.mesa` de la marca (7:1).
 
 ## 5. Pruebas
 
 - **Vitest:** presets e invariantes (cada una por separado y en su campo), transiciones, campos editables por estado, normalización de nombres; la base simulada (categorías, ligas, estados, forzar y 403, finalizar con confirmación, pausa, una sola liga abierta, 7.ª mesa, PIN, login indistinguible, alcance al instante); proxy de la mesa; diálogo del PIN y estados de acceso.
-- **Recorrido en navegador** con MSW (API falsa solo para la sesión): crear categoría y el error de duplicado, nueva liga con preset y error de invariante, requisitos de arranque, forzar, reglas congeladas en juego, alta de mesa con PIN y copiar, 6 mesas, login de mesa con PIN errónea y correcto. Hecho a mano; **no es un test automatizado del repo**.
+- **E2E automatizado sin backend (`pnpm test:e2e:mock`, 18 pruebas, también en el CI):** una API falsa (`tests/e2e-mock/api-falsa.mjs`) responde solo la sesión del admin y MSW simula lo nuevo. Cubre categorías (duplicado, archivar), ligas (preset, invariante rota, valores por defecto del plan, importes, requisitos y forzar, reglas congeladas, costos editables en juego, finalizar con confirmación, archivar), mesas (PIN una sola vez y copiar, límite de 6, cambiar operador, desbloquear) y login de mesa (PIN errónea, otro cliente, bloqueada, validación). Cada prueba parte de los datos de ejemplo.
 
 ## 6. Qué NO se hizo (a propósito)
 
-- **Reglas de sanción y financieras:** el plan las precarga en la edición y su efecto llega en las Fases 6 y 7. Falta su pantalla; sus valores por defecto (4.12 y H15) no están en el plan del front.
-- **Renombrar el operador de una mesa:** existe el endpoint (`PATCH`), falta el control.
+- **Efecto de las sanciones y multas:** solo se configuran; se aplican en las Fases 6 y 7.
 - **Color de la liga en la mesa y la página pública:** el componente `TemaCliente` ya existe; se conecta cuando esas pantallas lean el cliente.
 - **Lectura de plataforma** (`/plataforma/organizaciones/:id/categorias|ediciones|mesas`) y los conteos de la ficha: dependen del contrato.
 - **Guard de servidor de la mesa** (`GET /mesa/me` en el layout, como en los demás portales): hoy `/mesa` es un componente de cliente porque no hay API real.
-- **E2E automatizado contra la API real:** llega con el backend de la Fase 2.
+- **E2E contra la API real:** llega con el backend de la Fase 2 (`pnpm test:e2e:api`). El E2E con MSW se retira entonces.

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { KeyRound, Lock, LockOpen, Plus, Power, Trophy } from 'lucide-react';
+import { KeyRound, Lock, LockOpen, Pencil, Plus, Power, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEdiciones } from '@/features/ediciones/api';
 import type { MesaConPinDto, MesaDto } from '@/features/ediciones/tipos';
@@ -56,6 +56,7 @@ export function MesasLista() {
   const [conPin, setConPin] = useState<{ mesa: MesaConPinDto; reseteo: boolean } | null>(null);
   const [aResetear, setAResetear] = useState<MesaDto | null>(null);
   const [alcance, setAlcance] = useState<MesaDto | null>(null);
+  const [renombrando, setRenombrando] = useState<MesaDto | null>(null);
   const actualizar = useActualizarMesa();
   const desbloquear = useDesbloquearMesa();
   const lleno = (data?.length ?? 0) >= MAX_MESAS;
@@ -151,6 +152,10 @@ export function MesasLista() {
                 <p className="text-xs text-muted-foreground">Registrada por {m.creadoPor.nombre}</p>
 
                 <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setRenombrando(m)}>
+                    <Pencil data-icon="inline-start" />
+                    Operador
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setAlcance(m)}>
                     <Trophy data-icon="inline-start" />
                     Ligas
@@ -197,6 +202,7 @@ export function MesasLista() {
         }}
       />
       <AlcanceDialog mesa={alcance} onCerrar={() => setAlcance(null)} />
+      <OperadorDialog mesa={renombrando} onCerrar={() => setRenombrando(null)} />
       <PinDialog
         mesa={conPin?.mesa ?? null}
         reseteo={conPin?.reseteo}
@@ -367,5 +373,68 @@ function AlcanceDialog({ mesa, onCerrar }: { mesa: MesaDto | null; onCerrar: () 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Quién opera la mesa: cambia solo el nombre (el usuario MESAn y el PIN no se tocan). */
+function OperadorDialog({ mesa, onCerrar }: { mesa: MesaDto | null; onCerrar: () => void }) {
+  return (
+    <Dialog open={mesa !== null} onOpenChange={(abierto) => !abierto && onCerrar()}>
+      <DialogContent>
+        {mesa ? <FormularioOperador key={mesa.id} mesa={mesa} onCerrar={onCerrar} /> : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormularioOperador({ mesa, onCerrar }: { mesa: MesaDto; onCerrar: () => void }) {
+  const actualizar = useActualizarMesa();
+  const [nombre, setNombre] = useState(mesa.nombreOperador ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const cambio = nombre.trim() !== (mesa.nombreOperador ?? '');
+
+  async function guardar(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await actualizar.mutateAsync({
+        id: mesa.id,
+        data: { nombreOperador: nombre.trim() || null },
+      });
+      toast.success('Operador actualizado.');
+      onCerrar();
+    } catch (err) {
+      setError(err instanceof ApiError ? mensajeDeError(err) : mensajeGenerico());
+    }
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Operador de {mesa.username}</DialogTitle>
+        <DialogDescription>
+          Es solo el nombre de quien lleva la mesa. El usuario y el PIN no cambian.
+        </DialogDescription>
+      </DialogHeader>
+      <form onSubmit={guardar} className="grid gap-4">
+        {error ? <AlertaError>{error}</AlertaError> : null}
+        <Campo
+          id="operador-nombre"
+          etiqueta="Nombre de quien opera"
+          ayuda="Déjalo vacío para quitarlo."
+        >
+          <Input
+            id="operador-nombre"
+            autoComplete="off"
+            maxLength={80}
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+        </Campo>
+        <Button type="submit" disabled={actualizar.isPending || !cambio}>
+          {actualizar.isPending ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </form>
+    </>
   );
 }

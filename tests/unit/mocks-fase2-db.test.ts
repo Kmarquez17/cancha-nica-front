@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { presetDe } from '@/features/ediciones/lib/reglas';
+import {
+  COSTOS_POR_DEFECTO,
+  FINANZAS_POR_DEFECTO,
+  SANCIONES_POR_DEFECTO,
+} from '@/features/ediciones/lib/sanciones';
 import * as db from '@/mocks/fase2/db';
 
 const codigo = (fn: () => unknown) => {
@@ -23,6 +28,9 @@ const cuerpoLiga = (
     modalidad,
     fechaInicio: '2027-01-10',
     reglasModalidad: reglas,
+    reglasSanciones: structuredClone(SANCIONES_POR_DEFECTO),
+    reglasFinancieras: { ...FINANZAS_POR_DEFECTO },
+    ...COSTOS_POR_DEFECTO,
     ...parametros,
   };
 };
@@ -83,6 +91,35 @@ describe('ligas', () => {
     expect(codigo(() => db.actualizarEdicion('ed-1', { modalidad: 'FUTBOL_9' }))).toBe(
       'MODALIDAD_BLOQUEADA',
     );
+  });
+  it('en juego las sanciones se congelan pero los costos se pueden cambiar', () => {
+    db.cambiarEstado('ed-1', { a: 'EN_CURSO', forzar: true });
+    expect(
+      db.actualizarEdicion('ed-1', { costoInscripcion: '25.00', costoArbitraje: '10.00' }),
+    ).toMatchObject({ costoInscripcion: '25.00', costoArbitraje: '10.00' });
+    const sanciones = { ...SANCIONES_POR_DEFECTO, multaRoja: '5.00' };
+    expect(codigo(() => db.actualizarEdicion('ed-1', { reglasSanciones: sanciones }))).toBe(
+      'EDICION_SOLO_LECTURA',
+    );
+    expect(
+      codigo(() =>
+        db.actualizarEdicion('ed-1', {
+          reglasFinancieras: { ...FINANZAS_POR_DEFECTO, bloquearEquipoPorDeudaArbitraje: true },
+        }),
+      ),
+    ).toBe('EDICION_SOLO_LECTURA');
+  });
+  it('antes de empezar las sanciones sí se ajustan', () => {
+    const sanciones = { ...SANCIONES_POR_DEFECTO, multaRoja: '5.00' };
+    expect(
+      db.actualizarEdicion('ed-1', { reglasSanciones: sanciones }).reglasSanciones.multaRoja,
+    ).toBe('5.00');
+  });
+  it('una liga nueva nace con los valores del plan', () => {
+    const l = db.crearEdicion(cuerpoLiga('cat-1', 'FUTBOL_9'));
+    expect(l.reglasSanciones).toEqual(SANCIONES_POR_DEFECTO);
+    expect(l.reglasFinancieras).toEqual(FINANZAS_POR_DEFECTO);
+    expect(l.costoInscripcion).toBe('0.00');
   });
   it('archivar solo en configuración', () => {
     expect(codigo(() => db.archivarEdicion('ed-1', true))).toBe('EDICION_SOLO_LECTURA');
