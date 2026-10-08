@@ -40,7 +40,7 @@ export function InvitarDuenoDialog({ organizacion, open, onOpenChange, onCreada 
           <DialogDescription>
             {pendiente
               ? 'Se creará un enlace nuevo y el enlace anterior dejará de funcionar.'
-              : `La persona que invites será la única dueña de ${organizacion.nombre}.`}
+              : `La persona que invites será la única con rol de dueño de la cuenta de ${organizacion.nombre}.`}
           </DialogDescription>
         </DialogHeader>
         <FormularioInvitar

@@ -18,7 +18,7 @@ export type AccionSesion =
 
 /**
  * Decide qué hacer con un error de la API que afecta a la sesión (puro, testeable):
- * - `ORG_BLOQUEADA` → pantalla de liga bloqueada del portal. NO se refresca ni se borran cookies.
+ * - `ORG_BLOQUEADA` → pantalla de cuenta bloqueada del portal. NO se refresca ni se borran cookies.
  * - `UNAUTHORIZED` (el refresh ya falló en el mutator) → login del portal.
  * Todo lo demás lo maneja quien llamó.
  */

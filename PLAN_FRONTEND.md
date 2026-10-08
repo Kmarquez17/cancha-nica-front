@@ -1,6 +1,6 @@
 # PLAN FRONTEND — Cancha Nica: plataforma de gestión de torneos de fútbol (futsal y campo)
 
-> **Estado:** Fase 0 (stack, decisiones y revisión de coherencia) CERRADA el 2026-10-05. Decisiones: F1–F16 + ajustes por H1–H19, R1–R10, M1–M8 (modalidades, 2026-10-06) y **R11 (plataforma multi-liga, 2026-10-07)** del backend. R11 añade un cuarto portal `plataforma` y el error `ORG_BLOQUEADA`; sus endpoints están **◇ pendientes de confirmar** (sección 13.8).
+> **Estado:** Fase 0 (stack, decisiones y revisión de coherencia) CERRADA el 2026-10-05. Decisiones: F1–F16 + ajustes por H1–H19, R1–R10, M1–M8 (modalidades, 2026-10-06) y **R11 (plataforma multi-liga, 2026-10-07)** y **R15 (modelo de cliente, Fase 1b, 2026-10-07)** del backend. R15 distingue **cliente** (la organización que da de alta Kevin, p. ej. SOPA) de **liga** (un torneo del cliente = `Edicion`). R11 añade un cuarto portal `plataforma` y el error `ORG_BLOQUEADA`; sus endpoints están **◇ pendientes de confirmar** (sección 13.8).
 > **Fuente funcional:** `especificacion_mvp_futsal.md`. Describe la modalidad **FUTSAL** (preset de referencia); las demás modalidades (M1–M8) se tratan en la sección **4.9** y llegan como datos de la edición, no como código aparte.
 > **Independencia:** este repo se entiende **solo**. Lo que asume de la API está en la sección **13** (contrato) y puede avanzar sin ella usando `docs/contrato/openapi.snapshot.json` y MSW. `PLAN_BACKEND.md` es el documento hermano y debe mantenerse alineado, pero no hace falta abrirlo para trabajar aquí. Ante contradicción, vale la **sección más reciente** (R11 > M > R > B > H > base).
 > **Uso:** este archivo va en la raíz del repo `cancha-nica-front` y es la fuente de la verdad. De él se derivan los planes por fase (`docs/fases/FASE_XX.md`).
@@ -89,7 +89,7 @@ El dueño de la app gestiona **N ligas** desde un panel propio. Todos los endpoi
 | Tema | Impacto en el front |
 |---|---|
 | Cuarto portal `plataforma` | Route group `(plataforma)`, login, layout y guard propios, cookies `at_plataforma` / `rt_plataforma` (refresh de 7 días). Cuenta única creada por seed: **sin** «olvidé mi contraseña» ni registro (se recupera por seed/CLI). Sin 2FA en el MVP. Ver 4.10 |
-| Panel de ligas | Listar, crear liga + invitar a su dueño, editar, bloquear y reactivar. La plataforma **no ve datos internos** de una liga: no hay enlace «entrar como admin» |
+| Panel de clientes | Listar, crear cliente + invitar a su dueño, editar contacto, bloquear y reactivar. La plataforma **solo lee** lo que hace el cliente: no hay enlace «entrar como admin» (ver «R15» abajo) |
 | Invitación del dueño | `INVITACION_OWNER` (7 días). El panel muestra el enlace **una sola vez** con «Copiar» y «WhatsApp» (`wa.me` con el teléfono del invitado), más «Reenviar» (anula el anterior). Pantalla pública de aceptar invitación y poner contraseña. Ver 4.10 |
 | `ORG_BLOQUEADA` | Dar de baja = bloquear. Corte inmediato en admin, delegado y mesa: pantalla «liga no disponible» por portal, sin bucles de refresh y sin perder la cola de la mesa. Ver 4.2.1 |
 | `/public` de liga bloqueada | La API responde 404; el front muestra «liga no disponible» y no reintenta. Ver 4.6 |
@@ -142,14 +142,15 @@ cancha-nica-front/
    ├─ middleware.ts (o proxy.ts)
    ├─ app/                   ← SOLO rutas, layouts y composición
    │  ├─ (public)/liga/[orgSlug]/[edicionSlug]/{page,tabla,calendario,goleo,llaves,partido/[id]}
-   │  ├─ (plataforma)/plataforma/{login, (panel)/ligas/{page, nueva, [id]}}   (R11)
+   │  ├─ (plataforma)/plataforma/{login, (panel)/clientes/{page, nuevo, [id]}}   (R11/R15)
    │  ├─ (admin)/admin/{login, aceptar-invitacion, bloqueada, (panel)/...}
    │  ├─ (delegado)/delegado/{login, bloqueada, (app)/...}
    │  ├─ (mesa)/mesa/{bloqueada, [edicionSlug]/{login, (app)/...}}
    │  ├─ layout.tsx · globals.css · manifest.ts
    ├─ features/              ← una carpeta por dominio
    │  ├─ auth/               (formularios de login, sesión, refresh)
-   │  ├─ plataforma/         (R11: ligas, invitación del dueño)
+   │  ├─ plataforma/         (R11/R15: clientes, ficha de solo lectura, invitación del dueño)
+   │  ├─ configuracion/      (R15: configuración regional del cliente, portal admin)
    │  ├─ ediciones/ · mesas/ · clubes/ · equipos/ · delegados/
    │  ├─ roster/             (alta por cédula, bajas, traspasos)
    │  ├─ fixture/ · posiciones/ · goleo/
@@ -245,15 +246,19 @@ La edición trae `modalidad` (`FUTSAL`, `FUTBOL_9`, `FUTBOL_11`) y `reglasModali
 - **Plantilla del delegado:** los límites del roster salen de `rosterMin`/`rosterMax` de la edición, no de constantes (los mensajes dicen «máximo {n} jugadores»).
 - **Textos:** las cadenas dependientes de la modalidad llevan parámetros en `es.ts` (`{jugadoresEnCancha}`, `{minJugadoresPartido}`), sin números pegados.
 
-### 4.10 Plataforma multi-liga (R11)
+### 4.10 Plataforma y modelo de cliente (R11 + R15)
 
-**Portal `plataforma`** (`/plataforma`, escritorio). Login (email + contraseña) → `POST /auth/plataforma/login`; principal `GET /plataforma/me`; layout y guard propios con cookies `at_plataforma` / `rt_plataforma` y refresh en single-flight igual que los demás portales. Es una cuenta única creada por seed: sin registro, sin «olvidé mi contraseña» y sin 2FA. Los intentos fallidos se bloquean escalonadamente en la API (`INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `IP_LOCKED`, ya traducidos). **No ve datos internos de ninguna liga:** no hay «entrar como» ni listados de ediciones, equipos o jugadores.
+> **Vocabulario (R15).** **Cliente** = la organización que Kevin da de alta (API: `Organizacion`, `/plataforma/organizaciones`, `ORG_*`). **Liga** = un torneo de ese cliente (API: `Edicion`, Fase 2). Las rutas, `operationId`, DTO y códigos del API **no cambian**; solo las etiquetas. Las rutas del front de plataforma pasaron de `/plataforma/ligas` a **`/plataforma/clientes`** (`/nuevo`, `/[id]`) para no chocar con la palabra «liga». La pantalla pública `/liga/[orgSlug]/…` sigue igual (ahí «liga» es el torneo).
 
-**Panel de ligas** (`features/plataforma`):
-- **Listar:** tabla de ligas con nombre, slug, estado (`ACTIVA` / `BLOQUEADA`, con texto y no solo color), dueño (nombre, y si su invitación está pendiente, vencida o aceptada) y fecha de alta. Filtro por estado.
-- **Crear liga + invitar a su dueño:** un solo formulario (React Hook Form + Zod) con los datos de la liga y los del dueño (nombre, email, **teléfono E.164**, necesario para el botón de WhatsApp) y la opción «enviar también por email». Son **dos llamadas**: `crearOrganizacion` (nombre, slug —inmutable—; opcionales zona horaria, moneda, país, color, teléfono) y luego `invitarDueno` (`{ email, nombre, telefono?, enviarEmail? }`); al terminar se abre el diálogo de invitación (abajo).
-- **Editar:** `PATCH /plataforma/organizaciones/:id`. El cambio de dueño lo hace plataforma (hay un solo OWNER por liga): se modela como nueva invitación de dueño; el detalle exacto ◇.
-- **Bloquear** (`POST …/bloquear`, **`motivo` obligatorio de 3–500 caracteres**): diálogo de confirmación que explica el efecto («sus usuarios pierden el acceso de inmediato y su sitio público deja de verse; no se borra nada»). **Reactivar** (`POST …/reactivar`): confirmación simple. Ambos invalidan la lista. No existe «eliminar».
+**Portal `plataforma`** (`/plataforma`, escritorio). Login (email + contraseña) → `POST /auth/plataforma/login`; principal `GET /plataforma/me`; layout y guard propios con cookies `at_plataforma` / `rt_plataforma` y refresh en single-flight igual que los demás portales. Es una cuenta única creada por seed: sin registro, sin «olvidé mi contraseña» y sin 2FA. Los intentos fallidos se bloquean escalonadamente en la API (`INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `IP_LOCKED`, ya traducidos). **Solo lee** lo que hace el cliente (ficha de solo lectura); no hay «entrar como». Sus únicas escrituras son cinco: crear, editar contacto, invitar/reenviar al dueño, bloquear y reactivar. Si el API respondiera `PLATAFORMA_SOLO_LECTURA` (403) sería un error de programación y se muestra como error inesperado con código de soporte.
+
+**Panel de clientes** (`features/plataforma`):
+- **Listar:** tabla de clientes con nombre, slug, estado (`ACTIVA` / `BLOQUEADA`, con texto y no solo color), dueño (nombre, y si su invitación está pendiente, vencida o aceptada) y fecha de alta. Filtro por estado.
+- **Crear cliente + invitar a su dueño:** un solo formulario (React Hook Form + Zod) con los datos del cliente, una configuración inicial opcional (zona horaria, moneda, país, color) y los del dueño (nombre, email, **teléfono E.164**, necesario para el botón de WhatsApp) y la opción «enviar también por email». Son **dos llamadas**: `crearOrganizacion` (nombre, slug —inmutable—; opcionales zona horaria, moneda, país, color, teléfono) y luego `invitarDueno` (`{ email, nombre, telefono?, enviarEmail? }`); al terminar se abre el diálogo de invitación (abajo).
+- **Editar contacto (⚠ cambio rompedor R15):** `PATCH /plataforma/organizaciones/:id` acepta **solo `nombre` y `telefonoContacto`**; enviar `zonaHoraria`, `moneda`, `pais` o `colorPrimario` responde 400. Esos cuatro se indican al **crear** y después los edita el dueño o un admin (abajo). El `slug` no cambia. El cambio de dueño lo hace plataforma (un solo OWNER por cliente): nueva invitación de dueño.
+- **Ficha de cliente (solo lectura):** `getOrganizacion` devuelve `ClienteFichaDto` = datos y estado, motivo del bloqueo, dueño, invitación del dueño (con «Reenviar»), **tabla de admins** (nombre, correo, estado `ACTIVO`/`INACTIVO`/`INVITACION_PENDIENTE`, «desde» y, si está pendiente, cuándo vence), la configuración regional (solo texto) y **fichas de conteos**. Los conteos `null`/ausentes se muestran «—» con «Aún no disponible», **nunca 0**. Categorías, Ligas, Mesas, Delegados y Equipos son espacios preparados: se llenan solos cuando su conteo deja de ser `null` (Fases 2 y 3); los listados para plataforma (`GET /plataforma/organizaciones/:id/{categorias,ediciones,mesas,delegados,equipos}`) son ◇ y **no se construyen todavía**. «Admins» cuenta cuentas; una invitación pendiente va en «Invitaciones de admin pendientes».
+- **Plataforma ve la ficha de un cliente bloqueado** (con su motivo) y puede reactivarlo. Las escrituras devuelven un `OrganizacionDto` sin `admins`/`conteos`, así que el front **invalida** la ficha en vez de pisarla con `setQueryData`.
+- **Bloquear** (`POST …/bloquear`, **`motivo` obligatorio de 3–500 caracteres**): diálogo de confirmación que explica el efecto (dueño, admins, delegados y mesas pierden el acceso de inmediato y las ligas dejan de verse en lo público; no se borra nada). **Reactivar** (`POST …/reactivar`): confirmación simple. Ambos invalidan la lista. No existe «eliminar».
 - Textos y confirmaciones en `es.ts`; cada acción queda auditada en el backend (`TipoActor.PLATAFORMA`), el front no la registra.
 
 **Invitación del dueño (diálogo del panel)** — `POST /plataforma/organizaciones/:id/invitacion` devuelve `enlace` y `waMeUrl` **una sola vez**; el token en claro no vuelve a existir.
@@ -287,10 +292,10 @@ La edición trae `modalidad` (`FUTSAL`, `FUTBOL_9`, `FUTBOL_11`) y `reglasModali
 Home de la edición · Tabla de posiciones · Calendario y resultados · Goleo · Llaves de eliminatorias · Partido (acta y en vivo por SSE) · «Liga no disponible» (liga bloqueada o inexistente, R11).
 
 ### Plataforma (escritorio) — `/plataforma` (R11)
-Login · Ligas (lista con filtro por estado) · Nueva liga + invitar al dueño · Detalle/editar liga · Bloquear / reactivar · Diálogo de invitación (copiar, WhatsApp, reenviar). Sin acceso a datos internos de las ligas.
+Login · **Clientes** (lista con filtro por estado) · Nuevo cliente + invitar al dueño · **Ficha de cliente de solo lectura** (datos, dueño, invitación con «Reenviar», admins, conteos, espacios para Categorías/Ligas/Mesas/Delegados) · Editar contacto (solo nombre y teléfono) · Bloquear / reactivar · Diálogo de invitación (copiar, WhatsApp, reenviar).
 
 ### Admin (escritorio) — `/admin`
-Login · Aceptar invitación (también la del dueño, R11) · «Liga no disponible» (`ORG_BLOQUEADA`) · Dashboard de la edición activa · Ediciones (lista, crear **eligiendo modalidad y ajustando su preset**, configurar, cambiar estado) · Mesas (3: PIN, bloquear, resetear) · Clubes y delegados · Equipos de la edición · Jugadores/rosters (lectura y excepciones) · Fixture (generar y editar) · Partidos (detalle, **reabrir acta**) · Finanzas (inscripción, arbitraje, multas) · Sanciones · Eliminatorias · Renovación de temporada (checklist) · Auditoría · Usuarios admin.
+Login · Aceptar invitación (también la del dueño, R11) · **Configuración del cliente** (zona horaria, moneda, país y color; la ven y cambian el dueño **y** los admins; R15) · «Cuenta del cliente bloqueada» (`ORG_BLOQUEADA`) · Dashboard de la edición activa · Ediciones (lista, crear **eligiendo modalidad y ajustando su preset**, configurar, cambiar estado) · Mesas (3: PIN, bloquear, resetear) · Clubes y delegados · Equipos de la edición · Jugadores/rosters (lectura y excepciones) · Fixture (generar y editar) · Partidos (detalle, **reabrir acta**) · Finanzas (inscripción, arbitraje, multas) · Sanciones · Eliminatorias · Renovación de temporada (checklist) · Auditoría · Usuarios admin.
 
 ### Delegado (móvil) — `/delegado`
 Login teléfono + PIN · «Liga no disponible» · Selector de equipo · Inicio (saldos, próximo partido, posición) · Plantilla (lista, alta por cédula con precarga, baja, traspaso; **sin botón eliminar**; se oculta en `EN_ELIMINATORIAS`) · Calendario y resultados · Tabla · Finanzas del equipo.
@@ -429,6 +434,7 @@ Solo quedan las **realmente abiertas**; el resto se resolvió en F1–F16 y en l
 3. Todo cambio que toque el contrato con la API se refleja en `PLAN_BACKEND.md` (ajustes `Bn`) y se regenera el cliente con Orval.
 
 ### Historial
+- 2026-10-07 — **R15 · Fase 1b (modelo de cliente):** «Liga» pasa a «Cliente» en el panel de plataforma (rutas del front `/plataforma/clientes`); pantalla de bloqueo «cuenta del cliente bloqueada»; **ficha de cliente de solo lectura** (admins, conteos con «—» para `null`, espacios preparados); editar contacto solo nombre y teléfono (cambio rompedor); **Configuración del cliente** en el portal admin (dueño y admins); `PLATAFORMA_SOLO_LECTURA` como error inesperado. Pendiente del backend: listados de solo lectura (Fases 2 y 3) y mesas a nivel de cliente (`/mesa/<slug-del-cliente>`, Fase 2).
 - 2026-10-07 — **R11 · Plataforma multi-liga:** cuarto portal `plataforma` (cookies `at_/rt_plataforma`, sin «olvidé mi contraseña») con panel de ligas (listar, crear + invitar al dueño, editar, bloquear, reactivar); diálogo de invitación con enlace de una sola vez, copiar, `wa.me` y reenviar; pantalla pública de aceptar invitación del dueño; manejo global de `ORG_BLOQUEADA` (pantalla «liga no disponible» por portal, sin bucles de refresh, cola de la mesa pausada y conservada); 404 público de liga bloqueada. Endpoints ◇ pendientes (13.8): el cliente no se regenera hasta tener el snapshot de la Fase 1 del API. Cambian las fases 1, 7 y 8 (y la 10 en alcance). Sección 11/F1: sesión y «recordarme» resueltos por el backend.
 - 2026-10-06 — **Cancha Nica y modalidades:** el producto se llama Cancha Nica; repo `cancha-nica-front`. Ajustes M1–M8 del backend: sección 4.9 (la edición trae `modalidad` y `reglasModalidad`; motor, mesa, admin, público y plantilla leen parámetros, nunca el nombre de la modalidad), selector de modalidad con preset en el admin, reloj `REGRESIVO`/`PROGRESIVO`, faltas opcionales, textos parametrizados. Fases 2, 4 y 7 actualizadas.
 - 2026-10-05 — Desempate corregido en el backend (H16): vuelve el enfrentamiento directo. Sin cambios de alcance en las pantallas.
@@ -474,7 +480,9 @@ Rutas `/public/organizaciones/:orgSlug/ediciones/:edicionSlug/{tabla,partidos,go
 - La lista de `code` nuevos.
 - Cualquier ruta ◇ confirmada o renombrada.
 
-### 13.8 Plataforma multi-liga (R11) — ✅ CONFIRMADO con el snapshot de la Fase 1 (2026-10-07)
+### 13.8 Plataforma y cliente (R11 + R15) — ✅ CONFIRMADO con los snapshots de las fases 1 y 1b (2026-10-07)
+
+> **Fase 1b (R15):** `getOrganizacion` → `ClienteFichaDto` (aditivo: + `admins[]` y `conteos`); `actualizarOrganizacion` → solo `nombre` y `telefonoContacto` (⚠ rompedor); nuevos `getAdminOrganizacion` / `actualizarAdminOrganizacion` (`GET|PATCH /admin/organizacion`, dueño y admin, solo `zonaHoraria`, `moneda`, `pais`, `colorPrimario`); nuevo código `PLATAFORMA_SOLO_LECTURA` (403). Detalle en `docs/contrato/FRONT_FASE_01B.md`.
 
 > El cliente ya se regeneró (`pnpm api:generate`). Fuente: `docs/contrato/openapi.snapshot.json` y `docs/contrato/FRONT_FASE_01.md`. La tabla de abajo se conserva como registro de lo que se asumió; **lo que vale es el snapshot**. Diferencias respecto a lo asumido: rutas públicas `/aceptar-invitacion` y `/restablecer-contrasena` en la raíz; `ORG_BLOQUEADA` = 403 y **no** se borran cookies; `bloquear` exige `motivo`; aceptar invitación abre sesión; no hay `GET` de previsualización; el refresh anterior sigue válido 10 s.
 Endpoints que el front asume y **no genera todavía** (el cliente de Orval se regenera solo cuando exista el `docs/contrato/openapi.snapshot.json` de la Fase 1 del API; hoy solo trae `/ping`):

@@ -9,6 +9,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     '.next/**',
+    '.next-e2e/**', // build del E2E contra la API real (playwright.api.config.ts)
     'out/**',
     'build/**',
     'next-env.d.ts',

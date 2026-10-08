@@ -15,19 +15,19 @@ import { EstadoBadge } from './estado-badge';
 
 const POR_PAGINA = 20;
 
-function EstadoInvitacion({ liga }: { liga: OrganizacionDto }) {
-  if (liga.owner) return <span>{liga.owner.nombre}</span>;
-  if (liga.invitacionOwner) {
+function EstadoDueno({ cliente }: { cliente: OrganizacionDto }) {
+  if (cliente.owner) return <span>{cliente.owner.nombre}</span>;
+  if (cliente.invitacionOwner) {
     return (
       <span className="text-muted-foreground">
-        Invitación pendiente · vence {fechaCorta(liga.invitacionOwner.expiraEn)}
+        Invitación pendiente · vence {fechaCorta(cliente.invitacionOwner.expiraEn)}
       </span>
     );
   }
   return <span className="text-muted-foreground">Sin dueño</span>;
 }
 
-export function LigasLista() {
+export function ClientesLista() {
   const [estado, setEstado] = useState<EstadoOrganizacion | ''>('');
   const [busqueda, setBusqueda] = useState('');
   const [q, setQ] = useState('');
@@ -46,11 +46,11 @@ export function LigasLista() {
   return (
     <section className="grid gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Ligas</h1>
+        <h1 className="text-2xl font-semibold">Clientes</h1>
         <Button asChild>
-          <Link href="/plataforma/ligas/nueva">
+          <Link href="/plataforma/clientes/nuevo">
             <Plus data-icon="inline-start" />
-            Nueva liga
+            Nuevo cliente
           </Link>
         </Button>
       </div>
@@ -69,7 +69,7 @@ export function LigasLista() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre o slug"
-          aria-label="Buscar ligas"
+          aria-label="Buscar clientes"
           className="max-w-xs"
         />
         <select
@@ -81,9 +81,9 @@ export function LigasLista() {
           }}
           className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
         >
-          <option value="">Todas</option>
-          <option value="ACTIVA">Activas</option>
-          <option value="BLOQUEADA">Bloqueadas</option>
+          <option value="">Todos</option>
+          <option value="ACTIVA">Activos</option>
+          <option value="BLOQUEADA">Bloqueados</option>
         </select>
         <Button type="submit" variant="outline">
           Buscar
@@ -98,18 +98,18 @@ export function LigasLista() {
 
       {isLoading ? (
         <p role="status" className="text-muted-foreground">
-          Cargando ligas…
+          Cargando clientes…
         </p>
       ) : data && data.items.length === 0 ? (
-        <p className="text-muted-foreground">No hay ligas que coincidan.</p>
+        <p className="text-muted-foreground">No hay clientes que coincidan.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-left text-sm">
-            <caption className="sr-only">Ligas de la plataforma</caption>
+            <caption className="sr-only">Clientes de la plataforma</caption>
             <thead className="bg-muted/50 text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">
-                  Liga
+                  Cliente
                 </th>
                 <th scope="col" className="px-3 py-2 font-medium">
                   Estado
@@ -123,24 +123,26 @@ export function LigasLista() {
               </tr>
             </thead>
             <tbody>
-              {data?.items.map((liga) => (
-                <tr key={liga.id} className="border-t">
+              {data?.items.map((cliente) => (
+                <tr key={cliente.id} className="border-t">
                   <td className="px-3 py-2">
                     <Link
-                      href={`/plataforma/ligas/${liga.id}`}
+                      href={`/plataforma/clientes/${cliente.id}`}
                       className="font-medium underline-offset-4 hover:underline"
                     >
-                      {liga.nombre}
+                      {cliente.nombre}
                     </Link>
-                    <div className="text-xs text-muted-foreground">{liga.slug}</div>
+                    <div className="text-xs text-muted-foreground">{cliente.slug}</div>
                   </td>
                   <td className="px-3 py-2">
-                    <EstadoBadge estado={liga.estado} />
+                    <EstadoBadge estado={cliente.estado} />
                   </td>
                   <td className="px-3 py-2">
-                    <EstadoInvitacion liga={liga} />
+                    <EstadoDueno cliente={cliente} />
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{fechaCorta(liga.creadoEn)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {fechaCorta(cliente.creadoEn)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -159,7 +161,7 @@ export function LigasLista() {
             Anterior
           </Button>
           <span>
-            Página {pagina + 1} de {ultimaPagina + 1} · {total} ligas
+            Página {pagina + 1} de {ultimaPagina + 1} · {total} clientes
           </span>
           <Button
             variant="outline"

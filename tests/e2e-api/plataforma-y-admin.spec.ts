@@ -16,11 +16,11 @@ async function loginPlataforma(page: Page) {
   await page.getByLabel('Correo').fill(EMAIL!);
   await page.getByLabel('Contraseña').fill(PASSWORD!);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/plataforma\/ligas$/);
+  await expect(page).toHaveURL(/\/plataforma\/clientes$/);
 }
 
 async function crearLigaConInvitacion(page: Page, slug: string) {
-  await page.goto('/plataforma/ligas/nueva');
+  await page.goto('/plataforma/clientes/nuevo');
   await page.locator('#nombre').fill(`Liga E2E ${slug}`);
   await expect(page.locator('#slug')).toHaveValue(/^liga-e2e-/); // el slug se sugiere del nombre
   await page.locator('#slug').fill(slug);
@@ -28,7 +28,7 @@ async function crearLigaConInvitacion(page: Page, slug: string) {
   await page.locator('#duenoEmail').fill(`${slug}@e2e.test`);
   await page.locator('#duenoTelefono').fill('+50588888888');
   await page.getByLabel('Enviar también la invitación por correo').uncheck();
-  await page.getByRole('button', { name: 'Crear liga e invitar al dueño' }).click();
+  await page.getByRole('button', { name: 'Crear cliente e invitar al dueño' }).click();
 
   const dialogo = page.getByRole('dialog', { name: 'Invitación creada' });
   await expect(dialogo).toBeVisible();
@@ -48,7 +48,7 @@ async function nuevoContexto(browser: Browser) {
 }
 
 test('rutas protegidas sin sesión redirigen al login de su portal', async ({ page }) => {
-  await page.goto('/plataforma/ligas');
+  await page.goto('/plataforma/clientes');
   await expect(page).toHaveURL(/\/plataforma\/login$/);
   await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin\/login$/);
@@ -63,7 +63,7 @@ test('login de plataforma: credenciales incorrectas muestran el mensaje', async 
   await expect(page).toHaveURL(/\/plataforma\/login$/);
 });
 
-test('crear liga, invitar al dueño, aceptar, bloquear (corte inmediato) y reactivar', async ({
+test('crear cliente, invitar al dueño, aceptar, bloquear (corte inmediato) y reactivar', async ({
   page,
   browser,
 }) => {
@@ -84,7 +84,7 @@ test('crear liga, invitar al dueño, aceptar, bloquear (corte inmediato) y react
 
   const { ruta } = await enlaceLocal(dialogo);
   await dialogo.getByRole('button', { name: 'Cerrar' }).last().click();
-  await expect(page).toHaveURL(/\/plataforma\/ligas\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/plataforma\/clientes\/[0-9a-f-]{36}$/);
   await expect(page.getByText('Invitación pendiente')).toBeVisible();
 
   // El dueño acepta en su propio navegador.
@@ -113,23 +113,25 @@ test('crear liga, invitar al dueño, aceptar, bloquear (corte inmediato) y react
   await expect(page.getByText('Dueña de Prueba')).toBeVisible();
 
   // Bloquear exige motivo y corta al instante.
-  await page.getByRole('button', { name: 'Bloquear liga' }).click();
-  await page.getByRole('button', { name: 'Bloquear liga' }).last().click();
+  await page.getByRole('button', { name: 'Bloquear cliente' }).click();
+  await page.getByRole('button', { name: 'Bloquear cliente' }).last().click();
   await expect(page.getByText('Explica el motivo')).toBeVisible();
   await page.getByLabel('Motivo').fill('Prueba E2E');
-  await page.getByRole('dialog').getByRole('button', { name: 'Bloquear liga' }).click();
-  await expect(page.getByText('Bloqueada', { exact: true }).first()).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Bloquear cliente' }).click();
+  await expect(page.getByText('Bloqueado', { exact: true }).first()).toBeVisible();
 
   await dueno.page.goto('/admin');
   await expect(dueno.page).toHaveURL(/\/admin\/bloqueada$/);
   await expect(
-    dueno.page.getByText('Esta liga está bloqueada. Contacta al administrador de la app.'),
+    dueno.page.getByText(
+      'La cuenta del cliente está bloqueada. Contacta al administrador de la app.',
+    ),
   ).toBeVisible();
 
   // Reactivar: la MISMA sesión vuelve a funcionar (las cookies no se borraron).
-  await page.getByRole('button', { name: 'Reactivar liga' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Reactivar liga' }).click();
-  await expect(page.getByText('Activa', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Reactivar cliente' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Reactivar cliente' }).click();
+  await expect(page.getByText('Activo', { exact: true }).first()).toBeVisible();
 
   await dueno.page.getByRole('button', { name: 'Reintentar' }).click();
   await expect(dueno.page).toHaveURL(/\/admin$/);
@@ -179,13 +181,13 @@ test('reenviar la invitación anula el enlace anterior', async ({ page, browser 
 
 test('slug duplicado se marca en el campo', async ({ page }) => {
   await loginPlataforma(page);
-  await page.goto('/plataforma/ligas/nueva');
+  await page.goto('/plataforma/clientes/nuevo');
   await page.locator('#nombre').fill('Duplicada');
   await page.locator('#slug').fill(`e2e-${sufijo}-a`);
   await page.locator('#duenoNombre').fill('Otra Persona');
   await page.locator('#duenoEmail').fill(`dup-${sufijo}@e2e.test`);
-  await page.getByRole('button', { name: 'Crear liga e invitar al dueño' }).click();
-  await expect(page.getByText('Ya existe una liga con ese identificador')).toBeVisible();
+  await page.getByRole('button', { name: 'Crear cliente e invitar al dueño' }).click();
+  await expect(page.getByText('Ya existe un cliente con ese identificador')).toBeVisible();
 });
 
 test('las sesiones de plataforma y admin no se pisan', async ({ page, browser }) => {
@@ -203,8 +205,8 @@ test('las sesiones de plataforma y admin no se pisan', async ({ page, browser })
   await page.context().addCookies(cookies.filter((c) => c.name.endsWith('_admin')));
   await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin$/);
-  await page.goto('/plataforma/ligas');
-  await expect(page).toHaveURL(/\/plataforma\/ligas$/);
+  await page.goto('/plataforma/clientes');
+  await expect(page).toHaveURL(/\/plataforma\/clientes$/);
   await dueno.ctx.close();
 });
 
@@ -237,4 +239,150 @@ test('access token vencido: el servidor redirige a /refresh, se renueva y vuelve
   await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin\/login$/);
   await ctx.close();
+});
+
+// ---------------------------------------------------------------- Fase 1b
+
+test('1b: ficha de solo lectura con admins y conteos; el admin configura el cliente; plataforma edita solo contacto', async ({
+  page,
+  browser,
+}) => {
+  const slug = `e2e-${sufijo}-b`;
+  const nombreOriginal = `Liga E2E ${slug}`;
+
+  // El dueño entra e invita a un admin (aún no hay pantalla de admins: se usa el API).
+  const dueno = await nuevoContexto(browser);
+  await dueno.page.goto('/admin/login');
+  await dueno.page.getByLabel('Correo').fill(`${slug}@e2e.test`);
+  await dueno.page.getByLabel('Contraseña').fill(CLAVE_DUENO);
+  await dueno.page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(dueno.page).toHaveURL(/\/admin$/);
+
+  const emailAdmin = `${slug}-admin@e2e.test`;
+  const invitar = await dueno.page.request.post('/api/admin/usuarios/invitar', {
+    data: { nombre: 'Admin de Ayuda', email: emailAdmin, enviarEmail: false },
+  });
+  expect(invitar.status()).toBe(201);
+  const rutaAdmin = new URL((await invitar.json()).enlace);
+
+  // Plataforma ve la ficha de solo lectura.
+  await loginPlataforma(page);
+  await page.getByRole('link', { name: nombreOriginal }).click();
+  await expect(page.getByRole('heading', { name: nombreOriginal })).toBeVisible();
+  await expect(page.getByText('Dueña de Prueba')).toBeVisible();
+
+  const fila = page.getByRole('row', { name: new RegExp(emailAdmin) });
+  await expect(fila).toContainText('Admin de Ayuda');
+  await expect(fila).toContainText('Invitación pendiente');
+  await expect(fila).toContainText('Vence');
+
+  // Conteos aún no disponibles: «—» y nunca 0.
+  for (const titulo of ['Categorías', 'Ligas', 'Mesas', 'Delegados', 'Equipos']) {
+    const tarjeta = page.getByText(titulo, { exact: true }).locator('xpath=..');
+    await expect(tarjeta).toContainText('—');
+    await expect(tarjeta).toContainText('Aún no disponible');
+  }
+  // El admin invitado aún no tiene cuenta: cuenta como invitación pendiente, no como admin.
+  // Las fichas son <dt>/<dd>; «Admins» también es un título de sección, por eso se filtra por <dt>.
+  const ficha = (titulo: string) =>
+    page
+      .locator('dt')
+      .filter({ hasText: new RegExp(`^${titulo}$`) })
+      .locator('xpath=..');
+  await expect(ficha('Admins')).toContainText('0');
+  await expect(ficha('Invitaciones de admin pendientes')).toContainText('1');
+
+  // Un ADMIN (no solo el dueño) acepta la invitación y configura el cliente.
+  const ayuda = await nuevoContexto(browser);
+  await ayuda.page.goto(`${rutaAdmin.pathname}${rutaAdmin.search}`);
+  await ayuda.page.getByLabel('Contraseña nueva').fill(CLAVE_DUENO);
+  await ayuda.page.getByLabel('Repite la contraseña').fill(CLAVE_DUENO);
+  await ayuda.page.getByRole('button', { name: 'Crear contraseña y entrar' }).click();
+  await expect(ayuda.page).toHaveURL(/\/admin$/);
+  await expect(ayuda.page.getByText('Admin de Ayuda · Admin')).toBeVisible();
+
+  await ayuda.page.getByRole('link', { name: 'Configuración' }).click();
+  await expect(ayuda.page).toHaveURL(/\/admin\/configuracion$/);
+  await expect(
+    ayuda.page.getByRole('heading', { name: 'Configuración del cliente' }),
+  ).toBeVisible();
+  // Nombre, slug y teléfono: solo lectura (los administra plataforma).
+  await expect(ayuda.page.getByText(slug, { exact: true })).toBeVisible();
+  await expect(ayuda.page.getByLabel('Nombre')).toHaveCount(0);
+
+  await ayuda.page.getByLabel('Moneda').fill('USD');
+  await ayuda.page.getByLabel('País').fill('CR');
+  await ayuda.page.getByRole('button', { name: 'Guardar configuración' }).click();
+  await expect(ayuda.page.getByText('Configuración guardada.')).toBeVisible();
+  await ayuda.page.reload();
+  await expect(ayuda.page.getByLabel('Moneda')).toHaveValue('USD');
+  await expect(ayuda.page.getByLabel('País')).toHaveValue('CR');
+
+  // El dueño también la ve (misma configuración).
+  await dueno.page.goto('/admin/configuracion');
+  await expect(dueno.page.getByLabel('Moneda')).toHaveValue('USD');
+
+  // Valores inválidos: se frenan en el formulario, sin llegar al API.
+  await ayuda.page.getByLabel('Zona horaria').fill('Marte/Olimpo');
+  await ayuda.page.getByRole('button', { name: 'Guardar configuración' }).click();
+  await expect(ayuda.page.getByText(/Zona horaria IANA válida/)).toBeVisible();
+
+  // Plataforma ve el cambio y el admin ya activo; edita SOLO contacto (sin 400).
+  await page.reload();
+  await expect(page.getByText('USD')).toBeVisible();
+  const filaActiva = page.getByRole('row', { name: new RegExp(emailAdmin) });
+  await expect(filaActiva).toContainText('Activo');
+  await expect(ficha('Admins')).toContainText('1');
+  await expect(ficha('Admins activos')).toContainText('1');
+  await expect(ficha('Invitaciones de admin pendientes')).toContainText('0');
+  await expect(page.getByLabel('Zona horaria')).toHaveCount(0); // plataforma no la edita
+
+  await page.getByLabel('Nombre').fill(`${nombreOriginal} editada`);
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByText('Cambios guardados.')).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: `${nombreOriginal} editada` })).toBeVisible();
+  // La edición de contacto no pisó la configuración que hizo el admin.
+  await expect(page.getByText('USD')).toBeVisible();
+
+  await dueno.ctx.close();
+  await ayuda.ctx.close();
+});
+
+test('1b: plataforma sigue viendo la ficha de un cliente bloqueado y el admin ve la cuenta bloqueada sin perder la sesión', async ({
+  page,
+  browser,
+}) => {
+  const slug = `e2e-${sufijo}-b`;
+  const ayuda = await nuevoContexto(browser);
+  await ayuda.page.goto('/admin/login');
+  await ayuda.page.getByLabel('Correo').fill(`${slug}-admin@e2e.test`);
+  await ayuda.page.getByLabel('Contraseña').fill(CLAVE_DUENO);
+  await ayuda.page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(ayuda.page).toHaveURL(/\/admin$/);
+
+  await loginPlataforma(page);
+  await page.getByRole('link', { name: new RegExp(`Liga E2E ${slug}`) }).click();
+  await page.getByRole('button', { name: 'Bloquear cliente' }).click();
+  await page.getByLabel('Motivo').fill('Prueba 1b');
+  await page.getByRole('dialog').getByRole('button', { name: 'Bloquear cliente' }).click();
+
+  // La ficha sigue abierta con el motivo; los admins y conteos se ven igual.
+  await expect(page.getByText(/Motivo: Prueba 1b/)).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(slug) }).first()).toBeVisible();
+
+  // El admin cae al instante, también en la pantalla de configuración.
+  await ayuda.page.goto('/admin/configuracion');
+  await expect(ayuda.page).toHaveURL(/\/admin\/bloqueada$/);
+  await expect(
+    ayuda.page.getByRole('heading', { name: 'Cuenta del cliente bloqueada' }),
+  ).toBeVisible();
+
+  // Reactivar: la misma sesión vuelve a funcionar (no se borraron cookies).
+  await page.getByRole('button', { name: 'Reactivar cliente' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Reactivar cliente' }).click();
+  await expect(page.getByText('Activo', { exact: true }).first()).toBeVisible();
+  await ayuda.page.getByRole('button', { name: 'Reintentar' }).click();
+  await expect(ayuda.page).toHaveURL(/\/admin$/);
+  await ayuda.ctx.close();
 });

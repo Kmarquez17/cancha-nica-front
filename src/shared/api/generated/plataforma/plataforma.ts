@@ -27,6 +27,7 @@ import type {
 import type {
   ActualizarOrganizacionDto,
   BloquearOrganizacionDto,
+  ClienteFichaDto,
   CrearOrganizacionDto,
   InvitacionCreadaDto,
   InvitarDuenoDto,
@@ -264,7 +265,7 @@ export const getListarOrganizacionesUrl = (params?: ListarOrganizacionesParams,)
 }
 
 /**
- * @summary Lista las ligas, con su dueño e invitación pendiente
+ * @summary Lista los clientes, con su dueño e invitación pendiente
  */
 export const listarOrganizaciones = async (params?: ListarOrganizacionesParams, options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionesPaginaDto> => {
 
@@ -335,7 +336,7 @@ export function useListarOrganizaciones<TData = Awaited<ReturnType<typeof listar
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Lista las ligas, con su dueño e invitación pendiente
+ * @summary Lista los clientes, con su dueño e invitación pendiente
  */
 
 export function useListarOrganizaciones<TData = Awaited<ReturnType<typeof listarOrganizaciones>>, TError = unknown>(
@@ -364,7 +365,7 @@ export const getCrearOrganizacionUrl = () => {
 }
 
 /**
- * @summary Crea una liga (la invitación del dueño es un paso aparte)
+ * @summary Crea un cliente (la invitación del dueño es un paso aparte)
  */
 export const crearOrganizacion = async (crearOrganizacionDto: CrearOrganizacionDto, options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionDto> => {
 
@@ -430,7 +431,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CrearOrganizacionMutationVariables = {data: CrearOrganizacionDto}
 
     /**
- * @summary Crea una liga (la invitación del dueño es un paso aparte)
+ * @summary Crea un cliente (la invitación del dueño es un paso aparte)
  */
 export const useCrearOrganizacion = <TError = ProblemDetailsDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof crearOrganizacion>>, TError,CrearOrganizacionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
@@ -451,11 +452,11 @@ export const useCrearOrganizacion = <TError = ProblemDetailsDto,
 }
 
 /**
- * @summary Ficha de una liga
+ * @summary Ficha del cliente (solo lectura): dueño, invitación, admins con su estado y conteos
  */
-export const getOrganizacion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionDto> => {
+export const getOrganizacion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<ClienteFichaDto> => {
 
-  return apiFetch<OrganizacionDto>(getGetOrganizacionUrl(id),
+  return apiFetch<ClienteFichaDto>(getGetOrganizacionUrl(id),
   {
     ...options,
     method: 'GET'
@@ -522,7 +523,7 @@ export function useGetOrganizacion<TData = Awaited<ReturnType<typeof getOrganiza
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Ficha de una liga
+ * @summary Ficha del cliente (solo lectura): dueño, invitación, admins con su estado y conteos
  */
 
 export function useGetOrganizacion<TData = Awaited<ReturnType<typeof getOrganizacion>>, TError = unknown>(
@@ -551,7 +552,7 @@ export const getActualizarOrganizacionUrl = (id: string,) => {
 }
 
 /**
- * @summary Edita los datos de una liga (el slug no se puede cambiar)
+ * @summary Edita el contacto de un cliente (solo nombre y teléfono)
  */
 export const actualizarOrganizacion = async (id: string,
     actualizarOrganizacionDto: ActualizarOrganizacionDto, options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionDto> => {
@@ -618,7 +619,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ActualizarOrganizacionMutationVariables = {id: string;data: ActualizarOrganizacionDto}
 
     /**
- * @summary Edita los datos de una liga (el slug no se puede cambiar)
+ * @summary Edita el contacto de un cliente (solo nombre y teléfono)
  */
 export const useActualizarOrganizacion = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarOrganizacion>>, TError,ActualizarOrganizacionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
@@ -639,7 +640,7 @@ export const useActualizarOrganizacion = <TError = unknown,
 }
 
 /**
- * @summary Bloquea la liga: corte inmediato de todos sus usuarios y /public oculto
+ * @summary Bloquea al cliente: corte inmediato en cascada de su dueño, admins, delegados y mesas, y /public oculto
  */
 export const bloquearOrganizacion = async (id: string,
     bloquearOrganizacionDto: BloquearOrganizacionDto, options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionDto> => {
@@ -706,7 +707,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type BloquearOrganizacionMutationVariables = {id: string;data: BloquearOrganizacionDto}
 
     /**
- * @summary Bloquea la liga: corte inmediato de todos sus usuarios y /public oculto
+ * @summary Bloquea al cliente: corte inmediato en cascada de su dueño, admins, delegados y mesas, y /public oculto
  */
 export const useBloquearOrganizacion = <TError = ProblemDetailsDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bloquearOrganizacion>>, TError,BloquearOrganizacionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
@@ -728,7 +729,7 @@ export const useBloquearOrganizacion = <TError = ProblemDetailsDto,
 
 /**
  * Anula la invitación pendiente anterior (si la hay). Devuelve el enlace UNA sola vez, con el botón de WhatsApp si se indicó teléfono, y opcionalmente envía el correo.
- * @summary Crea o reenvía la invitación del dueño de la liga
+ * @summary Crea o reenvía la invitación del dueño del cliente
  */
 export const invitarDueno = async (id: string,
     invitarDuenoDto: InvitarDuenoDto, options?: Parameters<typeof apiFetch>[1]): Promise<InvitacionCreadaDto> => {
@@ -795,7 +796,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type InvitarDuenoMutationVariables = {id: string;data: InvitarDuenoDto}
 
     /**
- * @summary Crea o reenvía la invitación del dueño de la liga
+ * @summary Crea o reenvía la invitación del dueño del cliente
  */
 export const useInvitarDueno = <TError = ProblemDetailsDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invitarDueno>>, TError,InvitarDuenoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
@@ -816,7 +817,7 @@ export const useInvitarDueno = <TError = ProblemDetailsDto,
 }
 
 /**
- * @summary Reactiva una liga bloqueada; sus sesiones y datos vuelven
+ * @summary Reactiva a un cliente bloqueado; sus sesiones y datos vuelven
  */
 export const reactivarOrganizacion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionDto> => {
 
@@ -868,7 +869,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ReactivarOrganizacionMutationVariables = {id: string}
 
     /**
- * @summary Reactiva una liga bloqueada; sus sesiones y datos vuelven
+ * @summary Reactiva a un cliente bloqueado; sus sesiones y datos vuelven
  */
 export const useReactivarOrganizacion = <TError = ProblemDetailsDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactivarOrganizacion>>, TError,ReactivarOrganizacionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}

@@ -5,7 +5,7 @@ export type Portal = (typeof PORTALES)[number];
 /** Portales con login ya disponible en la API (delegado y mesa llegan en las fases 3 y 2). */
 export const PORTALES_CON_REFRESH: readonly Portal[] = ['plataforma', 'admin'];
 
-/** Deduce el portal de una ruta del API (`/admin/me`) o de la app (`/admin/ligas`). */
+/** Deduce el portal de una ruta del API (`/admin/me`) o de la app (`/admin/ediciones`). */
 export function portalDeRuta(ruta: string): Portal | null {
   const primero = ruta.split('?')[0].split('/')[1];
   return (PORTALES as readonly string[]).includes(primero) ? (primero as Portal) : null;
@@ -14,7 +14,7 @@ export function portalDeRuta(ruta: string): Portal | null {
 export const rutaLogin = (portal: Portal) => (portal === 'mesa' ? '/' : `/${portal}/login`);
 export const rutaBloqueada = (portal: Portal) => `/${portal}/bloqueada`;
 export const rutaInicio = (portal: Portal) =>
-  portal === 'plataforma' ? '/plataforma/ligas' : `/${portal}`;
+  portal === 'plataforma' ? '/plataforma/clientes' : `/${portal}`;
 
 export function rutaRefresh(portal: Portal, next: string) {
   return `/${portal}/refresh?next=${encodeURIComponent(next)}`;

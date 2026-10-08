@@ -26,6 +26,6 @@ export default defineConfig({
     url: `http://localhost:${PUERTO}`,
     reuseExistingServer: false,
     timeout: 120_000,
-    env: { NEXT_PUBLIC_USE_MSW: 'false', API_URL },
+    env: { NEXT_PUBLIC_USE_MSW: 'false', API_URL, NEXT_DIST_DIR: '.next-e2e' },
   },
 });

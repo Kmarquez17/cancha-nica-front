@@ -58,7 +58,7 @@ describe('problemToApiError + es.ts', () => {
       expect(mensajeDeError(problemToApiError(400, { code }))).not.toContain('inesperado');
     }
     expect(mensajeDeError(problemToApiError(403, { code: 'ORG_BLOQUEADA' }))).toBe(
-      'Esta liga está bloqueada. Contacta al administrador de la app.',
+      'La cuenta del cliente está bloqueada. Contacta al administrador de la app.',
     );
   });
 
@@ -71,5 +71,11 @@ describe('problemToApiError + es.ts', () => {
     const err = problemToApiError(400, { code: 'PASSWORD_DEBIL', detail: 'No uses tu correo.' });
     expect(mensajeDeError(err)).toBe('No uses tu correo.');
     expect(esKnownCode('PASSWORD_DEBIL')).toBe(true);
+  });
+
+  it('PLATAFORMA_SOLO_LECTURA se trata como error inesperado, con código de soporte', () => {
+    const err = problemToApiError(403, { code: 'PLATAFORMA_SOLO_LECTURA', requestId: 'req-9' });
+    expect(esKnownCode('PLATAFORMA_SOLO_LECTURA')).toBe(false);
+    expect(mensajeDeError(err)).toBe('Ocurrió un error inesperado. Código de soporte: req-9.');
   });
 });

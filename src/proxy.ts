@@ -7,7 +7,7 @@ const PUBLICAS = new Set(['login', 'bloqueada', 'refresh', 'olvide-contrasena'])
 
 /**
  * Guard grueso por prefijo: solo mira si hay alguna cookie del portal. No valida permisos ni
- * sabe si la liga está bloqueada (eso lo resuelve el layout con `GET /<portal>/me`).
+ * sabe si el cliente está bloqueado (eso lo resuelve el layout con `GET /<portal>/me`).
  */
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

@@ -8,7 +8,10 @@ export default async function PanelAdminLayout({ children }: LayoutProps<'/admin
   return (
     <ShellEscritorio
       marca={yo.organizacion.nombre}
-      nav={[{ href: '/admin', etiqueta: 'Inicio' }]}
+      nav={[
+        { href: '/admin', etiqueta: 'Inicio' },
+        { href: '/admin/configuracion', etiqueta: 'Configuración' },
+      ]}
       usuario={`${yo.nombre} · ${yo.role === 'OWNER' ? 'Dueño' : 'Admin'}`}
       acciones={<CerrarSesionButton portal="admin" />}
     >

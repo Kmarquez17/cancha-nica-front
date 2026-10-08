@@ -25,10 +25,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActualizarConfigDto,
   AdminPrincipalDto,
   InvitacionCreadaDto,
   InvitarAdminDto,
   LoginDto,
+  OrganizacionConfigDto,
   ProblemDetailsDto
 } from '../models';
 
@@ -63,7 +65,7 @@ export const getGetAdminMeUrl = () => {
 }
 
 /**
- * @summary Cuenta y liga de la sesión de admin actual
+ * @summary Cuenta y cliente de la sesión de admin actual
  */
 export const getAdminMe = async ( options?: Parameters<typeof apiFetch>[1]): Promise<AdminPrincipalDto> => {
 
@@ -134,7 +136,7 @@ export function useGetAdminMe<TData = Awaited<ReturnType<typeof getAdminMe>>, TE
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Cuenta y liga de la sesión de admin actual
+ * @summary Cuenta y cliente de la sesión de admin actual
  */
 
 export function useGetAdminMe<TData = Awaited<ReturnType<typeof getAdminMe>>, TError = unknown>(
@@ -154,7 +156,195 @@ export function useGetAdminMe<TData = Awaited<ReturnType<typeof getAdminMe>>, TE
 
 
 
-export const getInvitarAdminUrl = () => {
+export const getGetAdminOrganizacionUrl = () => {
+
+
+
+
+  return `/admin/organizacion`
+}
+
+/**
+ * @summary Datos y configuración regional de mi cliente
+ */
+export const getAdminOrganizacion = async ( options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionConfigDto> => {
+
+  return apiFetch<OrganizacionConfigDto>(getGetAdminOrganizacionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminOrganizacionQueryKey = () => {
+    return [
+    `/admin/organizacion`
+    ] as const;
+    }
+
+
+export const getGetAdminOrganizacionQueryOptions = <TData = Awaited<ReturnType<typeof getAdminOrganizacion>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminOrganizacionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminOrganizacion>>> = ({ signal }) => getAdminOrganizacion({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminOrganizacion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAdminOrganizacionQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminOrganizacion>>>
+export type GetAdminOrganizacionQueryError = unknown
+
+
+export function useGetAdminOrganizacion<TData = Awaited<ReturnType<typeof getAdminOrganizacion>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminOrganizacion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminOrganizacion>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminOrganizacion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminOrganizacion<TData = Awaited<ReturnType<typeof getAdminOrganizacion>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminOrganizacion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminOrganizacion>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminOrganizacion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminOrganizacion<TData = Awaited<ReturnType<typeof getAdminOrganizacion>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Datos y configuración regional de mi cliente
+ */
+
+export function useGetAdminOrganizacion<TData = Awaited<ReturnType<typeof getAdminOrganizacion>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAdminOrganizacionQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getActualizarAdminOrganizacionUrl = () => {
+
+
+
+
+  return `/admin/organizacion`
+}
+
+/**
+ * Solo esos cuatro campos. El nombre, el slug y el teléfono de contacto los administra la plataforma.
+ * @summary Cambia la zona horaria, moneda, país o color de mi cliente
+ */
+export const actualizarAdminOrganizacion = async (actualizarConfigDto: ActualizarConfigDto, options?: Parameters<typeof apiFetch>[1]): Promise<OrganizacionConfigDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<OrganizacionConfigDto>(getActualizarAdminOrganizacionUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(actualizarConfigDto)
+  }
+);}
+
+
+
+
+
+export const getActualizarAdminOrganizacionMutationKey = () => ['actualizarAdminOrganizacion'] as const;
+
+export const getActualizarAdminOrganizacionMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarAdminOrganizacion>>, TError,ActualizarAdminOrganizacionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actualizarAdminOrganizacion>>, TError,ActualizarAdminOrganizacionMutationVariables, TContext> => {
+
+const mutationKey = getActualizarAdminOrganizacionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actualizarAdminOrganizacion>>, ActualizarAdminOrganizacionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  actualizarAdminOrganizacion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActualizarAdminOrganizacionMutationResult = NonNullable<Awaited<ReturnType<typeof actualizarAdminOrganizacion>>>
+    export type ActualizarAdminOrganizacionMutationBody = ActualizarConfigDto
+    export type ActualizarAdminOrganizacionMutationError = unknown
+    export type ActualizarAdminOrganizacionMutationVariables = {data: ActualizarConfigDto}
+
+    /**
+ * @summary Cambia la zona horaria, moneda, país o color de mi cliente
+ */
+export const useActualizarAdminOrganizacion = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarAdminOrganizacion>>, TError,ActualizarAdminOrganizacionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actualizarAdminOrganizacion>>,
+        TError,
+        ActualizarAdminOrganizacionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActualizarAdminOrganizacionMutationOptions(options), queryClient);
+    }
+    export const getInvitarAdminUrl = () => {
 
 
 
@@ -164,7 +354,7 @@ export const getInvitarAdminUrl = () => {
 
 /**
  * Crea (o reenvía, anulando la anterior de ese correo) una invitación de rol ADMIN válida 7 días. Devuelve el enlace una sola vez, con el botón de WhatsApp si se indicó teléfono.
- * @summary El dueño invita a un admin a su liga
+ * @summary El dueño invita a un admin a su cliente
  */
 export const invitarAdmin = async (invitarAdminDto: InvitarAdminDto, options?: Parameters<typeof apiFetch>[1]): Promise<InvitacionCreadaDto> => {
 
@@ -230,7 +420,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type InvitarAdminMutationVariables = {data: InvitarAdminDto}
 
     /**
- * @summary El dueño invita a un admin a su liga
+ * @summary El dueño invita a un admin a su cliente
  */
 export const useInvitarAdmin = <TError = ProblemDetailsDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invitarAdmin>>, TError,InvitarAdminMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
@@ -252,7 +442,7 @@ export const useInvitarAdmin = <TError = ProblemDetailsDto,
 
 /**
  * Emite las cookies at_admin y rt_admin (httpOnly). Los tokens no viajan en el cuerpo. Bloqueo escalonado por IP y por cuenta.
- * @summary Inicia sesión como dueño o admin de una liga
+ * @summary Inicia sesión como dueño o admin de un cliente
  */
 export const adminLogin = async (loginDto: LoginDto, options?: Parameters<typeof apiFetch>[1]): Promise<AdminPrincipalDto> => {
 
@@ -318,7 +508,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type AdminLoginMutationVariables = {data: LoginDto}
 
     /**
- * @summary Inicia sesión como dueño o admin de una liga
+ * @summary Inicia sesión como dueño o admin de un cliente
  */
 export const useAdminLogin = <TError = ProblemDetailsDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,AdminLoginMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}

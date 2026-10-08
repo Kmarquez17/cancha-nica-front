@@ -19,7 +19,9 @@ export const mensajesEs: Record<string, { message: string; field?: string }> = {
   },
   TOO_MANY_REQUESTS: { message: 'Demasiadas solicitudes. Inténtalo de nuevo en unos minutos.' },
   UNAUTHORIZED: { message: 'Tu sesión expiró. Inicia sesión de nuevo.' },
-  ORG_BLOQUEADA: { message: 'Esta liga está bloqueada. Contacta al administrador de la app.' },
+  ORG_BLOQUEADA: {
+    message: 'La cuenta del cliente está bloqueada. Contacta al administrador de la app.',
+  },
   TOKEN_INVALIDO_O_EXPIRADO: {
     message: 'Este enlace ya no es válido. Pide uno nuevo a quien te invitó.',
   },
@@ -27,11 +29,11 @@ export const mensajesEs: Record<string, { message: string; field?: string }> = {
 
   // Plataforma
   ORG_SLUG_DUPLICATED: {
-    message: 'Ya existe una liga con ese identificador (slug).',
+    message: 'Ya existe un cliente con ese identificador (slug).',
     field: 'slug',
   },
-  ORG_ESTADO_INVALIDO: { message: 'La liga ya está en ese estado. Actualiza la lista.' },
-  ORG_YA_TIENE_OWNER: { message: 'Esta liga ya tiene un dueño.' },
+  ORG_ESTADO_INVALIDO: { message: 'El cliente ya está en ese estado. Actualiza la lista.' },
+  ORG_YA_TIENE_OWNER: { message: 'Este cliente ya tiene un dueño.' },
 
   // Transporte
   VALIDATION_ERROR: { message: 'Revisa los datos del formulario.' },

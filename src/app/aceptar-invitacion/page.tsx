@@ -12,7 +12,7 @@ export default function AceptarInvitacionPage() {
   return (
     <TarjetaAcceso
       titulo="Crea tu contraseña"
-      descripcion="Te invitaron a administrar una liga en Cancha Nica."
+      descripcion="Te invitaron a administrar una cuenta en Cancha Nica."
     >
       <DefinirPasswordForm modo="invitacion" />
     </TarjetaAcceso>

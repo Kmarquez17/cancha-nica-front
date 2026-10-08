@@ -16,12 +16,12 @@ import { Button } from '@/shared/ui/button';
 import { AlertaError, Campo } from '@/shared/ui/campo';
 import { Input } from '@/shared/ui/input';
 import { aE164, slugDeNombre } from '../lib/formato';
-import { nuevaLigaSchema, vacioAUndefined, type NuevaLigaValues } from '../schemas';
+import { nuevoClienteSchema, vacioAUndefined, type NuevoClienteValues } from '../schemas';
 import { EnlaceInvitacionDialog } from './enlace-invitacion';
 
 type Resultado = { orgId: string; invitacion: InvitacionCreadaDto; telefono?: string };
 
-export function NuevaLigaForm() {
+export function NuevoClienteForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const crear = useCrearOrganizacion();
@@ -36,8 +36,8 @@ export function NuevaLigaForm() {
     setValue,
     setError: setCampo,
     formState: { errors, isSubmitting },
-  } = useForm<NuevaLigaValues>({
-    resolver: zodResolver(nuevaLigaSchema),
+  } = useForm<NuevoClienteValues>({
+    resolver: zodResolver(nuevoClienteSchema),
     defaultValues: {
       nombre: '',
       slug: '',
@@ -55,7 +55,7 @@ export function NuevaLigaForm() {
 
   const nombreReg = register('nombre');
 
-  async function onSubmit(v: NuevaLigaValues) {
+  async function onSubmit(v: NuevoClienteValues) {
     setError(null);
     let orgId: string;
     try {
@@ -85,7 +85,7 @@ export function NuevaLigaForm() {
       predicate: (q) => String(q.queryKey[0]).startsWith('/plataforma/organizaciones'),
     });
 
-    // La liga ya existe: si la invitación falla, se reintenta desde su detalle (no se recrea).
+    // El cliente ya existe: si la invitación falla, se reintenta desde su ficha (no se recrea).
     const telefono = v.duenoTelefono ? (aE164(v.duenoTelefono) ?? undefined) : undefined;
     try {
       const invitacion = await invitar.mutateAsync({
@@ -99,8 +99,8 @@ export function NuevaLigaForm() {
       });
       setResultado({ orgId, invitacion, telefono });
     } catch {
-      // El detalle de la liga explica que la invitación falló y permite reintentarla.
-      router.replace(`/plataforma/ligas/${orgId}?invitacion=fallida`);
+      // La ficha explica que la invitación falló y permite reintentarla.
+      router.replace(`/plataforma/clientes/${orgId}?invitacion=fallida`);
     }
   }
 
@@ -110,7 +110,7 @@ export function NuevaLigaForm() {
         {error ? <AlertaError>{error}</AlertaError> : null}
 
         <fieldset className="grid gap-4">
-          <legend className="mb-2 text-lg font-medium">Liga</legend>
+          <legend className="mb-2 text-lg font-medium">Cliente</legend>
           <Campo id="nombre" etiqueta="Nombre" error={errors.nombre?.message}>
             <Input
               id="nombre"
@@ -150,10 +150,17 @@ export function NuevaLigaForm() {
               {...register('telefonoContacto')}
             />
           </Campo>
+        </fieldset>
+
+        <fieldset className="grid gap-4">
+          <legend className="mb-2 text-lg font-medium">Configuración inicial (opcional)</legend>
+          <p className="text-sm text-muted-foreground">
+            Son valores de partida: después los edita el dueño o un admin desde su portal.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo
               id="zonaHoraria"
-              etiqueta="Zona horaria (opcional)"
+              etiqueta="Zona horaria"
               ayuda="Ej. America/Managua"
               error={errors.zonaHoraria?.message}
             >
@@ -161,28 +168,23 @@ export function NuevaLigaForm() {
             </Campo>
             <Campo
               id="colorPrimario"
-              etiqueta="Color (opcional)"
+              etiqueta="Color"
               ayuda="#RRGGBB"
               error={errors.colorPrimario?.message}
             >
               <Input id="colorPrimario" {...register('colorPrimario')} />
             </Campo>
-            <Campo
-              id="moneda"
-              etiqueta="Moneda (opcional)"
-              ayuda="Ej. NIO"
-              error={errors.moneda?.message}
-            >
+            <Campo id="moneda" etiqueta="Moneda" ayuda="Ej. NIO" error={errors.moneda?.message}>
               <Input id="moneda" {...register('moneda')} />
             </Campo>
-            <Campo id="pais" etiqueta="País (opcional)" ayuda="Ej. NI" error={errors.pais?.message}>
+            <Campo id="pais" etiqueta="País" ayuda="Ej. NI" error={errors.pais?.message}>
               <Input id="pais" {...register('pais')} />
             </Campo>
           </div>
         </fieldset>
 
         <fieldset className="grid gap-4">
-          <legend className="mb-2 text-lg font-medium">Dueño de la liga</legend>
+          <legend className="mb-2 text-lg font-medium">Dueño del cliente</legend>
           <Campo id="duenoNombre" etiqueta="Nombre" error={errors.duenoNombre?.message}>
             <Input
               id="duenoNombre"
@@ -217,7 +219,7 @@ export function NuevaLigaForm() {
 
         <div className="flex gap-2">
           <Button type="submit" size="lg" disabled={isSubmitting}>
-            {isSubmitting ? 'Creando…' : 'Crear liga e invitar al dueño'}
+            {isSubmitting ? 'Creando…' : 'Crear cliente e invitar al dueño'}
           </Button>
           <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>
             Cancelar
@@ -231,7 +233,7 @@ export function NuevaLigaForm() {
         onCerrar={() => {
           const id = resultado?.orgId;
           setResultado(null); // el secreto se descarta al cerrar
-          if (id) router.replace(`/plataforma/ligas/${id}`);
+          if (id) router.replace(`/plataforma/clientes/${id}`);
         }}
       />
     </>

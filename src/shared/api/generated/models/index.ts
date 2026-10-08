@@ -7,12 +7,17 @@
  */
 
 export * from './aceptarInvitacionDto';
+export * from './actualizarConfigDto';
 export * from './actualizarOrganizacionDto';
+export * from './adminFichaDto';
 export * from './adminPrincipalDto';
 export * from './adminPrincipalDtoRole';
 export * from './bloquearOrganizacionDto';
+export * from './clienteFichaDto';
+export * from './conteosClienteDto';
 export * from './crearOrganizacionDto';
 export * from './errorCode';
+export * from './estadoAdminFicha';
 export * from './estadoOrganizacion';
 export * from './getHealth200';
 export * from './getHealth200Details';
@@ -36,6 +41,7 @@ export * from './logoutParams';
 export * from './logoutPortal';
 export * from './olvideContrasenaDto';
 export * from './olvideContrasenaRespuestaDto';
+export * from './organizacionConfigDto';
 export * from './organizacionDto';
 export * from './organizacionesPaginaDto';
 export * from './organizacionResumenDto';

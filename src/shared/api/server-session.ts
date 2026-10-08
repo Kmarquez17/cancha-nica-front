@@ -39,7 +39,7 @@ export async function leerPrincipal<T>(portal: Portal): Promise<LecturaPrincipal
 }
 
 /**
- * Guard de los layouts de portal: devuelve el principal o redirige. Una liga bloqueada va a su
+ * Guard de los layouts de portal: devuelve el principal o redirige. Un cliente bloqueado va a su
  * pantalla (no a refresh ni a login: la sesión sigue viva y se reactiva sola).
  */
 export async function exigirSesion<T>(portal: Portal): Promise<T> {

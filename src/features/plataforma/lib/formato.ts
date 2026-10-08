@@ -22,8 +22,13 @@ export function slugDeNombre(nombre: string): string {
 
 /** Si la API no trae `waMeUrl`, se arma con el teléfono (solo dígitos) y el enlace ya conocido. */
 export function armarWaMeUrl(telefonoE164: string, enlace: string): string {
-  const texto = `Te invito a administrar tu liga en Cancha Nica. Crea tu contraseña aquí: ${enlace}`;
+  const texto = `Te invito a administrar tu cuenta en Cancha Nica. Crea tu contraseña aquí: ${enlace}`;
   return `https://wa.me/${telefonoE164.replace(/\D/g, '')}?text=${encodeURIComponent(texto)}`;
+}
+
+/** Los conteos que el API aún no calcula llegan null o ausentes: se muestran «—», nunca 0. */
+export function textoConteo(n: number | null | undefined): string {
+  return n == null ? '—' : String(n);
 }
 
 export function fechaCorta(iso: string): string {

@@ -11,7 +11,7 @@ export function EstadoBadge({ estado }: { estado: EstadoOrganizacion }) {
         activa ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive',
       )}
     >
-      {activa ? 'Activa' : 'Bloqueada'}
+      {activa ? 'Activo' : 'Bloqueado'}
     </span>
   );
 }

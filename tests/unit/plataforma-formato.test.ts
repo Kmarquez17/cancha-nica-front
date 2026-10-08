@@ -3,8 +3,8 @@ import { aE164, armarWaMeUrl, slugDeNombre } from '@/features/plataforma/lib/for
 import {
   bloquearSchema,
   invitarSchema,
-  ligaSchema,
-  nuevaLigaSchema,
+  clienteSchema,
+  nuevoClienteSchema,
 } from '@/features/plataforma/schemas';
 import { definirPasswordSchema } from '@/features/auth/schemas';
 
@@ -37,7 +37,7 @@ describe('armarWaMeUrl', () => {
   });
 });
 
-describe('ligaSchema', () => {
+describe('clienteSchema', () => {
   const base = {
     nombre: 'Liga Nica',
     slug: 'liga-nica',
@@ -49,23 +49,23 @@ describe('ligaSchema', () => {
   };
 
   it('acepta opcionales vacíos', () => {
-    expect(ligaSchema.safeParse(base).success).toBe(true);
+    expect(clienteSchema.safeParse(base).success).toBe(true);
   });
 
   it.each(['ab', 'Liga', 'liga--nica', '-liga', 'liga_nica', 'a'.repeat(41)])(
     'rechaza slug %s',
     (slug) => {
-      expect(ligaSchema.safeParse({ ...base, slug }).success).toBe(false);
+      expect(clienteSchema.safeParse({ ...base, slug }).success).toBe(false);
     },
   );
 
   it('valida moneda, país, color y teléfono', () => {
-    expect(ligaSchema.safeParse({ ...base, moneda: 'nio' }).success).toBe(false);
-    expect(ligaSchema.safeParse({ ...base, pais: 'NIC' }).success).toBe(false);
-    expect(ligaSchema.safeParse({ ...base, colorPrimario: '#12345' }).success).toBe(false);
-    expect(ligaSchema.safeParse({ ...base, telefonoContacto: '88888888' }).success).toBe(false);
+    expect(clienteSchema.safeParse({ ...base, moneda: 'nio' }).success).toBe(false);
+    expect(clienteSchema.safeParse({ ...base, pais: 'NIC' }).success).toBe(false);
+    expect(clienteSchema.safeParse({ ...base, colorPrimario: '#12345' }).success).toBe(false);
+    expect(clienteSchema.safeParse({ ...base, telefonoContacto: '88888888' }).success).toBe(false);
     expect(
-      ligaSchema.safeParse({
+      clienteSchema.safeParse({
         ...base,
         moneda: 'NIO',
         pais: 'NI',
@@ -76,9 +76,9 @@ describe('ligaSchema', () => {
   });
 });
 
-describe('nuevaLigaSchema / invitarSchema / bloquearSchema', () => {
+describe('nuevoClienteSchema / invitarSchema / bloquearSchema', () => {
   it('exige datos del dueño', () => {
-    const r = nuevaLigaSchema.safeParse({
+    const r = nuevoClienteSchema.safeParse({
       nombre: 'Liga Nica',
       slug: 'liga-nica',
       telefonoContacto: '',

@@ -7,12 +7,6 @@
  */
 
 export interface ActualizarOrganizacionDto {
-  colorPrimario?: string;
-  /** ISO 4217 */
-  moneda?: string;
   nombre?: string;
-  /** ISO 3166-1 alpha-2 */
-  pais?: string;
   telefonoContacto?: string;
-  zonaHoraria?: string;
 }

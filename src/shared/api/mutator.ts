@@ -37,7 +37,7 @@ const refrescos = new Map<Portal, Promise<ResultadoRefresh>>(); // single-flight
 
 /**
  * Refresca la sesión de un portal. Una única petición en curso por portal: las demás esperan su
- * resultado. 204 = ok; 403 ORG_BLOQUEADA = liga bloqueada (la sesión sigue viva, no se borra nada);
+ * resultado. 204 = ok; 403 ORG_BLOQUEADA = cliente bloqueado (la sesión sigue viva, no se borra nada);
  * cualquier otra cosa = sesión expirada.
  */
 export function refrescarSesion(portal: Portal): Promise<ResultadoRefresh> {
@@ -65,7 +65,7 @@ export function refrescarSesion(portal: Portal): Promise<ResultadoRefresh> {
 }
 
 const ORG_BLOQUEADA_ERROR = () =>
-  new ApiError(403, 'ORG_BLOQUEADA', 'Liga bloqueada', 'La liga está bloqueada.');
+  new ApiError(403, 'ORG_BLOQUEADA', 'Cliente bloqueado', 'El cliente está bloqueado.');
 
 export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const portal = portalDeRuta(url);

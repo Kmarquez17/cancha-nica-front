@@ -7,7 +7,7 @@ import { accionParaError } from './session-errors';
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [client] = useState(() => {
-    // Sesión caída o liga bloqueada: se corta aquí, una sola vez, para cualquier query o mutación.
+    // Sesión caída o cliente bloqueado: se corta aquí, una sola vez, para cualquier query o mutación.
     const manejarSesion = (error: unknown, nombreMutacion?: string) => {
       const accion = accionParaError(error, {
         rutaActual: window.location.pathname,
@@ -27,7 +27,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       defaultOptions: {
         queries: {
           staleTime: 30_000,
-          // No reintentar errores 4xx (son deterministas, incluido el 404 de liga bloqueada y
+          // No reintentar errores 4xx (son deterministas, incluido el 404 de un cliente bloqueado y
           // ORG_BLOQUEADA); sí red/5xx, hasta 2 veces.
           retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 2,
         },

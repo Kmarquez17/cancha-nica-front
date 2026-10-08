@@ -8,7 +8,7 @@ export default function AdminInicioPage() {
     <section className="grid gap-2">
       <h1 className="text-2xl font-semibold">Bienvenido</h1>
       <p className="text-muted-foreground">
-        Aquí vivirán las ediciones, mesas, clubes y demás secciones de tu liga.
+        Aquí vivirán las ediciones, mesas, clubes y demás secciones de tu cuenta.
       </p>
     </section>
   );

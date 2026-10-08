@@ -9,7 +9,7 @@ function error(code: string, status: number, portal?: ApiError['portal']) {
 }
 
 describe('accionParaError', () => {
-  it('ORG_BLOQUEADA lleva a la pantalla de liga bloqueada del portal', () => {
+  it('ORG_BLOQUEADA lleva a la pantalla de cuenta bloqueada del portal', () => {
     expect(
       accionParaError(error('ORG_BLOQUEADA', 403, 'admin'), { rutaActual: '/admin/ediciones' }),
     ).toEqual({ tipo: 'bloqueada', portal: 'admin', destino: '/admin/bloqueada' });
@@ -24,7 +24,7 @@ describe('accionParaError', () => {
   it('UNAUTHORIZED (refresh ya falló) lleva al login del portal', () => {
     expect(
       accionParaError(error('UNAUTHORIZED', 401, 'plataforma'), {
-        rutaActual: '/plataforma/ligas',
+        rutaActual: '/plataforma/clientes',
       }),
     ).toEqual({ tipo: 'login', portal: 'plataforma', destino: '/plataforma/login' });
   });
@@ -55,5 +55,13 @@ describe('accionParaError', () => {
     expect(accionParaError(error('ROSTER_FULL', 409, 'admin'), { rutaActual: '/' })).toBeNull();
     expect(accionParaError(error('ORG_BLOQUEADA', 403), { rutaActual: '/' })).toBeNull();
     expect(accionParaError(new Error('x'), { rutaActual: '/' })).toBeNull();
+  });
+
+  it('PLATAFORMA_SOLO_LECTURA no es una sesión caída: no redirige (es un error inesperado)', () => {
+    expect(
+      accionParaError(error('PLATAFORMA_SOLO_LECTURA', 403, 'plataforma'), {
+        rutaActual: '/plataforma/clientes',
+      }),
+    ).toBeNull();
   });
 });

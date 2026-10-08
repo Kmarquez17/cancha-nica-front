@@ -1,5 +1,7 @@
 # Aviso al front — Fase 1 (auth, cuentas y plataforma multi-liga)
 
+> **⚠ Vocabulario actualizado (R15, Fase 1b):** donde este documento dice «liga» para referirse a la organización, léase **cliente** (una «liga» es ahora un torneo, es decir una edición). Además, el `PATCH` de plataforma solo acepta nombre y teléfono. Ver `FRONT_FASE_01B.md`.
+
 > **Fuente de verdad del contrato:** `docs/contrato/openapi.snapshot.json` (regenerado al cerrar la fase; 19 operaciones). Este documento explica lo que el OpenAPI no dice: flujos, pantallas y reglas de sesión.
 > **Decisiones de origen:** `PLAN_BACKEND.md`, decisión **R11** (historial) y secciones 4.2 y 13.
 

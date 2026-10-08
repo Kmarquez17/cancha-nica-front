@@ -17,7 +17,7 @@
         "required": ["token", "password"],
         "type": "object"
       },
-      "ActualizarOrganizacionDto": {
+      "ActualizarConfigDto": {
         "properties": {
           "colorPrimario": {
             "example": "#16a34a",
@@ -28,17 +28,9 @@
             "example": "NIO",
             "type": "string"
           },
-          "nombre": {
-            "example": "Liga Barrio Leningrado",
-            "type": "string"
-          },
           "pais": {
             "description": "ISO 3166-1 alpha-2",
             "example": "NI",
-            "type": "string"
-          },
-          "telefonoContacto": {
-            "example": "+505 8888 8888",
             "type": "string"
           },
           "zonaHoraria": {
@@ -46,6 +38,55 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "ActualizarOrganizacionDto": {
+        "properties": {
+          "nombre": {
+            "example": "Deportes SOPA",
+            "type": "string"
+          },
+          "telefonoContacto": {
+            "example": "+505 8888 8888",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AdminFichaDto": {
+        "properties": {
+          "desde": {
+            "description": "Alta de la cuenta, o fecha en que se envió la invitación",
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoAdminFicha"
+              }
+            ]
+          },
+          "expiraEn": {
+            "description": "Solo en INVITACION_PENDIENTE: cuándo vence",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "null mientras la persona aún no aceptó la invitación",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "email", "estado", "desde"],
         "type": "object"
       },
       "AdminPrincipalDto": {
@@ -74,12 +115,150 @@
       "BloquearOrganizacionDto": {
         "properties": {
           "motivo": {
-            "description": "Queda en la auditoría y en la ficha de la liga",
+            "description": "Queda en la auditoría y en la ficha del cliente",
             "example": "Falta de pago de la mensualidad",
             "type": "string"
           }
         },
         "required": ["motivo"],
+        "type": "object"
+      },
+      "ClienteFichaDto": {
+        "properties": {
+          "admins": {
+            "description": "Admins del cliente (sin el dueño), con su estado y fecha",
+            "items": {
+              "$ref": "#/components/schemas/AdminFichaDto"
+            },
+            "type": "array"
+          },
+          "bloqueadaEn": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "colorPrimario": {
+            "example": "#16a34a",
+            "type": "string"
+          },
+          "conteos": {
+            "$ref": "#/components/schemas/ConteosClienteDto"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoOrganizacion"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "invitacionOwner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvitacionOwnerPendienteDto"
+              }
+            ],
+            "description": "Invitación del dueño vigente y sin usar, si la hay",
+            "nullable": true,
+            "type": "object"
+          },
+          "moneda": {
+            "example": "NIO",
+            "type": "string"
+          },
+          "motivoBloqueo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "owner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OwnerResumenDto"
+              }
+            ],
+            "description": "OWNER activo del cliente, si ya aceptó su invitación",
+            "nullable": true,
+            "type": "object"
+          },
+          "pais": {
+            "example": "NI",
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "telefonoContacto": {
+            "nullable": true,
+            "type": "string"
+          },
+          "zonaHoraria": {
+            "example": "America/Managua",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "slug",
+          "zonaHoraria",
+          "moneda",
+          "pais",
+          "colorPrimario",
+          "estado",
+          "creadoEn",
+          "admins",
+          "conteos"
+        ],
+        "type": "object"
+      },
+      "ConteosClienteDto": {
+        "properties": {
+          "admins": {
+            "type": "number"
+          },
+          "adminsActivos": {
+            "type": "number"
+          },
+          "categorias": {
+            "description": "Fase 2",
+            "nullable": true,
+            "type": "number"
+          },
+          "delegados": {
+            "description": "Fase 3",
+            "nullable": true,
+            "type": "number"
+          },
+          "ediciones": {
+            "description": "Fase 2",
+            "nullable": true,
+            "type": "number"
+          },
+          "equipos": {
+            "description": "Fase 3",
+            "nullable": true,
+            "type": "number"
+          },
+          "invitacionesAdminPendientes": {
+            "type": "number"
+          },
+          "mesas": {
+            "description": "Fase 2",
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": ["admins", "adminsActivos", "invitacionesAdminPendientes"],
         "type": "object"
       },
       "CrearOrganizacionDto": {
@@ -94,7 +273,7 @@
             "type": "string"
           },
           "nombre": {
-            "example": "Liga Barrio Leningrado",
+            "example": "Deportes SOPA",
             "type": "string"
           },
           "pais": {
@@ -104,7 +283,7 @@
           },
           "slug": {
             "description": "Va en las URLs públicas; no se puede cambiar después. Minúsculas, números y guiones.",
-            "example": "barrio-leningrado",
+            "example": "sopa",
             "type": "string"
           },
           "telefonoContacto": {
@@ -144,6 +323,7 @@
           "ORG_BLOQUEADA",
           "ORG_SLUG_DUPLICATED",
           "ORG_ESTADO_INVALIDO",
+          "PLATAFORMA_SOLO_LECTURA",
           "ORG_YA_TIENE_OWNER",
           "EMAIL_YA_REGISTRADO",
           "PASSWORD_DEBIL",
@@ -177,6 +357,10 @@
           "SERVICE_UNAVAILABLE",
           "INTERNAL_ERROR"
         ],
+        "type": "string"
+      },
+      "EstadoAdminFicha": {
+        "enum": ["ACTIVO", "INACTIVO", "INVITACION_PENDIENTE"],
         "type": "string"
       },
       "EstadoOrganizacion": {
@@ -319,6 +503,51 @@
         "required": ["mensaje"],
         "type": "object"
       },
+      "OrganizacionConfigDto": {
+        "properties": {
+          "colorPrimario": {
+            "example": "#16a34a",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "moneda": {
+            "example": "NIO",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "pais": {
+            "example": "NI",
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "telefonoContacto": {
+            "description": "Lo edita plataforma, no el cliente",
+            "nullable": true,
+            "type": "string"
+          },
+          "zonaHoraria": {
+            "example": "America/Managua",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "slug",
+          "zonaHoraria",
+          "moneda",
+          "pais",
+          "colorPrimario"
+        ],
+        "type": "object"
+      },
       "OrganizacionDto": {
         "properties": {
           "bloqueadaEn": {
@@ -372,7 +601,7 @@
                 "$ref": "#/components/schemas/OwnerResumenDto"
               }
             ],
-            "description": "OWNER activo de la liga, si ya aceptó su invitación",
+            "description": "OWNER activo del cliente, si ya aceptó su invitación",
             "nullable": true,
             "type": "object"
           },
@@ -564,7 +793,56 @@
             "description": ""
           }
         },
-        "summary": "Cuenta y liga de la sesión de admin actual",
+        "summary": "Cuenta y cliente de la sesión de admin actual",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/organizacion": {
+      "get": {
+        "operationId": "getAdminOrganizacion",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionConfigDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Datos y configuración regional de mi cliente",
+        "tags": ["Admin"]
+      },
+      "patch": {
+        "description": "Solo esos cuatro campos. El nombre, el slug y el teléfono de contacto los administra la plataforma.",
+        "operationId": "actualizarAdminOrganizacion",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarConfigDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizacionConfigDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Cambia la zona horaria, moneda, país o color de mi cliente",
         "tags": ["Admin"]
       }
     },
@@ -605,7 +883,7 @@
             "description": "EMAIL_YA_REGISTRADO"
           }
         },
-        "summary": "El dueño invita a un admin a su liga",
+        "summary": "El dueño invita a un admin a su cliente",
         "tags": ["Admin"]
       }
     },
@@ -727,7 +1005,7 @@
             "description": "IP_LOCKED, ACCOUNT_LOCKED o TOO_MANY_REQUESTS"
           }
         },
-        "summary": "Inicia sesión como dueño o admin de una liga",
+        "summary": "Inicia sesión como dueño o admin de un cliente",
         "tags": ["Admin"]
       }
     },
@@ -1190,7 +1468,7 @@
             "description": ""
           }
         },
-        "summary": "Lista las ligas, con su dueño e invitación pendiente",
+        "summary": "Lista los clientes, con su dueño e invitación pendiente",
         "tags": ["Plataforma"]
       },
       "post": {
@@ -1228,7 +1506,7 @@
             "description": "ORG_SLUG_DUPLICATED"
           }
         },
-        "summary": "Crea una liga (la invitación del dueño es un paso aparte)",
+        "summary": "Crea un cliente (la invitación del dueño es un paso aparte)",
         "tags": ["Plataforma"]
       }
     },
@@ -1250,14 +1528,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrganizacionDto"
+                  "$ref": "#/components/schemas/ClienteFichaDto"
                 }
               }
             },
             "description": ""
           }
         },
-        "summary": "Ficha de una liga",
+        "summary": "Ficha del cliente (solo lectura): dueño, invitación, admins con su estado y conteos",
         "tags": ["Plataforma"]
       },
       "patch": {
@@ -1294,7 +1572,7 @@
             "description": ""
           }
         },
-        "summary": "Edita los datos de una liga (el slug no se puede cambiar)",
+        "summary": "Edita el contacto de un cliente (solo nombre y teléfono)",
         "tags": ["Plataforma"]
       }
     },
@@ -1343,7 +1621,7 @@
             "description": "ORG_ESTADO_INVALIDO (ya estaba bloqueada)"
           }
         },
-        "summary": "Bloquea la liga: corte inmediato de todos sus usuarios y /public oculto",
+        "summary": "Bloquea al cliente: corte inmediato en cascada de su dueño, admins, delegados y mesas, y /public oculto",
         "tags": ["Plataforma"]
       }
     },
@@ -1393,7 +1671,7 @@
             "description": "ORG_YA_TIENE_OWNER o EMAIL_YA_REGISTRADO"
           }
         },
-        "summary": "Crea o reenvía la invitación del dueño de la liga",
+        "summary": "Crea o reenvía la invitación del dueño del cliente",
         "tags": ["Plataforma"]
       }
     },
@@ -1432,7 +1710,7 @@
             "description": "ORG_ESTADO_INVALIDO (no estaba bloqueada)"
           }
         },
-        "summary": "Reactiva una liga bloqueada; sus sesiones y datos vuelven",
+        "summary": "Reactiva a un cliente bloqueado; sus sesiones y datos vuelven",
         "tags": ["Plataforma"]
       }
     }

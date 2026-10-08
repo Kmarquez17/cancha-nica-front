@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { configCamposSchema } from '@/shared/lib/config-cliente';
 import { aE164 } from './lib/formato';
 
 const nombre = z
@@ -17,36 +18,20 @@ const telefonoOpcional = z
 
 export const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-export const ligaSchema = z.object({
-  nombre,
-  slug: z
-    .string()
-    .trim()
-    .min(3, 'Usa al menos 3 caracteres.')
-    .max(40, 'Usa como máximo 40 caracteres.')
-    .regex(SLUG_RE, 'Solo minúsculas, números y guiones simples.'),
-  telefonoContacto: telefonoOpcional,
-  zonaHoraria: z.string().trim(),
-  moneda: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === '' || /^[A-Z]{3}$/.test(v),
-      'Código ISO de 3 letras mayúsculas, p. ej. NIO.',
-    ),
-  pais: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === '' || /^[A-Z]{2}$/.test(v),
-      'Código ISO de 2 letras mayúsculas, p. ej. NI.',
-    ),
-  colorPrimario: z
-    .string()
-    .trim()
-    .refine((v) => v === '' || /^#[0-9a-fA-F]{6}$/.test(v), 'Formato #RRGGBB.'),
-});
-export type LigaValues = z.infer<typeof ligaSchema>;
+/** Crear cliente: datos propios + configuración inicial. */
+export const clienteSchema = z
+  .object({
+    nombre,
+    slug: z
+      .string()
+      .trim()
+      .min(3, 'Usa al menos 3 caracteres.')
+      .max(40, 'Usa como máximo 40 caracteres.')
+      .regex(SLUG_RE, 'Solo minúsculas, números y guiones simples.'),
+    telefonoContacto: telefonoOpcional,
+  })
+  .and(configCamposSchema);
+export type ClienteValues = z.infer<typeof clienteSchema>;
 
 export const duenoSchema = z.object({
   duenoNombre: nombre,
@@ -56,11 +41,15 @@ export const duenoSchema = z.object({
 });
 export type DuenoValues = z.infer<typeof duenoSchema>;
 
-export const nuevaLigaSchema = ligaSchema.and(duenoSchema);
-export type NuevaLigaValues = z.infer<typeof nuevaLigaSchema>;
+export const nuevoClienteSchema = clienteSchema.and(duenoSchema);
+export type NuevoClienteValues = z.infer<typeof nuevoClienteSchema>;
 
-export const editarLigaSchema = ligaSchema.omit({ slug: true });
-export type EditarLigaValues = z.infer<typeof editarLigaSchema>;
+/**
+ * Editar cliente desde plataforma: SOLO nombre y teléfono de contacto. Enviar zona horaria,
+ * moneda, país o color responde 400 `VALIDATION_ERROR` (cambio rompedor de la Fase 1b).
+ */
+export const editarClienteSchema = z.object({ nombre, telefonoContacto: telefonoOpcional });
+export type EditarClienteValues = z.infer<typeof editarClienteSchema>;
 
 export const bloquearSchema = z.object({
   motivo: z

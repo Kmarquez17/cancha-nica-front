@@ -7,6 +7,6 @@
  */
 
 export interface BloquearOrganizacionDto {
-  /** Queda en la auditoría y en la ficha de la liga */
+  /** Queda en la auditoría y en la ficha del cliente */
   motivo: string;
 }

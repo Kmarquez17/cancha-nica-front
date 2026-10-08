@@ -26,7 +26,7 @@ export interface OrganizacionDto {
   motivoBloqueo?: string | null;
   nombre: string;
   /**
-     * OWNER activo de la liga, si ya aceptó su invitación
+     * OWNER activo del cliente, si ya aceptó su invitación
      * @nullable
      */
   owner?: OwnerResumenDto | null;

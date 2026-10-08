@@ -28,7 +28,7 @@ describe('rutas por portal', () => {
     expect(rutaLogin('admin')).toBe('/admin/login');
     expect(rutaLogin('plataforma')).toBe('/plataforma/login');
     expect(rutaBloqueada('delegado')).toBe('/delegado/bloqueada');
-    expect(rutaInicio('plataforma')).toBe('/plataforma/ligas');
+    expect(rutaInicio('plataforma')).toBe('/plataforma/clientes');
     expect(rutaInicio('admin')).toBe('/admin');
     expect(rutaRefresh('admin', '/admin/x?a=1')).toBe('/admin/refresh?next=%2Fadmin%2Fx%3Fa%3D1');
   });

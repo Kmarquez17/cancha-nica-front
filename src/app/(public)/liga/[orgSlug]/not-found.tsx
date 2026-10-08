@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-// Misma pantalla para liga inexistente y liga bloqueada (la API responde 404 en ambos casos).
+// Misma pantalla para liga inexistente y cliente bloqueado (la API responde 404 en ambos casos).
 export const metadata: Metadata = {
   title: 'Liga no disponible',
   robots: { index: false, follow: false },
