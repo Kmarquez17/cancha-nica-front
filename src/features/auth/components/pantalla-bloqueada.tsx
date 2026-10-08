@@ -6,6 +6,7 @@ import { mensajesEs } from '@/shared/api/errors/es';
 import { useLogout } from '@/shared/api/generated/auth/auth';
 import { rutaInicio, rutaLogin, type Portal } from '@/shared/api/portales';
 import { Button } from '@/shared/ui/button';
+import { Logo } from '@/shared/ui/logo';
 
 /**
  * Cliente bloqueado (R11). Las cookies NO se borran: si el cliente se reactiva, la misma sesión vuelve a
@@ -27,6 +28,7 @@ export function PantallaBloqueada({ portal }: { portal: Exclude<Portal, 'platafo
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
+      <Logo variante="vertical" className="w-36" />
       <h1 className="text-2xl font-semibold">Cuenta del cliente bloqueada</h1>
       <p role="status" className="text-muted-foreground">
         {mensajesEs.ORG_BLOQUEADA.message}
