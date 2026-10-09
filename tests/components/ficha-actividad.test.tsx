@@ -35,6 +35,40 @@ const respuestas: Record<string, unknown> = {
       ediciones: [],
     },
   ],
+  '/api/plataforma/organizaciones/org-1/equipos': [
+    {
+      id: 'q1',
+      nombre: 'Real Peña Sub-18',
+      club: { id: 'k1', nombre: 'Real Peña' },
+      edicion: { id: 'e1', nombre: 'Apertura 2026', estado: 'EN_REGISTRO' },
+      estado: 'CONFIRMADO',
+      delegado: { id: 'd1', nombre: 'Pedro' },
+      creadoPor: { id: 'u1', nombre: 'Sopa' },
+      creadoEn: '2026-10-08T10:00:00.000Z',
+    },
+    {
+      id: 'q2',
+      nombre: 'Los Tigres',
+      club: { id: 'k2', nombre: 'Los Tigres' },
+      edicion: { id: 'e1', nombre: 'Apertura 2026', estado: 'EN_REGISTRO' },
+      estado: 'RETIRADO',
+      delegado: { id: 'd1', nombre: 'Pedro' },
+      creadoPor: { id: 'u1', nombre: 'Sopa' },
+      creadoEn: '2026-10-08T10:00:00.000Z',
+    },
+  ],
+  '/api/plataforma/organizaciones/org-1/delegados': [
+    {
+      id: 'd1',
+      nombre: 'Pedro',
+      activo: true,
+      pinCambiadoEn: null,
+      ultimoAccesoEn: null,
+      equipos: [],
+      creadoPor: { id: 'u1', nombre: 'Sopa' },
+      creadoEn: '2026-10-08T10:00:00.000Z',
+    },
+  ],
 };
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -97,6 +131,26 @@ describe('ActividadCliente (plataforma, solo lectura)', () => {
     expect(lista).toHaveTextContent('Carlos');
     expect(lista).toHaveTextContent('activa');
     expect(lista).toHaveTextContent('desactivada');
+  });
+
+  it('equipos: club, liga, delegado y retirados, sin teléfonos ni PIN', async () => {
+    render(<ActividadCliente clienteId="org-1" />, { wrapper: Con });
+    fireEvent.click(screen.getByRole('button', { name: 'Equipos' }));
+    const lista = await screen.findByRole('list', { name: 'Equipos del cliente' });
+    expect(lista).toHaveTextContent('Real Peña Sub-18');
+    expect(lista).toHaveTextContent('club Real Peña');
+    expect(lista).toHaveTextContent('delegado Pedro');
+    expect(lista).toHaveTextContent('retirado');
+    expect(lista).not.toHaveTextContent(/PIN/i);
+  });
+
+  it('delegados: marca a quien nunca ha entrado', async () => {
+    render(<ActividadCliente clienteId="org-1" />, { wrapper: Con });
+    fireEvent.click(screen.getByRole('button', { name: 'Delegados' }));
+    const lista = await screen.findByRole('list', { name: 'Delegados del cliente' });
+    expect(lista).toHaveTextContent('Pedro');
+    expect(lista).toHaveTextContent('aún no ha entrado');
+    expect(lista).toHaveTextContent('0 equipos');
   });
 
   it('volver a tocar la pestaña la cierra', async () => {

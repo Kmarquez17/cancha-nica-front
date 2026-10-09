@@ -8,7 +8,6 @@ import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import { useGetAdminMe } from '@/shared/api/generated/admin/admin';
 import type { EdicionDto, EstadoEdicion } from '@/shared/api/generated/models';
 import { ApiError } from '@/shared/api/mutator';
-import { HAY_PROTOTIPOS } from '@/shared/config/prototipos';
 import { Button } from '@/shared/ui/button';
 import { AlertaError } from '@/shared/ui/campo';
 import {
@@ -19,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
+import { useEquipos } from '@/features/equipos/api';
 import {
   useActualizarEdicion,
   useArchivarEdicion,
@@ -70,14 +70,12 @@ export function LigaDetalle({ id }: { id: string }) {
         </div>
       </div>
 
-      {HAY_PROTOTIPOS ? (
-        <Button variant="outline" className="w-fit" asChild>
-          <Link href={`/admin/ligas/${liga.id}/equipos`}>
-            <Users data-icon="inline-start" />
-            Equipos inscritos
-          </Link>
-        </Button>
-      ) : null}
+      <Button variant="outline" className="w-fit" asChild>
+        <Link href={`/admin/ligas/${liga.id}/equipos`}>
+          <Users data-icon="inline-start" />
+          Equipos inscritos
+        </Link>
+      </Button>
 
       {!liga.archivadaEn ? <PanelEstado liga={liga} /> : null}
 
@@ -153,6 +151,12 @@ function CambioEstadoDialog({
   const { data: yo } = useGetAdminMe();
   const [entiendo, setEntiendo] = useState(false);
   const [fallo, setFallo] = useState<Fallo | null>(null);
+  const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
+  // Al arrancar la liga se puede dejar fuera a equipos concretos (no se borran: quedan «excluidos»).
+  const arranca = destino === 'EN_CURSO' && liga.estado === 'EN_REGISTRO';
+  const { data: equipos } = useEquipos(liga.id);
+  const candidatos = (equipos ?? []).filter((e) => !e.retirado);
+  const quedan = candidatos.filter((e) => !excluidos.has(e.id)).length;
   const esDueno = yo?.role === 'OWNER';
   const finaliza = destino === 'FINALIZADA';
   const faltantes = fallo?.incumplimientos ?? [];
@@ -165,7 +169,12 @@ function CambioEstadoDialog({
     try {
       await cambiar.mutateAsync({
         id: liga.id,
-        data: { a: destino, forzar: forzar || undefined, confirmar: finaliza || undefined },
+        data: {
+          a: destino,
+          forzar: forzar || undefined,
+          confirmar: finaliza || undefined,
+          excluirEquipos: arranca && excluidos.size > 0 ? [...excluidos] : undefined,
+        },
       });
       toast.success(`La liga ahora está: ${ESTADO_TEXTO[destino].toLowerCase()}.`);
       onCerrar();
@@ -189,6 +198,33 @@ function CambioEstadoDialog({
                   : `La liga pasará de «${ESTADO_TEXTO[liga.estado]}» a «${ESTADO_TEXTO[destino]}».`}
               </DialogDescription>
             </DialogHeader>
+
+            {arranca && candidatos.length > 0 ? (
+              <fieldset className="grid gap-2">
+                <legend className="mb-1 text-sm font-semibold">
+                  Equipos que arrancan ({quedan} de {candidatos.length}; mínimo{' '}
+                  {liga.minEquiposArranque})
+                </legend>
+                {candidatos.map((e) => (
+                  <label key={e.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-primary"
+                      checked={excluidos.has(e.id)}
+                      onChange={(ev) => {
+                        const nuevo = new Set(excluidos);
+                        if (ev.target.checked) nuevo.add(e.id);
+                        else nuevo.delete(e.id);
+                        setExcluidos(nuevo);
+                      }}
+                    />
+                    <span>
+                      {e.nombre} <span className="text-muted-foreground">· No arranca</span>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            ) : null}
 
             {fallo ? <AlertaError>{fallo.mensaje}</AlertaError> : null}
 

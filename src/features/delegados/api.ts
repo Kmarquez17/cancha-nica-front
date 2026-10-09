@@ -1,39 +1,53 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CambiarPinBody, DelegadoLoginBody, DelegadoMeDto } from '@/features/equipos/tipos';
-import { apiFetch } from '@/shared/api/mutator';
+import { useQueryClient } from '@tanstack/react-query';
+import { useLogout } from '@/shared/api/generated/auth/auth';
+import {
+  getGetDelegadoMeQueryKey,
+  useCambiarPinDelegado as useCambiarPinApi,
+  useDelegadoLogin as useDelegadoLoginApi,
+  useGetDelegadoEdicion,
+  useGetDelegadoMe,
+} from '@/shared/api/generated/delegado/delegado';
 
-/** Hooks del portal del delegado (Fase 3). PROVISIONAL, ver `equipos/api.ts`. */
-const json = (method: string, body?: unknown): RequestInit => ({
-  method,
-  headers: { 'Content-Type': 'application/json' },
-  body: body === undefined ? undefined : JSON.stringify(body),
-});
+/**
+ * Portal del delegado: hooks generados con Orval más lo que el generador no hace (releer `/delegado/me` tras
+ * cambiar el PIN, limpiar la caché al entrar y al salir). Ninguna cookie ni PIN se lee desde JavaScript.
+ */
+export const useDelegadoMe = () => useGetDelegadoMe({ query: { retry: false } });
+export const useDelegadoEdicion = (edicionId: string) =>
+  useGetDelegadoEdicion(edicionId, { query: { retry: false } });
 
-export function useDelegadoLogin(orgSlug: string) {
-  return useMutation({
-    mutationFn: (data: DelegadoLoginBody) =>
-      apiFetch<void>(`/auth/delegado/${orgSlug}/login`, json('POST', data)),
+export function useDelegadoLogin() {
+  const qc = useQueryClient();
+  // El cuerpo de la respuesta es el mismo de `/delegado/me`: se siembra la caché para no repetir la petición.
+  return useDelegadoLoginApi({
+    mutation: { onSuccess: (me) => qc.setQueryData(getGetDelegadoMeQueryKey(), me) },
+  });
+}
+
+export function useCambiarPin() {
+  const qc = useQueryClient();
+  return useCambiarPinApi({
+    // El aviso «cambia tu PIN» sale de `pinCambiadoEn`: hay que volver a leer `/delegado/me`.
+    mutation: {
+      gcTime: 0,
+      onSuccess: () => qc.invalidateQueries({ queryKey: getGetDelegadoMeQueryKey() }),
+    },
   });
 }
 
 export function useDelegadoLogout() {
-  return useMutation({ mutationFn: () => apiFetch<void>('/auth/delegado/logout', json('POST')) });
-}
-
-export const useDelegadoMe = () =>
-  useQuery({
-    queryKey: ['/delegado/me'],
-    queryFn: () => apiFetch<DelegadoMeDto>('/delegado/me'),
-    retry: false,
-  });
-
-export function useCambiarPin() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CambiarPinBody) => apiFetch<void>('/delegado/pin', json('POST', data)),
-    // El aviso «tu PIN es temporal» sale de /delegado/me: hay que volver a leerlo.
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['/delegado/me'] }),
-  });
+  const logout = useLogout();
+  return {
+    isPending: logout.isPending,
+    async salir() {
+      try {
+        await logout.mutateAsync({ params: { portal: 'delegado' } });
+      } finally {
+        qc.clear();
+      }
+    },
+  };
 }

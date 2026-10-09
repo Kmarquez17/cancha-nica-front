@@ -4,19 +4,23 @@ import { useState } from 'react';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import {
   useListarCategoriasDeOrganizacion,
+  useListarDelegadosDeOrganizacion,
   useListarEdicionesDeOrganizacion,
+  useListarEquiposDeOrganizacion,
   useListarMesasDeOrganizacion,
 } from '@/shared/api/generated/plataforma/plataforma';
 import { ApiError } from '@/shared/api/mutator';
 import { cn } from '@/shared/lib/utils';
 import { AlertaError } from '@/shared/ui/campo';
 
-type Pestana = 'categorias' | 'ligas' | 'mesas';
+type Pestana = 'categorias' | 'ligas' | 'mesas' | 'equipos' | 'delegados';
 
 const PESTANAS: { id: Pestana; texto: string }[] = [
   { id: 'categorias', texto: 'Categorías' },
   { id: 'ligas', texto: 'Ligas' },
   { id: 'mesas', texto: 'Mesas' },
+  { id: 'equipos', texto: 'Equipos' },
+  { id: 'delegados', texto: 'Delegados' },
 ];
 
 const NOMBRE_ESTADO: Record<string, string> = {
@@ -38,7 +42,7 @@ const hora = (iso: string) =>
   new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 
 /**
- * Lo que el cliente ya armó: categorías, ligas y mesas, **solo lectura** (Plataforma no escribe nada de esto).
+ * Lo que el cliente ya armó: categorías, ligas, mesas, equipos y delegados, **solo lectura** (Plataforma no escribe nada de esto).
  * Cada lista se pide cuando se abre su pestaña.
  */
 export function ActividadCliente({ clienteId }: { clienteId: string }) {
@@ -65,6 +69,8 @@ export function ActividadCliente({ clienteId }: { clienteId: string }) {
       {pestana === 'categorias' ? <Categorias id={clienteId} /> : null}
       {pestana === 'ligas' ? <Ligas id={clienteId} /> : null}
       {pestana === 'mesas' ? <Mesas id={clienteId} /> : null}
+      {pestana === 'equipos' ? <Equipos id={clienteId} /> : null}
+      {pestana === 'delegados' ? <Delegados id={clienteId} /> : null}
     </div>
   );
 }
@@ -171,6 +177,63 @@ function Mesas({ id }: { id: string }) {
                     ? 'desactivada'
                     : 'activa'}{' '}
                 · {m.ediciones.length} {m.ediciones.length === 1 ? 'liga' : 'ligas'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
+}
+
+function Equipos({ id }: { id: string }) {
+  const { data, isLoading, error } = useListarEquiposDeOrganizacion(id);
+  return (
+    <>
+      <Estado
+        cargando={isLoading}
+        error={error}
+        vacio={data?.length === 0}
+        textoVacio="Este cliente aún no tiene equipos."
+      />
+      {data && data.length > 0 ? (
+        <ul aria-label="Equipos del cliente" className="grid gap-2">
+          {data.map((e) => (
+            <li key={e.id} className="rounded-lg border bg-card p-3 text-sm">
+              <span className="font-semibold">{e.nombre}</span>
+              <span className="text-muted-foreground">
+                {' '}
+                · club {e.club.nombre} · {e.edicion.nombre} · delegado {e.delegado.nombre}
+                {e.estado === 'RETIRADO' ? ' · retirado' : ''} · inscrito por {e.creadoPor.nombre}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
+}
+
+function Delegados({ id }: { id: string }) {
+  const { data, isLoading, error } = useListarDelegadosDeOrganizacion(id);
+  return (
+    <>
+      <Estado
+        cargando={isLoading}
+        error={error}
+        vacio={data?.length === 0}
+        textoVacio="Este cliente aún no tiene delegados."
+      />
+      {data && data.length > 0 ? (
+        <ul aria-label="Delegados del cliente" className="grid gap-2">
+          {data.map((d) => (
+            <li key={d.id} className="rounded-lg border bg-card p-3 text-sm">
+              <span className="font-semibold">{d.nombre}</span>
+              <span className="text-muted-foreground">
+                {d.activo ? '' : ' · desactivado'}
+                {d.ultimoAccesoEn === null ? ' · aún no ha entrado' : ''} · {d.equipos.length}{' '}
+                {d.equipos.length === 1 ? 'equipo' : 'equipos'} · registrado por{' '}
+                {d.creadoPor.nombre}
               </span>
             </li>
           ))}

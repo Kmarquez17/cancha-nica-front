@@ -1,46 +1,72 @@
 'use client';
 
-import type { PinEntregado } from '@/features/equipos/tipos';
+import type { DelegadoConPinDto, EquipoConAccesoDto } from '@/shared/api/generated/models';
 import { PinEntregaDialog, type EntregaPin } from '@/shared/ui/pin-entrega';
 
-/** Mensaje para el delegado: enlace de acceso, teléfono (su usuario) y PIN. */
-export function mensajeAccesoDelegado(p: PinEntregado, origen: string): string {
-  const enlace = p.loginUrl.startsWith('http') ? p.loginUrl : `${origen}${p.loginUrl}`;
-  return `Hola ${p.delegado.nombre}, tu acceso de delegado en Cancha Nica:\nEnlace: ${enlace}\nTeléfono: ${p.delegado.telefono}\nPIN: ${p.pin}\nPuedes cambiar el PIN al entrar.`;
+/** Acceso de un delegado listo para entregar. El PIN vive solo en memoria de quien lo muestra. */
+export type AccesoDelegado = {
+  nombre: string;
+  telefono: string;
+  /** Texto, no número: puede empezar con 0. */
+  pin: string;
+  loginUrl: string;
+  waMeUrl: string;
+};
+
+/** De la respuesta de inscribir / reasignar. `null` si el delegado ya existía (no hay PIN que mostrar). */
+export function accesoDeEquipo(r: EquipoConAccesoDto): AccesoDelegado | null {
+  if (r.pin === null || r.loginUrl === null || r.waMeUrl === null) return null;
+  return {
+    nombre: r.equipo.delegado.nombre,
+    telefono: r.equipo.delegado.telefono,
+    pin: r.pin,
+    loginUrl: r.loginUrl,
+    waMeUrl: r.waMeUrl,
+  };
 }
 
-/** `wa.me` del API si viene; si no, uno al teléfono del delegado con el mensaje ya escrito. */
-export function waMeDeDelegado(p: PinEntregado, origen: string): string {
-  const base = p.waMeUrl ?? `https://wa.me/${p.delegado.telefono.replace(/\D/g, '')}`;
-  return p.waMeUrl?.includes('text=')
-    ? p.waMeUrl
-    : `${base}?text=${encodeURIComponent(mensajeAccesoDelegado(p, origen))}`;
-}
+/** De la respuesta de `pin/reset`. */
+export const accesoDeReset = (r: DelegadoConPinDto): AccesoDelegado => ({
+  nombre: r.delegado.nombre,
+  telefono: r.delegado.telefono,
+  pin: r.pin,
+  loginUrl: r.loginUrl,
+  waMeUrl: r.waMeUrl,
+});
 
-/** Entrega del PIN de un delegado (una sola vez): al inscribir un equipo con delegado nuevo o al resetear. */
+/** Mensaje para pegar a mano (el `wa.me` del API ya trae el suyo, no se reconstruye). */
+export const mensajeAcceso = (a: AccesoDelegado) =>
+  `Hola ${a.nombre}, tu acceso de delegado en Cancha Nica:\nEnlace: ${a.loginUrl}\nTeléfono: ${a.telefono}\nPIN: ${a.pin}\nEs un PIN temporal: puedes cambiarlo al entrar.`;
+
+/** Entrega del PIN de un delegado (una sola vez): alta de equipo con delegado nuevo, reasignar y resetear. */
 export function EntregaPinDelegado({
-  pin,
+  acceso,
   titulo,
   reseteo,
   onCerrar,
 }: {
-  pin: PinEntregado | null;
+  acceso: AccesoDelegado | null;
   titulo: string;
   reseteo?: boolean;
   onCerrar: () => void;
 }) {
-  const origen = typeof window === 'undefined' ? '' : window.location.origin;
-  const entrega: EntregaPin | null = pin
+  const entrega: EntregaPin | null = acceso
     ? {
         etiquetaUsuario: 'Teléfono',
-        usuario: pin.delegado.telefono,
-        pin: pin.pin,
-        enlace: pin.loginUrl.startsWith('http') ? pin.loginUrl : `${origen}${pin.loginUrl}`,
-        mensaje: mensajeAccesoDelegado(pin, origen),
-        waMeUrl: waMeDeDelegado(pin, origen),
+        usuario: acceso.telefono,
+        pin: acceso.pin,
+        enlace: acceso.loginUrl,
+        mensaje: mensajeAcceso(acceso),
+        waMeUrl: acceso.waMeUrl,
       }
     : null;
   return (
-    <PinEntregaDialog entrega={entrega} titulo={titulo} reseteo={reseteo} onCerrar={onCerrar} />
+    <PinEntregaDialog
+      entrega={entrega}
+      titulo={titulo}
+      reseteo={reseteo}
+      nota="Es un PIN temporal: el delegado puede cambiarlo cuando entre."
+      onCerrar={onCerrar}
+    />
   );
 }

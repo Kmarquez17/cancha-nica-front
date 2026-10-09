@@ -7,28 +7,26 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
 import { ApiError } from '@/shared/api/mutator';
-import { aE164 } from '@/shared/lib/telefono';
+import { PIN_VALIDO } from '@/shared/lib/pin';
 import { Button } from '@/shared/ui/button';
 import { AlertaError, Campo } from '@/shared/ui/campo';
 import { Input } from '@/shared/ui/input';
 import { useDelegadoLogin } from '../api';
 
 const schema = z.object({
+  // Solo se avisa de lo evidente: el API normaliza el número (local, +505… o 00505…) con el país del cliente.
   telefono: z
     .string()
     .trim()
-    .refine(
-      (v) => aE164(v) !== null,
-      'Escribe tu teléfono con código de país, por ejemplo +50588888888.',
-    ),
-  pin: z.string().regex(/^\d{6}$/, 'El PIN tiene 6 números.'),
+    .regex(/^\+?[\d\s\-.()]{6,20}$/, 'Escribe tu teléfono, por ejemplo 8888 8888.'),
+  pin: z.string().regex(PIN_VALIDO, 'El PIN tiene 6 números.'),
 });
 type Values = z.infer<typeof schema>;
 
 /** Login del delegado por el slug del cliente: teléfono + PIN de 6 dígitos. Controles grandes para usarse con una mano. */
 export function DelegadoLoginForm({ orgSlug }: { orgSlug: string }) {
   const router = useRouter();
-  const login = useDelegadoLogin(orgSlug);
+  const login = useDelegadoLogin();
   const [error, setError] = useState<string | null>(null);
   const {
     register,
@@ -39,11 +37,11 @@ export function DelegadoLoginForm({ orgSlug }: { orgSlug: string }) {
   async function onSubmit(v: Values) {
     setError(null);
     try {
-      await login.mutateAsync({ telefono: aE164(v.telefono)!, pin: v.pin });
+      await login.mutateAsync({ orgSlug, data: { telefono: v.telefono, pin: v.pin } });
       router.replace('/delegado');
     } catch (e) {
       if (!(e instanceof ApiError)) return setError(mensajeGenerico());
-      // Misma respuesta para teléfono inexistente, PIN errónea o delegado inactivo: no se distingue.
+      // Misma respuesta para cliente o teléfono inexistente, PIN errado y delegado desactivado: no se distingue.
       setError(
         e.code === 'INVALID_CREDENTIALS' ? 'Teléfono o PIN incorrectos.' : mensajeDeError(e),
       );
@@ -59,7 +57,7 @@ export function DelegadoLoginForm({ orgSlug }: { orgSlug: string }) {
           type="tel"
           inputMode="tel"
           autoComplete="username"
-          placeholder="+50588888888"
+          placeholder="8888 8888"
           className="h-12 text-lg"
           aria-invalid={!!errors.telefono}
           {...register('telefono')}

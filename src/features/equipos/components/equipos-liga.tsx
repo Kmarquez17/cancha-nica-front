@@ -2,62 +2,118 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { ArrowLeft, Plus, UserRoundCog } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Pencil, Plus, RotateCcw, UserMinus, UserRoundCog } from 'lucide-react';
 import { toast } from 'sonner';
+import { useDelegados } from '@/features/delegados/api-admin';
+import {
+  accesoDeEquipo,
+  EntregaPinDelegado,
+  type AccesoDelegado,
+} from '@/features/delegados/components/entrega-pin-delegado';
 import { useEdicion } from '@/features/ediciones/api';
 import { EstadoLiga } from '@/features/ediciones/components/estado-liga';
-import type { EdicionDto } from '@/shared/api/generated/models';
-import { EntregaPinDelegado } from '@/features/delegados/components/entrega-pin-delegado';
-import { campoDeError, mensajeDeError, mensajeGenerico } from '@/shared/api/errors/es';
+import { campoDeError } from '@/shared/api/errors/es';
+import { useGetAdminMe, useGetAdminOrganizacion } from '@/shared/api/generated/admin/admin';
+import type { EdicionDto, EquipoConAccesoDto, EquipoDto } from '@/shared/api/generated/models';
 import { ApiError } from '@/shared/api/mutator';
 import { Button } from '@/shared/ui/button';
-import { AlertaError } from '@/shared/ui/campo';
+import { AlertaError, Campo } from '@/shared/ui/campo';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
+import { Input } from '@/shared/ui/input';
 import {
-  useClubes,
-  useDelegados,
   useEquipos,
   useInscribirEquipo,
   useReasignarDelegado,
+  useReincorporarEquipo,
+  useRenombrarEquipo,
+  useRetirarEquipo,
 } from '../api';
+import { esErrorDeEstado, textoError } from '../lib/errores';
 import {
-  aClubInscripcion,
-  aDelegadoInscripcion,
-  clubVacio,
+  aDelegadoEntrada,
+  aInscripcion,
+  camposVacios,
   delegadoVacio,
   hayErrores,
-  validarClub,
   validarDelegado,
-  type ClubCampos,
-  type DelegadoCampos,
-  type ErroresClub,
+  validarEquipo,
+  type CamposDelegado,
+  type CamposEquipo,
   type ErroresDelegado,
+  type ErroresEquipo,
 } from '../lib/inscripcion';
-import type { ClubDto, DelegadoDto, EquipoDto, PinEntregado } from '../tipos';
-import { CamposClub, CamposDelegado } from './campos-inscripcion';
+import {
+  esTardio,
+  puedeEditar,
+  puedeInscribir,
+  puedeReincorporar,
+  puedeRetirar,
+  retiroDefinitivo,
+} from '../lib/permisos';
+import { CampoClub, CamposDelegadoForm } from './campos-inscripcion';
+
+type Resultado = { acceso: AccesoDelegado | null; titulo: string; aviso: string | null };
+
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/** Resultado de inscribir / reasignar: con PIN se entrega una sola vez; sin PIN se confirma el delegado. */
+function resultadoDe(r: EquipoConAccesoDto, titulo: string): Resultado {
+  const acceso = accesoDeEquipo(r);
+  return {
+    acceso,
+    titulo,
+    aviso: acceso
+      ? null
+      : `${titulo} con un delegado existente (no se genera PIN): ${r.equipo.delegado.nombre}.`,
+  };
+}
+
+/** Tras un error de estado de la liga, vuelve a leerla y a sus equipos para que los botones se corrijan. */
+function useRefrescarLiga() {
+  const qc = useQueryClient();
+  return () =>
+    qc.invalidateQueries({
+      predicate: (q) => String(q.queryKey[0]).startsWith('/admin/ediciones'),
+    });
+}
 
 export function EquiposLiga({ edicionId }: { edicionId: string }) {
   const { data: liga, isLoading: cargaLiga, error: errorLiga } = useEdicion(edicionId);
   const { data: equipos, isLoading, error } = useEquipos(edicionId);
+  const { data: yo } = useGetAdminMe();
+  const esDueno = yo?.role === 'OWNER';
   const [inscribiendo, setInscribiendo] = useState(false);
   const [reasignando, setReasignando] = useState<EquipoDto | null>(null);
-  const [conPin, setConPin] = useState<{ pin: PinEntregado; titulo: string } | null>(null);
+  const [renombrando, setRenombrando] = useState<EquipoDto | null>(null);
+  const [retirando, setRetirando] = useState<EquipoDto | null>(null);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
+  const reincorporar = useReincorporarEquipo();
+  const refrescar = useRefrescarLiga();
 
   if (cargaLiga) return <p role="status">Cargando…</p>;
-  if (errorLiga || !liga)
-    return (
-      <AlertaError>
-        {errorLiga instanceof ApiError ? mensajeDeError(errorLiga) : mensajeGenerico()}
-      </AlertaError>
-    );
+  if (errorLiga || !liga) return <AlertaError>{textoError(errorLiga)}</AlertaError>;
 
-  const abierta = liga.estado === 'EN_REGISTRO';
+  const inscribible = puedeInscribir(liga, esDueno);
+  const tardio = esTardio(liga);
+
+  async function reincorporarEquipo(e: EquipoDto) {
+    try {
+      await reincorporar.mutateAsync({ edicionId, equipoId: e.id });
+      toast.success(`${e.nombre} volvió a la liga.`);
+    } catch (err) {
+      toast.error(textoError(err));
+      if (esErrorDeEstado(err)) refrescar();
+    }
+  }
 
   return (
     <section className="grid gap-4">
@@ -73,31 +129,35 @@ export function EquiposLiga({ edicionId }: { edicionId: string }) {
           <div className="grid gap-1">
             <h1 className="text-2xl">Equipos de {liga.nombre}</h1>
             <p className="text-sm text-muted-foreground">
-              Categoría {liga.categoria.nombre}. Cada delegado lleva un solo equipo por categoría.
+              Categoría {liga.categoria.nombre}. Cada equipo tiene su nombre en esta liga y su
+              propio delegado; un delegado lleva un solo equipo por liga.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <EstadoLiga estado={liga.estado} />
-            <Button onClick={() => setInscribiendo(true)} disabled={!abierta}>
-              <Plus data-icon="inline-start" />
-              Inscribir equipo
-            </Button>
+            {inscribible ? (
+              <Button onClick={() => setInscribiendo(true)}>
+                <Plus data-icon="inline-start" />
+                {tardio ? 'Agregar equipo' : 'Inscribir equipo'}
+              </Button>
+            ) : null}
           </div>
         </div>
-        {!abierta ? (
+        {!inscribible ? (
           <p role="status" className="text-sm text-muted-foreground">
-            {liga.estado === 'CONFIGURACION'
-              ? 'Abre las inscripciones de la liga para poder inscribir equipos.'
-              : 'Esta liga ya no tiene las inscripciones abiertas.'}
+            {liga.estado === 'EN_CURSO'
+              ? 'Con la liga en marcha, solo el dueño puede agregar un equipo tardío.'
+              : 'Esta liga ya no admite inscripciones.'}
+          </p>
+        ) : tardio ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            La liga está en marcha: el equipo entra como tardío. Su efecto en el calendario y los
+            puntos llega más adelante.
           </p>
         ) : null}
       </div>
 
-      {error ? (
-        <AlertaError>
-          {error instanceof ApiError ? mensajeDeError(error) : mensajeGenerico()}
-        </AlertaError>
-      ) : null}
+      {error ? <AlertaError>{textoError(error)}</AlertaError> : null}
       {isLoading ? <p role="status">Cargando equipos…</p> : null}
       {equipos && equipos.length === 0 ? (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -109,29 +169,81 @@ export function EquiposLiga({ edicionId }: { edicionId: string }) {
       {equipos && equipos.length > 0 ? (
         <ul className="grid gap-3 md:grid-cols-2">
           {equipos.map((e) => (
-            <li key={e.id} className="grid gap-3 rounded-lg border bg-card p-4">
+            <li
+              key={e.id}
+              data-retirado={e.retirado || undefined}
+              className={`grid gap-3 rounded-lg border bg-card p-4 ${e.retirado ? 'opacity-80' : ''}`}
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <p className="font-heading text-xl font-extrabold italic">{e.club.nombre}</p>
-                {e.delegado.pinSinUsar ? (
-                  <span className="rounded-full bg-warning px-2.5 py-1 text-xs font-semibold tracking-wider text-warning-foreground uppercase">
-                    PIN aún no usado
-                  </span>
-                ) : null}
+                <div>
+                  <p
+                    className={`font-heading text-xl font-extrabold italic ${
+                      e.retirado ? 'line-through' : ''
+                    }`}
+                  >
+                    {e.nombre}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Club {e.club.nombre}</p>
+                </div>
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {e.retirado ? (
+                    <Marca clases="bg-destructive/10 text-destructive">Retirado</Marca>
+                  ) : null}
+                  {!e.habilitado ? (
+                    <Marca clases="bg-muted text-muted-foreground">Excluido al arrancar</Marca>
+                  ) : null}
+                  {e.inscritoTardio ? (
+                    <Marca clases="bg-info text-info-foreground">Tardío</Marca>
+                  ) : null}
+                </div>
               </div>
               <p className="text-sm">
                 Delegado: <strong>{e.delegado.nombre}</strong>{' '}
                 <span className="marcador text-muted-foreground">{e.delegado.telefono}</span>
+                {!e.delegado.activo ? (
+                  <span className="text-xs text-muted-foreground"> (desactivado)</span>
+                ) : null}
               </p>
+              {e.retirado ? (
+                <p className="text-sm text-muted-foreground">
+                  Retirado
+                  {e.retiradoEn ? ` el ${fecha(e.retiradoEn)}` : ''}
+                  {e.retiradoPor ? ` por ${e.retiradoPor.nombre}` : ''}
+                  {e.motivoRetiro ? `. Motivo: ${e.motivoRetiro}` : ''}
+                </p>
+              ) : null}
               <p className="text-xs text-muted-foreground">Inscrito por {e.creadoPor.nombre}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-fit"
-                onClick={() => setReasignando(e)}
-              >
-                <UserRoundCog data-icon="inline-start" />
-                Cambiar delegado
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                {puedeEditar(liga, e) ? (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setRenombrando(e)}>
+                      <Pencil data-icon="inline-start" />
+                      Renombrar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setReasignando(e)}>
+                      <UserRoundCog data-icon="inline-start" />
+                      Cambiar delegado
+                    </Button>
+                  </>
+                ) : null}
+                {puedeRetirar(liga, e, esDueno) ? (
+                  <Button variant="outline" size="sm" onClick={() => setRetirando(e)}>
+                    <UserMinus data-icon="inline-start" />
+                    Retirar
+                  </Button>
+                ) : null}
+                {puedeReincorporar(liga, e) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={reincorporar.isPending}
+                    onClick={() => reincorporarEquipo(e)}
+                  >
+                    <RotateCcw data-icon="inline-start" />
+                    Reincorporar
+                  </Button>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>
@@ -139,40 +251,86 @@ export function EquiposLiga({ edicionId }: { edicionId: string }) {
 
       <InscribirDialog
         liga={liga}
+        equipos={equipos ?? []}
         open={inscribiendo}
         onCerrar={() => setInscribiendo(false)}
-        onPin={(pin) => setConPin({ pin, titulo: 'Equipo inscrito' })}
+        onResultado={setResultado}
       />
       <ReasignarDialog
-        liga={liga}
+        edicionId={liga.id}
         equipo={reasignando}
+        equipos={equipos ?? []}
         onCerrar={() => setReasignando(null)}
-        onPin={(pin) => setConPin({ pin, titulo: 'Delegado nuevo' })}
+        onResultado={setResultado}
+      />
+      <RenombrarDialog
+        edicionId={liga.id}
+        equipo={renombrando}
+        onCerrar={() => setRenombrando(null)}
+      />
+      <RetirarDialog
+        edicionId={liga.id}
+        definitivo={retiroDefinitivo(liga)}
+        equipo={retirando}
+        onCerrar={() => setRetirando(null)}
       />
       <EntregaPinDelegado
-        pin={conPin?.pin ?? null}
-        titulo={conPin?.titulo ?? ''}
-        onCerrar={() => setConPin(null)}
+        acceso={resultado?.acceso ?? null}
+        titulo={resultado?.titulo ?? ''}
+        onCerrar={() => setResultado(null)}
       />
+      <Dialog
+        open={resultado !== null && resultado.acceso === null}
+        onOpenChange={(abierto) => !abierto && setResultado(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{resultado?.titulo}</DialogTitle>
+            <DialogDescription role="status">{resultado?.aviso}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
 
+function Marca({ clases, children }: { clases: string; children: React.ReactNode }) {
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-semibold tracking-wider uppercase ${clases}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+// ---------- inscribir
+
 function InscribirDialog({
   liga,
+  equipos,
   open,
   onCerrar,
-  onPin,
+  onResultado,
 }: {
   liga: EdicionDto;
+  equipos: EquipoDto[];
   open: boolean;
   onCerrar: () => void;
-  onPin: (pin: PinEntregado) => void;
+  onResultado: (r: Resultado) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={(abierto) => !abierto && onCerrar()}>
       <DialogContent>
-        {open ? <FormularioInscribir liga={liga} onCerrar={onCerrar} onPin={onPin} /> : null}
+        {open ? (
+          <FormularioInscribir
+            liga={liga}
+            equipos={equipos}
+            onCerrar={onCerrar}
+            onResultado={onResultado}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -180,96 +338,81 @@ function InscribirDialog({
 
 function FormularioInscribir({
   liga,
+  equipos,
   onCerrar,
-  onPin,
+  onResultado,
 }: {
   liga: EdicionDto;
+  equipos: EquipoDto[];
   onCerrar: () => void;
-  onPin: (pin: PinEntregado) => void;
+  onResultado: (r: Resultado) => void;
 }) {
-  const { data: clubes, error: errClubes } = useClubes();
-  const { data: delegados, error: errDelegados } = useDelegados();
-  const { data: equipos, error: errEquipos } = useEquipos(liga.id);
-  const fallo = errClubes ?? errDelegados ?? errEquipos;
-
-  // El modo inicial (club y delegado «existente» o «nuevo») depende de los datos: no se arma hasta tenerlos.
-  if (fallo)
-    return (
-      <AlertaError>
-        {fallo instanceof ApiError ? mensajeDeError(fallo) : mensajeGenerico()}
-      </AlertaError>
-    );
-  if (!clubes || !delegados || !equipos) return <p role="status">Cargando…</p>;
+  const { data: delegados, error } = useDelegados();
+  const { data: org } = useGetAdminOrganizacion();
+  // El modo inicial del delegado («existente» o «nuevo») depende de los datos: no se arma hasta tenerlos.
+  if (error) return <AlertaError>{textoError(error)}</AlertaError>;
+  if (!delegados) return <p role="status">Cargando…</p>;
   return (
     <FormularioInscribirListo
       liga={liga}
-      clubes={clubes}
-      delegados={delegados}
       equipos={equipos}
+      delegados={delegados.filter((d) => d.activo)}
+      pais={org?.pais}
       onCerrar={onCerrar}
-      onPin={onPin}
+      onResultado={onResultado}
     />
   );
 }
 
 function FormularioInscribirListo({
   liga,
-  clubes,
-  delegados,
   equipos,
+  delegados,
+  pais,
   onCerrar,
-  onPin,
+  onResultado,
 }: {
   liga: EdicionDto;
-  clubes: ClubDto[];
-  delegados: DelegadoDto[];
   equipos: EquipoDto[];
+  delegados: React.ComponentProps<typeof CamposDelegadoForm>['delegados'];
+  pais?: string;
   onCerrar: () => void;
-  onPin: (pin: PinEntregado) => void;
+  onResultado: (r: Resultado) => void;
 }) {
-  const inscribir = useInscribirEquipo(liga.id);
-
-  // Solo clubes activos que todavía no juegan en esta liga.
-  const enLiga = new Set(equipos.map((e) => e.club.id));
-  const elegibles = clubes.filter((c) => c.activo && !enLiga.has(c.id));
-
-  const [club, setClub] = useState<ClubCampos>(() => clubVacio(elegibles.length > 0));
-  const [delegado, setDelegado] = useState<DelegadoCampos>(() =>
-    delegadoVacio(delegados.length > 0),
-  );
-  const [errClub, setErrClub] = useState<ErroresClub>({});
-  const [errDel, setErrDel] = useState<ErroresDelegado>({});
+  const inscribir = useInscribirEquipo();
+  const refrescar = useRefrescarLiga();
+  const [campos, setCampos] = useState<CamposEquipo>(() => camposVacios(delegados.length > 0));
+  const [errores, setErrores] = useState<ErroresEquipo>({});
   const [error, setError] = useState<string | null>(null);
+  const tardio = esTardio(liga);
+  const ocupados = new Set(equipos.filter((e) => !e.retirado).map((e) => e.delegado.id));
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const ec = validarClub(club);
-    const ed = validarDelegado(delegado);
-    setErrClub(ec);
-    setErrDel(ed);
-    if (hayErrores(ec) || hayErrores(ed)) return;
+    const ev = validarEquipo(campos);
+    setErrores(ev);
+    if (hayErrores(ev)) return;
     try {
-      const r = await inscribir.mutateAsync({
-        club: aClubInscripcion(club),
-        delegado: aDelegadoInscripcion(delegado),
-      });
-      toast.success(`${r.club.nombre} quedó inscrito.`);
+      const r = await inscribir.mutateAsync({ edicionId: liga.id, data: aInscripcion(campos) });
+      toast.success(`${r.equipo.nombre} quedó inscrito.`);
       onCerrar();
-      if (r.pinEntregado) onPin(r.pinEntregado);
+      onResultado(resultadoDe(r, tardio ? 'Equipo tardío inscrito' : 'Equipo inscrito'));
     } catch (err) {
-      if (!(err instanceof ApiError)) return setError(mensajeGenerico());
+      if (esErrorDeEstado(err)) refrescar();
+      if (!(err instanceof ApiError)) return setError(textoError(err));
       const campo = campoDeError(err);
-      if (campo === 'clubNombre') setErrClub({ nombre: mensajeDeError(err) });
-      else if (campo === 'delegadoTelefono') setErrDel({ telefono: mensajeDeError(err) });
-      else setError(mensajeDeError(err));
+      if (campo === 'nombre') setErrores({ nombre: textoError(err) });
+      else if (campo === 'clubNombre') setErrores({ clubNombre: textoError(err) });
+      else if (campo === 'delegadoTelefono') setErrores({ delegadoTelefono: textoError(err) });
+      else setError(textoError(err));
     }
   }
 
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Inscribir equipo</DialogTitle>
+        <DialogTitle>{tardio ? 'Agregar equipo tardío' : 'Inscribir equipo'}</DialogTitle>
         <DialogDescription>
           Si el club o el delegado son nuevos, se crean en este mismo paso. Al delegado nuevo le
           damos un PIN que verás una sola vez.
@@ -277,45 +420,66 @@ function FormularioInscribirListo({
       </DialogHeader>
       <form onSubmit={enviar} noValidate className="grid gap-5">
         {error ? <AlertaError>{error}</AlertaError> : null}
-        <CamposClub
-          valor={club}
-          onChange={setClub}
-          clubes={elegibles}
-          errores={errClub}
+        <Campo id="insc-nombre" etiqueta="Nombre del equipo en esta liga" error={errores.nombre}>
+          <Input
+            id="insc-nombre"
+            autoComplete="off"
+            maxLength={80}
+            disabled={inscribir.isPending}
+            value={campos.nombre}
+            aria-invalid={!!errores.nombre}
+            onChange={(e) => setCampos({ ...campos, nombre: e.target.value })}
+          />
+        </Campo>
+        <CampoClub
+          valor={campos}
+          onChange={(c) => setCampos({ ...campos, ...c })}
+          error={errores.clubNombre}
           deshabilitado={inscribir.isPending}
         />
-        <CamposDelegado
-          valor={delegado}
-          onChange={setDelegado}
+        <CamposDelegadoForm
+          valor={campos}
+          onChange={(d) => setCampos({ ...campos, ...d })}
           delegados={delegados}
-          categoria={liga.categoria.nombre}
-          errores={errDel}
+          pais={pais}
+          idsOcupados={ocupados}
+          errores={errores}
           deshabilitado={inscribir.isPending}
         />
         <Button type="submit" disabled={inscribir.isPending}>
-          {inscribir.isPending ? 'Inscribiendo…' : 'Inscribir equipo'}
+          {inscribir.isPending ? 'Inscribiendo…' : tardio ? 'Agregar equipo' : 'Inscribir equipo'}
         </Button>
       </form>
     </>
   );
 }
 
+// ---------- reasignar delegado
+
 function ReasignarDialog({
-  liga,
+  edicionId,
   equipo,
+  equipos,
   onCerrar,
-  onPin,
+  onResultado,
 }: {
-  liga: EdicionDto;
+  edicionId: string;
   equipo: EquipoDto | null;
+  equipos: EquipoDto[];
   onCerrar: () => void;
-  onPin: (pin: PinEntregado) => void;
+  onResultado: (r: Resultado) => void;
 }) {
   return (
     <Dialog open={equipo !== null} onOpenChange={(abierto) => !abierto && onCerrar()}>
       <DialogContent>
         {equipo ? (
-          <FormularioReasignar liga={liga} equipo={equipo} onCerrar={onCerrar} onPin={onPin} />
+          <FormularioReasignar
+            edicionId={edicionId}
+            equipo={equipo}
+            equipos={equipos}
+            onCerrar={onCerrar}
+            onResultado={onResultado}
+          />
         ) : null}
       </DialogContent>
     </Dialog>
@@ -323,96 +487,289 @@ function ReasignarDialog({
 }
 
 function FormularioReasignar({
-  liga,
+  edicionId,
   equipo,
+  equipos,
   onCerrar,
-  onPin,
+  onResultado,
 }: {
-  liga: EdicionDto;
+  edicionId: string;
   equipo: EquipoDto;
+  equipos: EquipoDto[];
   onCerrar: () => void;
-  onPin: (pin: PinEntregado) => void;
+  onResultado: (r: Resultado) => void;
 }) {
   const { data: delegados, error } = useDelegados();
-  if (error)
-    return (
-      <AlertaError>
-        {error instanceof ApiError ? mensajeDeError(error) : mensajeGenerico()}
-      </AlertaError>
-    );
+  const { data: org } = useGetAdminOrganizacion();
+  if (error) return <AlertaError>{textoError(error)}</AlertaError>;
   if (!delegados) return <p role="status">Cargando…</p>;
+  const otros = delegados.filter((d) => d.activo && d.id !== equipo.delegado.id);
   return (
     <FormularioReasignarListo
-      liga={liga}
+      edicionId={edicionId}
       equipo={equipo}
-      delegados={delegados}
+      delegados={otros}
+      ocupados={new Set(equipos.filter((e) => !e.retirado).map((e) => e.delegado.id))}
+      pais={org?.pais}
       onCerrar={onCerrar}
-      onPin={onPin}
+      onResultado={onResultado}
     />
   );
 }
 
 function FormularioReasignarListo({
-  liga,
+  edicionId,
   equipo,
   delegados,
+  ocupados,
+  pais,
   onCerrar,
-  onPin,
+  onResultado,
 }: {
-  liga: EdicionDto;
+  edicionId: string;
   equipo: EquipoDto;
-  delegados: DelegadoDto[];
+  delegados: React.ComponentProps<typeof CamposDelegadoForm>['delegados'];
+  ocupados: Set<string>;
+  pais?: string;
   onCerrar: () => void;
-  onPin: (pin: PinEntregado) => void;
+  onResultado: (r: Resultado) => void;
 }) {
-  const reasignar = useReasignarDelegado(liga.id);
-  const otros = delegados.filter((d) => d.id !== equipo.delegado.id);
-  const [delegado, setDelegado] = useState<DelegadoCampos>(() => delegadoVacio(otros.length > 0));
-  const [errDel, setErrDel] = useState<ErroresDelegado>({});
+  const reasignar = useReasignarDelegado();
+  const refrescar = useRefrescarLiga();
+  const [campos, setCampos] = useState<CamposDelegado>(() => delegadoVacio(delegados.length > 0));
+  const [errores, setErrores] = useState<ErroresDelegado>({});
   const [error, setError] = useState<string | null>(null);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const ed = validarDelegado(delegado);
-    setErrDel(ed);
-    if (hayErrores(ed)) return;
+    const ev = validarDelegado(campos);
+    setErrores(ev);
+    if (hayErrores(ev)) return;
     try {
       const r = await reasignar.mutateAsync({
+        edicionId,
         equipoId: equipo.id,
-        delegado: aDelegadoInscripcion(delegado),
+        data: { delegado: aDelegadoEntrada(campos) },
       });
-      toast.success(`${r.club.nombre} ahora lo lleva ${r.delegado.nombre}.`);
+      toast.success(`${r.equipo.nombre} ahora lo lleva ${r.equipo.delegado.nombre}.`);
       onCerrar();
-      if (r.pinEntregado) onPin(r.pinEntregado);
+      onResultado(resultadoDe(r, 'Delegado cambiado'));
     } catch (err) {
-      if (!(err instanceof ApiError)) return setError(mensajeGenerico());
-      if (campoDeError(err) === 'delegadoTelefono') setErrDel({ telefono: mensajeDeError(err) });
-      else setError(mensajeDeError(err));
+      if (esErrorDeEstado(err)) refrescar();
+      if (err instanceof ApiError && campoDeError(err) === 'delegadoTelefono')
+        setErrores({ delegadoTelefono: textoError(err) });
+      else setError(textoError(err));
     }
   }
 
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Cambiar delegado de {equipo.club.nombre}</DialogTitle>
+        <DialogTitle>Cambiar delegado de {equipo.nombre}</DialogTitle>
         <DialogDescription>
-          Hoy lo lleva {equipo.delegado.nombre}. Su sesión sobre este equipo se cierra al guardar.
+          Hoy lo lleva {equipo.delegado.nombre}. Pierde el acceso a este equipo al instante y
+          conserva los demás que lleve.
         </DialogDescription>
       </DialogHeader>
       <form onSubmit={enviar} noValidate className="grid gap-5">
         {error ? <AlertaError>{error}</AlertaError> : null}
-        <CamposDelegado
-          valor={delegado}
-          onChange={setDelegado}
-          delegados={otros}
-          categoria={liga.categoria.nombre}
-          ignorarEquipoId={equipo.id}
-          errores={errDel}
+        <CamposDelegadoForm
+          valor={campos}
+          onChange={setCampos}
+          delegados={delegados}
+          pais={pais}
+          idsOcupados={ocupados}
+          errores={errores}
           deshabilitado={reasignar.isPending}
         />
         <Button type="submit" disabled={reasignar.isPending}>
           {reasignar.isPending ? 'Guardando…' : 'Cambiar delegado'}
+        </Button>
+      </form>
+    </>
+  );
+}
+
+// ---------- renombrar
+
+function RenombrarDialog({
+  edicionId,
+  equipo,
+  onCerrar,
+}: {
+  edicionId: string;
+  equipo: EquipoDto | null;
+  onCerrar: () => void;
+}) {
+  return (
+    <Dialog open={equipo !== null} onOpenChange={(abierto) => !abierto && onCerrar()}>
+      <DialogContent>
+        {equipo ? (
+          <FormularioRenombrar
+            key={equipo.id}
+            edicionId={edicionId}
+            equipo={equipo}
+            onCerrar={onCerrar}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormularioRenombrar({
+  edicionId,
+  equipo,
+  onCerrar,
+}: {
+  edicionId: string;
+  equipo: EquipoDto;
+  onCerrar: () => void;
+}) {
+  const renombrar = useRenombrarEquipo();
+  const refrescar = useRefrescarLiga();
+  const [nombre, setNombre] = useState(equipo.nombre);
+  const [errorCampo, setErrorCampo] = useState<string>();
+  const [error, setError] = useState<string | null>(null);
+
+  async function guardar(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setErrorCampo(undefined);
+    const limpio = nombre.trim();
+    if (limpio.length < 2) return setErrorCampo('Escribe el nombre del equipo (mínimo 2 letras).');
+    if (limpio === equipo.nombre) return onCerrar();
+    try {
+      await renombrar.mutateAsync({ edicionId, equipoId: equipo.id, data: { nombre: limpio } });
+      toast.success('Equipo renombrado.');
+      onCerrar();
+    } catch (err) {
+      if (esErrorDeEstado(err)) refrescar();
+      if (err instanceof ApiError && campoDeError(err) === 'nombre') setErrorCampo(textoError(err));
+      else setError(textoError(err));
+    }
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Renombrar equipo</DialogTitle>
+        <DialogDescription>
+          El nombre cambia solo en esta liga; el mismo club en otras ligas no se toca.
+        </DialogDescription>
+      </DialogHeader>
+      <form onSubmit={guardar} noValidate className="grid gap-4">
+        {error ? <AlertaError>{error}</AlertaError> : null}
+        <Campo id="ren-nombre" etiqueta="Nombre del equipo" error={errorCampo}>
+          <Input
+            id="ren-nombre"
+            autoComplete="off"
+            maxLength={80}
+            value={nombre}
+            aria-invalid={!!errorCampo}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+        </Campo>
+        <Button type="submit" disabled={renombrar.isPending}>
+          {renombrar.isPending ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </form>
+    </>
+  );
+}
+
+// ---------- retirar
+
+function RetirarDialog({
+  edicionId,
+  definitivo,
+  equipo,
+  onCerrar,
+}: {
+  edicionId: string;
+  definitivo: boolean;
+  equipo: EquipoDto | null;
+  onCerrar: () => void;
+}) {
+  return (
+    <Dialog open={equipo !== null} onOpenChange={(abierto) => !abierto && onCerrar()}>
+      <DialogContent>
+        {equipo ? (
+          <FormularioRetirar
+            key={equipo.id}
+            edicionId={edicionId}
+            definitivo={definitivo}
+            equipo={equipo}
+            onCerrar={onCerrar}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormularioRetirar({
+  edicionId,
+  definitivo,
+  equipo,
+  onCerrar,
+}: {
+  edicionId: string;
+  definitivo: boolean;
+  equipo: EquipoDto;
+  onCerrar: () => void;
+}) {
+  const retirar = useRetirarEquipo();
+  const refrescar = useRefrescarLiga();
+  const [motivo, setMotivo] = useState('');
+  const [errorCampo, setErrorCampo] = useState<string>();
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirmar(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setErrorCampo(undefined);
+    if (motivo.trim() === '') return setErrorCampo('Cuéntanos el motivo del retiro.');
+    try {
+      await retirar.mutateAsync({
+        edicionId,
+        equipoId: equipo.id,
+        data: { motivo: motivo.trim() },
+      });
+      toast.success(`${equipo.nombre} fue retirado de la liga.`);
+      onCerrar();
+    } catch (err) {
+      if (esErrorDeEstado(err)) refrescar();
+      setError(textoError(err));
+    }
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Retirar a {equipo.nombre}</DialogTitle>
+        <DialogDescription>
+          No se borra: queda retirado, con fecha y motivo.{' '}
+          {definitivo
+            ? 'Con la liga en marcha el retiro es definitivo: el equipo no vuelve.'
+            : 'Antes de que arranque la liga puedes reincorporarlo.'}
+        </DialogDescription>
+      </DialogHeader>
+      <form onSubmit={confirmar} noValidate className="grid gap-4">
+        {error ? <AlertaError>{error}</AlertaError> : null}
+        <Campo id="ret-motivo" etiqueta="Motivo" error={errorCampo}>
+          <Input
+            id="ret-motivo"
+            autoComplete="off"
+            maxLength={500}
+            value={motivo}
+            aria-invalid={!!errorCampo}
+            onChange={(e) => setMotivo(e.target.value)}
+          />
+        </Campo>
+        <Button type="submit" variant="destructive" disabled={retirar.isPending}>
+          {retirar.isPending ? 'Retirando…' : 'Retirar equipo'}
         </Button>
       </form>
     </>
