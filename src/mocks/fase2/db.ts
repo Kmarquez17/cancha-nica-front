@@ -566,16 +566,35 @@ export function archivarEdicion(eid: string, archivar: boolean) {
 
 type Incumplimiento = { codigo: string; mensaje: string; forzable: boolean };
 
+/**
+ * Enlace con los equipos de la Fase 3 (los registra `fase3/db.ts`): el arranque de la liga usa equipos reales y
+ * `excluirEquipos` (FRONT_FASE_03.md §7). Sin él (pruebas de la Fase 2 solas) hay 0 equipos.
+ */
+export const puenteEquipos = {
+  /** Equipos que cuentan para el arranque: no retirados, habilitados y fuera de `excluidos`. */
+  contar: (...args: [edicionId: string, excluidos: string[]]): number => (void args, 0),
+  /** 404 si algún id no es un equipo de esa liga. */
+  validarExcluidos: (...args: [edicionId: string, ids: string[]]): void => void args,
+  excluir: (...args: [edicionId: string, ids: string[]]): void => void args,
+};
+
 /** Condiciones de cada cambio de estado (FRONT_FASE_02.md §3.5). Equipos y calendario llegan en fases futuras. */
-function incumplimientosPara(e: EdicionInterna, a: EstadoEdicion): Incumplimiento[] {
+function incumplimientosPara(
+  e: EdicionInterna,
+  a: EstadoEdicion,
+  excluidos: string[] = [],
+): Incumplimiento[] {
   const lista: Incumplimiento[] = [];
   if (a === 'EN_CURSO') {
-    lista.push(
-      {
+    // Hasta la Fase 4 no hay planteles: ROSTER_INCOMPLETO sale siempre (forzable por el dueño).
+    if (puenteEquipos.contar(e.id, excluidos) < e.minEquiposArranque)
+      lista.push({
         codigo: 'EQUIPOS_INSUFICIENTES',
         mensaje: `Faltan equipos confirmados (mínimo ${e.minEquiposArranque}).`,
         forzable: true,
-      },
+      });
+    lista.push(
+      { codigo: 'ROSTER_INCOMPLETO', mensaje: 'Hay equipos sin plantel completo.', forzable: true },
       { codigo: 'FIXTURE_NO_GENERADO', mensaje: 'Falta generar el calendario.', forzable: true },
     );
     if (!estado.mesas.some((m) => m.activo && m.ediciones.some((x) => x.id === e.id)))
@@ -631,7 +650,12 @@ export function cambiarEstado(eid: string, b: CambiarEstadoDto, esDueno = true) 
       ],
     });
 
-  const faltan = incumplimientosPara(e, b.a);
+  if (b.excluirEquipos !== undefined) {
+    if (!(e.estado === 'EN_REGISTRO' && b.a === 'EN_CURSO'))
+      throw errorValidacion('excluirEquipos solo se acepta al arrancar la liga.');
+    puenteEquipos.validarExcluidos(e.id, b.excluirEquipos);
+  }
+  const faltan = incumplimientosPara(e, b.a, b.excluirEquipos ?? []);
   if (faltan.length > 0) {
     const forzables = faltan.every((i) => i.forzable);
     if (!(b.forzar && forzables))
@@ -642,6 +666,7 @@ export function cambiarEstado(eid: string, b: CambiarEstadoDto, esDueno = true) 
         { incumplimientos: faltan },
       );
   }
+  if (b.excluirEquipos?.length) puenteEquipos.excluir(e.id, b.excluirEquipos);
   if (b.a === 'PAUSADA') e.estadoPrevioPausa = e.estado;
   else if (e.estado === 'PAUSADA') e.estadoPrevioPausa = null;
   e.estado = b.a;

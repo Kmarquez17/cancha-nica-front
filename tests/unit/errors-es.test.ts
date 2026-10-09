@@ -78,4 +78,52 @@ describe('problemToApiError + es.ts', () => {
     expect(esKnownCode('PLATAFORMA_SOLO_LECTURA')).toBe(false);
     expect(mensajeDeError(err)).toBe('Ocurrió un error inesperado. Código de soporte: req-9.');
   });
+
+  it('traduce los 13 códigos de la Fase 3 y mapea los de campo', () => {
+    const campos: Record<string, string> = {
+      EQUIPO_DUPLICADO: 'nombre',
+      EQUIPO_CLUB_DUPLICADO: 'clubNombre',
+      CLUB_ARCHIVADO: 'clubNombre',
+      TELEFONO_INVALIDO: 'delegadoTelefono',
+      DELEGADO_PHONE_DUPLICATED: 'delegadoTelefono',
+      PIN_DEBIL: 'pinNuevo',
+      PIN_ACTUAL_INCORRECTO: 'pinActual',
+    };
+    for (const code of [
+      'EQUIPO_DUPLICADO',
+      'EQUIPO_CLUB_DUPLICADO',
+      'CLUB_ARCHIVADO',
+      'TELEFONO_INVALIDO',
+      'DELEGADO_PHONE_DUPLICATED',
+      'DELEGADO_DESACTIVADO',
+      'DELEGADO_CON_EQUIPOS_ACTIVOS',
+      'INSCRIPCION_CERRADA',
+      'RETIRO_CERRADO',
+      'REINCORPORACION_CERRADA',
+      'PIN_DEBIL',
+      'PIN_ACTUAL_INCORRECTO',
+      'DELEGADO_BLOQUEADO',
+    ]) {
+      const err = problemToApiError(409, { code });
+      expect(esKnownCode(code), code).toBe(true);
+      expect(mensajeDeError(err)).not.toContain('inesperado');
+      expect(campoDeError(err), code).toBe(campos[code]);
+    }
+  });
+
+  it('TELEFONO_INVALIDO muestra el detail del API cuando existe', () => {
+    const err = problemToApiError(400, { code: 'TELEFONO_INVALIDO', detail: 'Faltan dígitos.' });
+    expect(mensajeDeError(err)).toBe('Faltan dígitos.');
+  });
+
+  it('ya no existen los códigos provisionales de la Fase 3', () => {
+    for (const code of [
+      'CLUB_DUPLICADO',
+      'CLUB_INACTIVO',
+      'TELEFONO_DUPLICADO',
+      'DELEGADO_MISMA_CATEGORIA',
+      'EDICION_NO_ACEPTA_INSCRIPCIONES',
+    ])
+      expect(esKnownCode(code), code).toBe(false);
+  });
 });

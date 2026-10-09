@@ -29,7 +29,12 @@ export function responder<T>(operacion: () => T, init?: HttpResponseInit) {
       ? new HttpResponse(null, { status: 204 })
       : HttpResponse.json(dato, init);
   } catch (e) {
-    if (e instanceof Problema) return problema(e);
+    if (e instanceof Problema) {
+      // Un rechazo también puede cambiar el estado (los intentos fallidos del login suman hacia el bloqueo).
+      persistirFase2();
+      persistirFase3();
+      return problema(e);
+    }
     throw e;
   }
 }

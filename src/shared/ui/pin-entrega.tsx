@@ -33,11 +33,14 @@ export function PinEntregaDialog({
   entrega,
   titulo,
   reseteo,
+  nota,
   onCerrar,
 }: {
   entrega: EntregaPin | null;
   titulo: string;
   reseteo?: boolean;
+  /** Aviso extra bajo el PIN (p. ej. «es temporal»). */
+  nota?: string;
   onCerrar: () => void;
 }) {
   const [copiado, setCopiado] = useState<'pin' | 'mensaje' | null>(null);
@@ -87,6 +90,7 @@ export function PinEntregaDialog({
             {reseteo ? (
               <p className="text-sm text-muted-foreground">El PIN anterior ya no funciona.</p>
             ) : null}
+            {nota ? <p className="text-sm text-muted-foreground">{nota}</p> : null}
             <p className="text-sm">
               Enlace de acceso: <span className="font-medium break-all">{entrega.enlace}</span>
             </p>

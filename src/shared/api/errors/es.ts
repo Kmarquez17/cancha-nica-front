@@ -70,22 +70,44 @@ export const mensajesEs: Record<string, { message: string; field?: string }> = {
   FORBIDDEN: { message: 'No tienes permiso para hacer esto.' },
   NOT_FOUND: { message: 'No encontramos lo que buscas. Puede que ya no exista.' },
 
-  // Clubes, delegados y equipos (Fase 3; nombres provisionales hasta el contrato)
-  CLUB_DUPLICADO: {
-    message: 'Ya existe un club con ese nombre (no importan mayúsculas, tildes ni guiones).',
+  // Clubes, delegados y equipos (Fase 3, FRONT_FASE_03.md §8)
+  EQUIPO_DUPLICADO: {
+    message: 'Ups, ya hay un equipo con ese nombre en esta liga.',
+    field: 'nombre',
+  },
+  EQUIPO_CLUB_DUPLICADO: {
+    message: 'Ese club ya está inscrito en esta liga.',
     field: 'clubNombre',
   },
-  CLUB_INACTIVO: { message: 'Ese club está desactivado. Actívalo para inscribirlo.' },
-  EQUIPO_DUPLICADO: { message: 'Ese club ya está inscrito en esta liga.' },
-  TELEFONO_DUPLICADO: {
-    message: 'Ya hay un delegado con ese teléfono. Elígelo de la lista de delegados.',
+  CLUB_ARCHIVADO: {
+    message: 'Ese club está archivado. Restáuralo en Clubes para usarlo.',
+    field: 'clubNombre',
+  },
+  TELEFONO_INVALIDO: {
+    message: 'Ese teléfono no es válido. Revisa el número y el código de país.',
     field: 'delegadoTelefono',
   },
-  DELEGADO_MISMA_CATEGORIA: {
-    message: 'Ese delegado ya tiene un equipo en esta categoría. Elige a otra persona.',
+  DELEGADO_PHONE_DUPLICATED: {
+    message: 'Ese delegado ya lleva un equipo en esta liga.',
+    field: 'delegadoTelefono',
   },
-  EDICION_NO_ACEPTA_INSCRIPCIONES: {
-    message: 'Esta liga no tiene las inscripciones abiertas.',
+  DELEGADO_DESACTIVADO: { message: 'Ese delegado está desactivado. Actívalo o elige otro.' },
+  DELEGADO_CON_EQUIPOS_ACTIVOS: {
+    message: 'Reasigna sus equipos antes de desactivarlo.',
+  },
+  INSCRIPCION_CERRADA: { message: 'Esta liga ya no admite inscripciones.' },
+  RETIRO_CERRADO: { message: 'Esta liga ya no admite retiros.' },
+  REINCORPORACION_CERRADA: {
+    message: 'Con la liga en marcha un equipo retirado no vuelve.',
+  },
+  PIN_DEBIL: {
+    message: 'Elige un PIN menos obvio: sin repetidos, escaleras ni patrones.',
+    field: 'pinNuevo',
+  },
+  PIN_ACTUAL_INCORRECTO: { message: 'El PIN actual no es correcto.', field: 'pinActual' },
+  DELEGADO_BLOQUEADO: {
+    message:
+      'Demasiados intentos. Espera unos minutos o pide al dueño de la liga que te desbloquee.',
   },
 
   // Transporte
@@ -95,7 +117,7 @@ export const mensajesEs: Record<string, { message: string; field?: string }> = {
 };
 
 /** Códigos cuyo `detail` del servidor explica el motivo y es seguro mostrarlo. */
-const USA_DETALLE = new Set(['PASSWORD_DEBIL']);
+const USA_DETALLE = new Set(['PASSWORD_DEBIL', 'TELEFONO_INVALIDO']);
 
 export function mensajeGenerico(requestId?: string): string {
   return `Ocurrió un error inesperado.${requestId ? ` Código de soporte: ${requestId}.` : ''}`;
@@ -108,7 +130,9 @@ export function esKnownCode(code: string): boolean {
 /** Mensaje en español para un ApiError; code desconocido => genérico con requestId. */
 export function mensajeDeError(error: ApiError): string {
   if (USA_DETALLE.has(error.code)) {
-    return error.detail ?? 'La contraseña no es lo bastante segura.';
+    return (
+      error.detail ?? mensajesEs[error.code]?.message ?? 'La contraseña no es lo bastante segura.'
+    );
   }
   return mensajesEs[error.code]?.message ?? mensajeGenerico(error.requestId);
 }
