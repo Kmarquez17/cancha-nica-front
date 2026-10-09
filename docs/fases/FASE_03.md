@@ -40,7 +40,7 @@ Otros: catálogo de los 13 códigos nuevos en `shared/api/errors/es.ts`; `shared
 2. **Nada de esto se ha probado a mano en el navegador** ni contra el backend real; solo contra la simulación. Revisar a ojo móvil y escritorio.
 3. **Semántica de `useClubes({ archivados: true })`:** no se sabe si la API devuelve solo archivados o ambos; la pantalla muestra lo que llegue. Confirmar contra el backend real.
 4. **Bypass de sesión simulada:** `src/proxy.ts` y el layout `(delegado)/delegado/(panel)` mantienen una sesión simulada con MSW (`NEXT_PUBLIC_USE_MSW=true`) para el E2E sin backend. Revisar que no pueda activarse fuera de desarrollo/CI.
-5. **Warnings de lint** (no errores) en `src/mocks/fase2/db.ts` líneas ~575-578 (`_edicionId`, `_excluidos`, `_ids` sin usar).
+5. ~~Warnings de lint en `mocks/fase2/db.ts`~~ — resueltos (el hook de pre-commit exige 0 warnings).
 6. **Revisión de a11y/UX de la fase** (agente `revisor-ux-a11y`) sin hacer: contraste, foco en diálogos del PIN, tamaños táctiles del portal del delegado.
 7. **Auditoría del flujo del PIN:** confirmar que el PIN nunca queda en `localStorage`, URL, caché de React Query ni logs (solo en el estado del diálogo; `gcTime: 0`).
 8. **Slugs reservados** `login`, `bloqueada` y `refresh` chocan con rutas fijas de `/delegado/…` y `/mesa/…`: pedir al backend que los prohíba como slug de cliente.
@@ -53,3 +53,7 @@ Otros: catálogo de los 13 códigos nuevos en `shared/api/errors/es.ts`; `shared
 - Jugadores y planteles: Fase 4. Finanzas y sanciones de equipo: Fase 6. Partido en vivo: Fase 7.
 - Escudo del club (`escudoUrl` siempre `null`): espera a Storage.
 - Carga masiva de equipos: no existe en el API.
+
+## 6. Nota sobre el commit en Windows
+
+El hook de pre-commit (lint-staged) falla con «The command line is too long» si se commitean ~80 archivos de golpe. Commitear por lotes (contrato/generado, mocks y shared, features, tests y docs). El hook además exige `--max-warnings=0`.
