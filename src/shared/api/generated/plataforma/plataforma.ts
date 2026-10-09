@@ -30,7 +30,9 @@ import type {
   CategoriaDto,
   ClienteFichaDto,
   CrearOrganizacionDto,
+  DelegadoPlataformaDto,
   EdicionDto,
+  EquipoPlataformaDto,
   InvitacionCreadaDto,
   InvitarDuenoDto,
   ListarOrganizacionesParams,
@@ -822,6 +824,107 @@ export function useListarCategoriasDeOrganizacion<TData = Awaited<ReturnType<typ
 
 
 
+export const getListarDelegadosDeOrganizacionUrl = (id: string,) => {
+
+
+
+
+  return `/plataforma/organizaciones/${id}/delegados`
+}
+
+/**
+ * Nunca incluye PIN, hash ni teléfono.
+ * @summary Delegados del cliente (solo lectura): estado, último acceso, equipos y ligas
+ */
+export const listarDelegadosDeOrganizacion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<DelegadoPlataformaDto[]> => {
+
+  return apiFetch<DelegadoPlataformaDto[]>(getListarDelegadosDeOrganizacionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarDelegadosDeOrganizacionQueryKey = (id: string,) => {
+    return [
+    `/plataforma/organizaciones/${id}/delegados`
+    ] as const;
+    }
+
+
+export const getListarDelegadosDeOrganizacionQueryOptions = <TData = Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarDelegadosDeOrganizacionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>> = ({ signal }) => listarDelegadosDeOrganizacion(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarDelegadosDeOrganizacionQueryResult = NonNullable<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>>
+export type ListarDelegadosDeOrganizacionQueryError = unknown
+
+
+export function useListarDelegadosDeOrganizacion<TData = Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>,
+          TError,
+          Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarDelegadosDeOrganizacion<TData = Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>,
+          TError,
+          Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarDelegadosDeOrganizacion<TData = Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delegados del cliente (solo lectura): estado, último acceso, equipos y ligas
+ */
+
+export function useListarDelegadosDeOrganizacion<TData = Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegadosDeOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarDelegadosDeOrganizacionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export const getListarEdicionesDeOrganizacionUrl = (id: string,) => {
 
 
@@ -911,6 +1014,106 @@ export function useListarEdicionesDeOrganizacion<TData = Awaited<ReturnType<type
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListarEdicionesDeOrganizacionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListarEquiposDeOrganizacionUrl = (id: string,) => {
+
+
+
+
+  return `/plataforma/organizaciones/${id}/equipos`
+}
+
+/**
+ * @summary Equipos del cliente en todas sus ligas (solo lectura), con club, delegado y quién los inscribió
+ */
+export const listarEquiposDeOrganizacion = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoPlataformaDto[]> => {
+
+  return apiFetch<EquipoPlataformaDto[]>(getListarEquiposDeOrganizacionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarEquiposDeOrganizacionQueryKey = (id: string,) => {
+    return [
+    `/plataforma/organizaciones/${id}/equipos`
+    ] as const;
+    }
+
+
+export const getListarEquiposDeOrganizacionQueryOptions = <TData = Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarEquiposDeOrganizacionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>> = ({ signal }) => listarEquiposDeOrganizacion(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarEquiposDeOrganizacionQueryResult = NonNullable<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>>
+export type ListarEquiposDeOrganizacionQueryError = unknown
+
+
+export function useListarEquiposDeOrganizacion<TData = Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>,
+          TError,
+          Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarEquiposDeOrganizacion<TData = Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>,
+          TError,
+          Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarEquiposDeOrganizacion<TData = Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Equipos del cliente en todas sus ligas (solo lectura), con club, delegado y quién los inscribió
+ */
+
+export function useListarEquiposDeOrganizacion<TData = Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquiposDeOrganizacion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarEquiposDeOrganizacionQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

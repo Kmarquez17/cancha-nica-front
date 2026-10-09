@@ -1,6 +1,25 @@
 {
   "components": {
     "schemas": {
+      "AccesoDelegadoDto": {
+        "properties": {
+          "bloqueadoHasta": {
+            "description": "Hasta cuándo está bloqueado por intentos fallidos (solo en BLOQUEADO)",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoAccesoDelegado"
+              }
+            ]
+          }
+        },
+        "required": ["estado", "bloqueadoHasta"],
+        "type": "object"
+      },
       "AccesoMesaDto": {
         "properties": {
           "bloqueadaHasta": {
@@ -76,6 +95,22 @@
           },
           "zonaHoraria": {
             "example": "America/Managua",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ActualizarDelegadoDto": {
+        "properties": {
+          "nombre": {
+            "example": "Juan Pérez",
+            "maxLength": 80,
+            "type": "string"
+          },
+          "telefono": {
+            "description": "Número local (se completa con el país del cliente) o internacional con + o 00. Se guarda en E.164. Cambiarlo cierra las sesiones del delegado.",
+            "example": "8888 8888",
+            "maxLength": 32,
             "type": "string"
           }
         },
@@ -305,12 +340,50 @@
             "description": "Obligatorio para FINALIZADA, que no tiene vuelta atrás",
             "type": "boolean"
           },
+          "excluirEquipos": {
+            "description": "Ids de equipos de esta liga que no arrancan: quedan habilitado=false (no se borran) y no cuentan para el mínimo. Solo al pasar de EN_REGISTRO a EN_CURSO (otro caso: 400); un equipo de otra liga: 404.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
           "forzar": {
             "description": "Saltarse las precondiciones forzables. Solo el dueño (OWNER); queda auditado.",
             "type": "boolean"
           }
         },
         "required": ["a"],
+        "type": "object"
+      },
+      "CambiarPinDto": {
+        "properties": {
+          "pinActual": {
+            "description": "El PIN con el que entró",
+            "example": "004821",
+            "type": "string"
+          },
+          "pinNuevo": {
+            "description": "Seis dígitos. Se rechazan los obvios (PIN_DEBIL: todos iguales, escaleras, patrones repetidos) y el mismo PIN actual.",
+            "example": "730159",
+            "pattern": "^\\d{6}$",
+            "type": "string"
+          }
+        },
+        "required": ["pinActual", "pinNuevo"],
+        "type": "object"
+      },
+      "CategoriaDelegadoDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
         "type": "object"
       },
       "CategoriaDto": {
@@ -488,6 +561,111 @@
         ],
         "type": "object"
       },
+      "ClubDeEquipoDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "example": "Real Peña",
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
+        "type": "object"
+      },
+      "ClubDelegadoDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
+        "type": "object"
+      },
+      "ClubDto": {
+        "properties": {
+          "activo": {
+            "description": "Archivado: no se ofrece ni se reutiliza",
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "description": "Quién lo registró (R12)"
+          },
+          "equipos": {
+            "description": "Equipos (uno por liga) que tiene el club",
+            "type": "number"
+          },
+          "escudoUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ligas": {
+            "description": "Ligas en las que el club tiene un equipo",
+            "items": {
+              "$ref": "#/components/schemas/ClubLigaDto"
+            },
+            "type": "array"
+          },
+          "nombre": {
+            "example": "Real Peña",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "escudoUrl",
+          "activo",
+          "equipos",
+          "ligas",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
+      "ClubLigaDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "example": "Libre 2026",
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
+        "type": "object"
+      },
+      "ClubRefDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
       "ConteosClienteDto": {
         "properties": {
           "admins": {
@@ -643,6 +821,231 @@
           }
         },
         "required": ["edicionIds"],
+        "type": "object"
+      },
+      "DelegadoConPinDto": {
+        "properties": {
+          "delegado": {
+            "$ref": "#/components/schemas/DelegadoDto"
+          },
+          "loginUrl": {
+            "example": "http://localhost:3001/delegado/sopa",
+            "type": "string"
+          },
+          "pin": {
+            "description": "PIN temporal de 6 dígitos. Se muestra una sola vez y no se puede recuperar; si se pierde, se resetea.",
+            "example": "004821",
+            "type": "string"
+          },
+          "waMeUrl": {
+            "description": "Abre WhatsApp con el chat del delegado y el acceso ya escrito",
+            "type": "string"
+          }
+        },
+        "required": ["delegado", "pin", "loginUrl", "waMeUrl"],
+        "type": "object"
+      },
+      "DelegadoDeEquipoDto": {
+        "properties": {
+          "activo": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "telefono": {
+            "description": "E.164",
+            "example": "+50588888888",
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "telefono", "activo"],
+        "type": "object"
+      },
+      "DelegadoDto": {
+        "properties": {
+          "acceso": {
+            "$ref": "#/components/schemas/AccesoDelegadoDto"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "description": "Quién lo registró (R12)"
+          },
+          "equipos": {
+            "description": "Equipos que lleva o llevó, con su liga (incluye retirados)",
+            "items": {
+              "$ref": "#/components/schemas/EquipoDeDelegadoDto"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "pinCambiadoEn": {
+            "description": "`null` = sigue con el PIN temporal que le entregó el dueño",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "telefono": {
+            "description": "E.164",
+            "example": "+50588888888",
+            "type": "string"
+          },
+          "ultimoAccesoEn": {
+            "description": "`null` = nunca entró («PIN aún no usado»)",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "telefono",
+          "activo",
+          "acceso",
+          "ultimoAccesoEn",
+          "pinCambiadoEn",
+          "equipos",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
+      "DelegadoExistenteDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "DelegadoPlataformaDto": {
+        "properties": {
+          "activo": {
+            "description": "`false` = desactivado por el cliente",
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "$ref": "#/components/schemas/UsuarioResumenDto"
+          },
+          "equipos": {
+            "description": "Equipos que lleva o llevó, con su liga (incluye retirados)",
+            "items": {
+              "$ref": "#/components/schemas/EquipoDeDelegadoDto"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "pinCambiadoEn": {
+            "description": "`null` = sigue con el PIN temporal",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "ultimoAccesoEn": {
+            "description": "`null` = nunca entró",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "activo",
+          "ultimoAccesoEn",
+          "pinCambiadoEn",
+          "equipos",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
+      "DelegadoPrincipalDto": {
+        "properties": {
+          "equipos": {
+            "description": "Sus equipos en ligas no finalizadas (ni archivadas). Un equipo retirado aparece marcado.",
+            "items": {
+              "$ref": "#/components/schemas/EquipoDelegadoDto"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "organizacion": {
+            "$ref": "#/components/schemas/OrganizacionDelegadoDto"
+          },
+          "pinCambiadoEn": {
+            "description": "null mientras siga con el PIN temporal que le dio el dueño: el front muestra el aviso «cambiá tu PIN»",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "telefono": {
+            "description": "E.164",
+            "example": "+50588888888",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "telefono",
+          "pinCambiadoEn",
+          "organizacion",
+          "equipos"
+        ],
+        "type": "object"
+      },
+      "DelegadoResumenPlataformaDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre"],
         "type": "object"
       },
       "EdicionDeMesaDto": {
@@ -838,6 +1241,292 @@
         ],
         "type": "object"
       },
+      "EntradaDelegadoDto": {
+        "properties": {},
+        "type": "object"
+      },
+      "EquipoConAccesoDto": {
+        "properties": {
+          "delegadoExistente": {
+            "description": "`true` si se usó un delegado que ya existía (por id o por teléfono): conserva su nombre y su PIN, y no hay PIN nuevo",
+            "type": "boolean"
+          },
+          "equipo": {
+            "$ref": "#/components/schemas/EquipoDto"
+          },
+          "loginUrl": {
+            "example": "http://localhost:3001/delegado/sopa",
+            "nullable": true,
+            "type": "string"
+          },
+          "pin": {
+            "description": "PIN temporal de 6 dígitos del delegado nuevo. Se muestra una sola vez; `null` si el delegado ya existía.",
+            "example": "004821",
+            "nullable": true,
+            "type": "string"
+          },
+          "waMeUrl": {
+            "description": "Abre WhatsApp con el chat del delegado nuevo y su acceso ya escrito",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "equipo",
+          "delegadoExistente",
+          "pin",
+          "loginUrl",
+          "waMeUrl"
+        ],
+        "type": "object"
+      },
+      "EquipoDeDelegadoDto": {
+        "properties": {
+          "edicion": {
+            "$ref": "#/components/schemas/LigaDeEquipoDto"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEquipo"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "description": "Nombre del equipo en esa liga",
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "estado", "edicion"],
+        "type": "object"
+      },
+      "EquipoDelegadoDto": {
+        "properties": {
+          "club": {
+            "$ref": "#/components/schemas/ClubDelegadoDto"
+          },
+          "edicion": {
+            "$ref": "#/components/schemas/LigaDelegadoDto"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEquipo"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "description": "Nombre del equipo en esta liga",
+            "type": "string"
+          },
+          "retirado": {
+            "description": "true si el equipo fue retirado de la liga (se muestra marcado)",
+            "type": "boolean"
+          },
+          "retiradoEn": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "estado",
+          "retirado",
+          "retiradoEn",
+          "club",
+          "edicion"
+        ],
+        "type": "object"
+      },
+      "EquipoDto": {
+        "properties": {
+          "club": {
+            "$ref": "#/components/schemas/ClubDeEquipoDto"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "description": "Quién lo inscribió («registrado por», R12)"
+          },
+          "delegado": {
+            "$ref": "#/components/schemas/DelegadoDeEquipoDto"
+          },
+          "edicionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEquipo"
+              }
+            ]
+          },
+          "habilitado": {
+            "description": "`false` si quedó excluido al arrancar la liga",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inscritoTardio": {
+            "description": "Se inscribió con la liga ya en curso (equipo tardío)",
+            "type": "boolean"
+          },
+          "motivoRetiro": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nombre": {
+            "description": "Nombre del equipo en esta liga",
+            "type": "string"
+          },
+          "retirado": {
+            "description": "`true` si el equipo está RETIRADO",
+            "type": "boolean"
+          },
+          "retiradoEn": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "retiradoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "edicionId",
+          "nombre",
+          "estado",
+          "retirado",
+          "habilitado",
+          "inscritoTardio",
+          "retiradoEn",
+          "motivoRetiro",
+          "retiradoPor",
+          "club",
+          "delegado",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
+      "EquipoEnLigaDelegadoDto": {
+        "properties": {
+          "club": {
+            "$ref": "#/components/schemas/ClubDelegadoDto"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEquipo"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "description": "Nombre del equipo en esta liga",
+            "type": "string"
+          },
+          "retirado": {
+            "description": "true si el equipo fue retirado de la liga (se muestra marcado)",
+            "type": "boolean"
+          },
+          "retiradoEn": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "estado",
+          "retirado",
+          "retiradoEn",
+          "club"
+        ],
+        "type": "object"
+      },
+      "EquipoPlataformaDto": {
+        "properties": {
+          "club": {
+            "$ref": "#/components/schemas/ClubDeEquipoDto"
+          },
+          "creadoEn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creadoPor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioResumenDto"
+              }
+            ],
+            "description": "Quién lo inscribió"
+          },
+          "delegado": {
+            "$ref": "#/components/schemas/DelegadoResumenPlataformaDto"
+          },
+          "edicion": {
+            "$ref": "#/components/schemas/LigaDeEquipoDto"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEquipo"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "description": "Nombre del equipo en su liga",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "estado",
+          "edicion",
+          "club",
+          "delegado",
+          "creadoPor",
+          "creadoEn"
+        ],
+        "type": "object"
+      },
       "ErrorCode": {
         "description": "Código estable de negocio (catálogo 4.9, B6)",
         "enum": [
@@ -859,10 +1548,22 @@
           "CONFIRMACION_REQUERIDA",
           "CATEGORIA_DUPLICADA",
           "CATEGORIA_ARCHIVADA",
+          "CLUB_ARCHIVADO",
+          "EQUIPO_DUPLICADO",
+          "EQUIPO_CLUB_DUPLICADO",
+          "INSCRIPCION_CERRADA",
+          "RETIRO_CERRADO",
+          "REINCORPORACION_CERRADA",
           "MESA_LIMIT_REACHED",
           "MESA_BLOQUEADA",
           "DELEGADO_PHONE_DUPLICATED",
           "DELEGADO_REASIGNACION_INVALIDA",
+          "DELEGADO_CON_EQUIPOS_ACTIVOS",
+          "DELEGADO_DESACTIVADO",
+          "DELEGADO_BLOQUEADO",
+          "PIN_DEBIL",
+          "PIN_ACTUAL_INCORRECTO",
+          "TELEFONO_INVALIDO",
           "INVALID_CREDENTIALS",
           "ACCOUNT_LOCKED",
           "ORG_BLOQUEADA",
@@ -904,6 +1605,10 @@
         ],
         "type": "string"
       },
+      "EstadoAccesoDelegado": {
+        "enum": ["ACTIVO", "DESACTIVADO", "BLOQUEADO"],
+        "type": "string"
+      },
       "EstadoAccesoMesa": {
         "enum": ["ACTIVA", "DESACTIVADA", "BLOQUEADA"],
         "type": "string"
@@ -923,9 +1628,48 @@
         ],
         "type": "string"
       },
+      "EstadoEquipo": {
+        "enum": ["BORRADOR", "CONFIRMADO", "DECLINADO", "RETIRADO"],
+        "type": "string"
+      },
       "EstadoOrganizacion": {
         "enum": ["ACTIVA", "BLOQUEADA"],
         "type": "string"
+      },
+      "InscribirEquipoDto": {
+        "properties": {
+          "club": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClubRefDto"
+              }
+            ],
+            "description": "Club elegido de la lista. Sin él, se reutiliza en silencio el club con el mismo nombre (sin distinguir mayúsculas, tildes ni signos) o se crea uno nuevo."
+          },
+          "delegado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EntradaDelegadoDto"
+              }
+            ],
+            "description": "`{ id }` para elegir un delegado existente, o `{ nombre, telefono }`. Si el teléfono ya es de un delegado del cliente, se reutiliza (conserva su nombre y su PIN) y la respuesta trae `delegadoExistente: true`.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DelegadoExistenteDto"
+              },
+              {
+                "$ref": "#/components/schemas/NuevoDelegadoDto"
+              }
+            ]
+          },
+          "nombre": {
+            "example": "Real Peña",
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "required": ["nombre", "delegado"],
+        "type": "object"
       },
       "InvitacionCreadaDto": {
         "properties": {
@@ -1029,6 +1773,83 @@
         "required": ["email", "nombre"],
         "type": "object"
       },
+      "LigaDeEquipoDto": {
+        "properties": {
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "estado"],
+        "type": "object"
+      },
+      "LigaDelegadoDetalleDto": {
+        "properties": {
+          "edicion": {
+            "$ref": "#/components/schemas/LigaDelegadoDto"
+          },
+          "equipo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EquipoEnLigaDelegadoDto"
+              }
+            ],
+            "description": "El equipo que el delegado lleva en ESTA liga (en otra liga puede ser otro)"
+          }
+        },
+        "required": ["edicion", "equipo"],
+        "type": "object"
+      },
+      "LigaDelegadoDto": {
+        "properties": {
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaDelegadoDto"
+          },
+          "estado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEdicion"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "modalidad": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Modalidad"
+              }
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "slug",
+          "modalidad",
+          "estado",
+          "categoria"
+        ],
+        "type": "object"
+      },
       "LigaMesaDetalleDto": {
         "properties": {
           "categoria": {
@@ -1125,6 +1946,22 @@
           "estado",
           "categoria"
         ],
+        "type": "object"
+      },
+      "LoginDelegadoDto": {
+        "properties": {
+          "pin": {
+            "description": "PIN de 6 dígitos",
+            "example": "004821",
+            "type": "string"
+          },
+          "telefono": {
+            "description": "Número local (se completa con el país del cliente) o internacional con + o 00",
+            "example": "8888 8888",
+            "type": "string"
+          }
+        },
+        "required": ["telefono", "pin"],
         "type": "object"
       },
       "LoginDto": {
@@ -1269,6 +2106,22 @@
         "enum": ["FUTSAL", "FUTBOL_9", "FUTBOL_11"],
         "type": "string"
       },
+      "NuevoDelegadoDto": {
+        "properties": {
+          "nombre": {
+            "example": "Juan Pérez",
+            "maxLength": 80,
+            "type": "string"
+          },
+          "telefono": {
+            "example": "8888 8888",
+            "maxLength": 32,
+            "type": "string"
+          }
+        },
+        "required": ["nombre", "telefono"],
+        "type": "object"
+      },
       "OlvideContrasenaDto": {
         "properties": {
           "email": {
@@ -1332,6 +2185,22 @@
           "pais",
           "colorPrimario"
         ],
+        "type": "object"
+      },
+      "OrganizacionDelegadoDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nombre", "slug"],
         "type": "object"
       },
       "OrganizacionDto": {
@@ -1578,6 +2447,39 @@
         "required": ["type", "title", "status", "code", "instance"],
         "type": "object"
       },
+      "ReasignarDelegadoDto": {
+        "properties": {
+          "delegado": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EntradaDelegadoDto"
+              }
+            ],
+            "description": "`{ id }` para elegir un delegado existente, o `{ nombre, telefono }`. Si el teléfono ya es de un delegado del cliente, se reutiliza (conserva su nombre y su PIN) y la respuesta trae `delegadoExistente: true`.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DelegadoExistenteDto"
+              },
+              {
+                "$ref": "#/components/schemas/NuevoDelegadoDto"
+              }
+            ]
+          }
+        },
+        "required": ["delegado"],
+        "type": "object"
+      },
+      "RenombrarEquipoDto": {
+        "properties": {
+          "nombre": {
+            "example": "Real Peña B",
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "required": ["nombre"],
+        "type": "object"
+      },
       "RestablecerContrasenaDto": {
         "properties": {
           "password": {
@@ -1591,6 +2493,18 @@
           }
         },
         "required": ["token", "password"],
+        "type": "object"
+      },
+      "RetirarEquipoDto": {
+        "properties": {
+          "motivo": {
+            "description": "Obligatorio: queda en el equipo y en la auditoría",
+            "example": "El club se quedó sin jugadores",
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": ["motivo"],
         "type": "object"
       },
       "UsuarioResumenDto": {
@@ -1795,6 +2709,386 @@
         "tags": ["Admin"]
       }
     },
+    "/admin/clubes": {
+      "get": {
+        "operationId": "listarClubes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "archivados",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClubDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Clubes de mi cliente (los archivados solo con ?archivados=true; ?q= filtra por nombre sin tildes)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/clubes/{id}/archivar": {
+      "post": {
+        "operationId": "archivarClub",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: el club no existe o es de otro cliente"
+          }
+        },
+        "summary": "Archiva un club (no se ofrece ni se reutiliza; sus equipos siguen)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/clubes/{id}/restaurar": {
+      "post": {
+        "operationId": "restaurarClub",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: el club no existe o es de otro cliente"
+          }
+        },
+        "summary": "Restaura un club archivado",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/delegados": {
+      "get": {
+        "description": "`ultimoAccesoEn: null` = «PIN aún no usado». `pinCambiadoEn: null` = sigue con el PIN temporal. El estado de acceso dice si está activo, desactivado o bloqueado por intentos (y hasta cuándo). Nunca incluye el PIN.",
+        "operationId": "listarDelegados",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DelegadoDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Delegados de mi cliente, con sus equipos, quién los registró y su estado de acceso",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/delegados/{id}": {
+      "patch": {
+        "description": "El teléfono se normaliza con el país del cliente y debe ser único en el cliente. Cambiarlo cierra las sesiones abiertas del delegado.",
+        "operationId": "actualizarDelegado",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarDelegadoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegadoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "TELEFONO_INVALIDO"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: el delegado no existe o es de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "DELEGADO_PHONE_DUPLICATED"
+          }
+        },
+        "summary": "Cambia el nombre o el teléfono del delegado",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/delegados/{id}/activar": {
+      "post": {
+        "operationId": "activarDelegado",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegadoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: el delegado no existe o es de otro cliente"
+          }
+        },
+        "summary": "Reactiva un delegado desactivado",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/delegados/{id}/desactivar": {
+      "post": {
+        "description": "Se rechaza mientras lleve un equipo (no retirado) en una liga no finalizada: primero se reasigna.",
+        "operationId": "desactivarDelegado",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegadoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: el delegado no existe o es de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "DELEGADO_CON_EQUIPOS_ACTIVOS"
+          }
+        },
+        "summary": "Desactiva un delegado: pierde el acceso al instante, también con la sesión abierta",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/delegados/{id}/desbloquear": {
+      "post": {
+        "operationId": "desbloquearDelegado",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegadoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: el delegado no existe o es de otro cliente"
+          }
+        },
+        "summary": "Levanta el bloqueo por intentos fallidos sin cambiar el PIN",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/delegados/{id}/pin/reset": {
+      "post": {
+        "description": "Cierra las sesiones abiertas del delegado y levanta su bloqueo por intentos. El WhatsApp se abre dirigido a su teléfono.",
+        "operationId": "resetearPinDelegado",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegadoConPinDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: el delegado no existe o es de otro cliente"
+          }
+        },
+        "summary": "Genera un PIN temporal nuevo (el anterior deja de servir) y lo devuelve una sola vez",
+        "tags": ["Admin"]
+      }
+    },
     "/admin/ediciones": {
       "get": {
         "operationId": "listarEdiciones",
@@ -1890,6 +3184,472 @@
           }
         },
         "summary": "Crea una liga en CONFIGURACION con el preset de su modalidad",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{edicionId}/equipos": {
+      "get": {
+        "operationId": "listarEquipos",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sin filtro trae todos, incluidos los retirados (marcados)",
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoEquipo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EquipoDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: la liga, el equipo, el club o el delegado no existen o son de otro cliente"
+          }
+        },
+        "summary": "Equipos de la liga con su club, su delegado y quién los registró (incluye retirados, marcados)",
+        "tags": ["Admin"]
+      },
+      "post": {
+        "description": "Todo en una transacción. El club se reutiliza en silencio si el nombre coincide con uno del cliente. Si el teléfono ya es de un delegado, se reutiliza (`delegadoExistente: true`, sin PIN). Solo si el delegado es nuevo vienen `pin`, `loginUrl` y `waMeUrl`: es la única vez que se ve el PIN. Con la liga EN_CURSO solo el dueño inscribe (equipo tardío).",
+        "operationId": "inscribirEquipo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InscribirEquipoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoConAccesoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR o TELEFONO_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "Un admin con la liga en curso (solo el dueño inscribe tardíos)"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: la liga, el equipo, el club o el delegado no existen o son de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EQUIPO_DUPLICADO, EQUIPO_CLUB_DUPLICADO, DELEGADO_PHONE_DUPLICATED, DELEGADO_DESACTIVADO, CLUB_ARCHIVADO o INSCRIPCION_CERRADA"
+          }
+        },
+        "summary": "Formulario único: inscribe un equipo, creando el club y el delegado si hacen falta",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{edicionId}/equipos/{equipoId}": {
+      "get": {
+        "operationId": "obtenerEquipo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "equipoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: la liga, el equipo, el club o el delegado no existen o son de otro cliente"
+          }
+        },
+        "summary": "Un equipo de la liga con su club, su delegado y quién lo registró",
+        "tags": ["Admin"]
+      },
+      "patch": {
+        "description": "No se puede en una liga finalizada ni archivada.",
+        "operationId": "renombrarEquipo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "equipoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenombrarEquipoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: la liga, el equipo, el club o el delegado no existen o son de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EQUIPO_DUPLICADO, EDICION_SOLO_LECTURA o EDICION_ARCHIVADA"
+          }
+        },
+        "summary": "Cambia el nombre del equipo en esta liga (no toca otras ligas)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{edicionId}/equipos/{equipoId}/delegado": {
+      "patch": {
+        "description": "El delegado anterior pierde este equipo al instante y conserva los demás. Si el delegado es nuevo vienen `pin`, `loginUrl` y `waMeUrl` (única vez). No se puede en una liga finalizada ni archivada.",
+        "operationId": "reasignarDelegadoEquipo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "equipoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasignarDelegadoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoConAccesoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR o TELEFONO_INVALIDO"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: la liga, el equipo, el club o el delegado no existen o son de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "DELEGADO_PHONE_DUPLICATED, DELEGADO_DESACTIVADO, EDICION_SOLO_LECTURA o EDICION_ARCHIVADA"
+          }
+        },
+        "summary": "Cambia el delegado del equipo por uno existente o uno nuevo (que recibe PIN)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{edicionId}/equipos/{equipoId}/reincorporar": {
+      "post": {
+        "description": "Solo antes de arrancar (CONFIGURACION, EN_REGISTRO), dueño y admin. Con la liga en marcha o después: REINCORPORACION_CERRADA. Idempotente: si el equipo no estaba retirado responde 200 sin cambiar nada.",
+        "operationId": "reincorporarEquipo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "equipoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: la liga, el equipo, el club o el delegado no existen o son de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "REINCORPORACION_CERRADA o EDICION_ARCHIVADA"
+          }
+        },
+        "summary": "Devuelve un equipo retirado a la liga (CONFIRMADO, con su nombre)",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/ediciones/{edicionId}/equipos/{equipoId}/retirar": {
+      "post": {
+        "description": "CONFIGURACION y EN_REGISTRO: dueño y admin, y se puede reincorporar. EN_CURSO y PAUSADA: solo el dueño, y el retiro es definitivo. EN_ELIMINATORIAS y FINALIZADA: no (RETIRO_CERRADO). El equipo conserva su nombre, que sigue ocupado en la liga. Idempotente: si ya estaba retirado responde 200 sin cambiar nada (ni el motivo original).",
+        "operationId": "retirarEquipo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "equipoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetirarEquipoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR (motivo vacío o ausente)"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "Un admin con la liga en marcha (solo el dueño retira)"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "NOT_FOUND: la liga, el equipo, el club o el delegado no existen o son de otro cliente"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "RETIRO_CERRADO o EDICION_ARCHIVADA"
+          }
+        },
+        "summary": "Retira el equipo de la liga (no se borra: queda RETIRADO con fecha, motivo y quién)",
         "tags": ["Admin"]
       }
     },
@@ -2599,6 +4359,76 @@
         "tags": ["Admin"]
       }
     },
+    "/auth/delegado/{orgSlug}/login": {
+      "post": {
+        "description": "El teléfono se normaliza con el país del cliente (también acepta + o 00). Emite las cookies at_delegado y rt_delegado (30 días). Un cliente inexistente, un teléfono inexistente o mal escrito, un PIN errado o un delegado desactivado responden exactamente igual (401). Registra el primer ingreso (ultimoAccesoEn).",
+        "operationId": "delegadoLogin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orgSlug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDelegadoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegadoPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIALS"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "ORG_BLOQUEADA (solo tras validar el PIN)"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "DELEGADO_BLOQUEADO, IP_LOCKED o TOO_MANY_REQUESTS"
+          }
+        },
+        "summary": "Inicia sesión como delegado con el teléfono y el PIN",
+        "tags": ["Delegado"]
+      }
+    },
     "/auth/logout": {
       "post": {
         "operationId": "logout",
@@ -2845,6 +4675,141 @@
         },
         "summary": "Cambia la contraseña con el token del correo",
         "tags": ["Auth"]
+      }
+    },
+    "/delegado/ediciones/{edicionId}": {
+      "get": {
+        "description": "EdicionScopeGuard decide el acceso en cada petición: 401 si el delegado fue desactivado, 404 si la liga no existe, es de otro cliente o está archivada, 403 si no lleva un equipo operativo en ella (un equipo retirado o excluido no la abre) y 409 EDICION_SOLO_LECTURA si ya finalizó. Reasignar o retirar su equipo surte efecto al instante con el mismo token.",
+        "operationId": "getDelegadoEdicion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edicionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LigaDelegadoDetalleDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "Sesión inválida o delegado desactivado"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "No lleva un equipo operativo en esta liga"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "No existe, es de otro cliente o está archivada"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "EDICION_SOLO_LECTURA"
+          }
+        },
+        "summary": "Una liga donde el delegado lleva equipo, con SU equipo en ella",
+        "tags": ["Delegado"]
+      }
+    },
+    "/delegado/me": {
+      "get": {
+        "description": "Perfil, pinCambiadoEn (null = sigue con el PIN temporal: mostrar el aviso) y sus equipos de ligas no finalizadas, con liga, categoría, modalidad y estado. Un equipo retirado aparece marcado.",
+        "operationId": "getDelegadoMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegadoPrincipalDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "El delegado de la sesión y sus equipos",
+        "tags": ["Delegado"]
+      }
+    },
+    "/delegado/pin": {
+      "post": {
+        "description": "El PIN actual se verifica con el mismo bloqueo por intentos que el login: un PIN actual incorrecto cuenta como intento fallido. Rechaza los PIN obvios y el mismo PIN actual (PIN_DEBIL). Cierra las demás sesiones del delegado y conserva la actual.",
+        "operationId": "cambiarPinDelegado",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarPinDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "PIN cambiado (sin cuerpo)"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "PIN_DEBIL, PIN_ACTUAL_INCORRECTO o VALIDATION_ERROR"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            },
+            "description": "DELEGADO_BLOQUEADO, IP_LOCKED o TOO_MANY_REQUESTS"
+          }
+        },
+        "summary": "Cambia el PIN del delegado pidiendo el actual",
+        "tags": ["Delegado"]
       }
     },
     "/health": {
@@ -3398,6 +5363,39 @@
         "tags": ["Plataforma"]
       }
     },
+    "/plataforma/organizaciones/{id}/delegados": {
+      "get": {
+        "description": "Nunca incluye PIN, hash ni teléfono.",
+        "operationId": "listarDelegadosDeOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DelegadoPlataformaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Delegados del cliente (solo lectura): estado, último acceso, equipos y ligas",
+        "tags": ["Plataforma"]
+      }
+    },
     "/plataforma/organizaciones/{id}/ediciones": {
       "get": {
         "operationId": "listarEdicionesDeOrganizacion",
@@ -3427,6 +5425,38 @@
           }
         },
         "summary": "Ligas del cliente (solo lectura), con su estado y quién las registró",
+        "tags": ["Plataforma"]
+      }
+    },
+    "/plataforma/organizaciones/{id}/equipos": {
+      "get": {
+        "operationId": "listarEquiposDeOrganizacion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EquipoPlataformaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Equipos del cliente en todas sus ligas (solo lectura), con club, delegado y quién los inscribió",
         "tags": ["Plataforma"]
       }
     },

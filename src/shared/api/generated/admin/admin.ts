@@ -27,25 +27,37 @@ import type {
 import type {
   ActualizarCategoriaDto,
   ActualizarConfigDto,
+  ActualizarDelegadoDto,
   ActualizarEdicionDto,
   ActualizarMesaDto,
   AdminPrincipalDto,
   CambiarEstadoDto,
   CategoriaDto,
+  ClubDto,
   CrearCategoriaDto,
   CrearEdicionDto,
   CrearMesaDto,
   DefinirAlcanceMesaDto,
+  DelegadoConPinDto,
+  DelegadoDto,
   EdicionDto,
+  EquipoConAccesoDto,
+  EquipoDto,
+  InscribirEquipoDto,
   InvitacionCreadaDto,
   InvitarAdminDto,
   ListarCategoriasParams,
+  ListarClubesParams,
   ListarEdicionesParams,
+  ListarEquiposParams,
   LoginDto,
   MesaConPinDto,
   MesaDto,
   OrganizacionConfigDto,
-  ProblemDetailsDto
+  ProblemDetailsDto,
+  ReasignarDelegadoDto,
+  RenombrarEquipoDto,
+  RetirarEquipoDto
 } from '../models';
 
 import { apiFetch } from '../../mutator';
@@ -500,6 +512,743 @@ export const useRestaurarCategoria = <TError = unknown,
       > => {
       return useMutation(getRestaurarCategoriaMutationOptions(options), queryClient);
     }
+    export const getListarClubesUrl = (params?: ListarClubesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/admin/clubes?${stringifiedParams}` : `/admin/clubes`
+}
+
+/**
+ * @summary Clubes de mi cliente (los archivados solo con ?archivados=true; ?q= filtra por nombre sin tildes)
+ */
+export const listarClubes = async (params?: ListarClubesParams, options?: Parameters<typeof apiFetch>[1]): Promise<ClubDto[]> => {
+
+  return apiFetch<ClubDto[]>(getListarClubesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarClubesQueryKey = (params?: ListarClubesParams,) => {
+    return [
+    `/admin/clubes`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListarClubesQueryOptions = <TData = Awaited<ReturnType<typeof listarClubes>>, TError = unknown>(params?: ListarClubesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarClubes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarClubesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarClubes>>> = ({ signal }) => listarClubes(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarClubes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarClubesQueryResult = NonNullable<Awaited<ReturnType<typeof listarClubes>>>
+export type ListarClubesQueryError = unknown
+
+
+export function useListarClubes<TData = Awaited<ReturnType<typeof listarClubes>>, TError = unknown>(
+ params: undefined |  ListarClubesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarClubes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarClubes>>,
+          TError,
+          Awaited<ReturnType<typeof listarClubes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarClubes<TData = Awaited<ReturnType<typeof listarClubes>>, TError = unknown>(
+ params?: ListarClubesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarClubes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarClubes>>,
+          TError,
+          Awaited<ReturnType<typeof listarClubes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarClubes<TData = Awaited<ReturnType<typeof listarClubes>>, TError = unknown>(
+ params?: ListarClubesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarClubes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Clubes de mi cliente (los archivados solo con ?archivados=true; ?q= filtra por nombre sin tildes)
+ */
+
+export function useListarClubes<TData = Awaited<ReturnType<typeof listarClubes>>, TError = unknown>(
+ params?: ListarClubesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarClubes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarClubesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getArchivarClubUrl = (id: string,) => {
+
+
+
+
+  return `/admin/clubes/${id}/archivar`
+}
+
+/**
+ * @summary Archiva un club (no se ofrece ni se reutiliza; sus equipos siguen)
+ */
+export const archivarClub = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<ClubDto> => {
+
+  return apiFetch<ClubDto>(getArchivarClubUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getArchivarClubMutationKey = () => ['archivarClub'] as const;
+
+export const getArchivarClubMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archivarClub>>, TError,ArchivarClubMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archivarClub>>, TError,ArchivarClubMutationVariables, TContext> => {
+
+const mutationKey = getArchivarClubMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archivarClub>>, ArchivarClubMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  archivarClub(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchivarClubMutationResult = NonNullable<Awaited<ReturnType<typeof archivarClub>>>
+
+    export type ArchivarClubMutationError = ProblemDetailsDto
+    export type ArchivarClubMutationVariables = {id: string}
+
+    /**
+ * @summary Archiva un club (no se ofrece ni se reutiliza; sus equipos siguen)
+ */
+export const useArchivarClub = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archivarClub>>, TError,ArchivarClubMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof archivarClub>>,
+        TError,
+        ArchivarClubMutationVariables,
+        TContext
+      > => {
+      return useMutation(getArchivarClubMutationOptions(options), queryClient);
+    }
+    export const getRestaurarClubUrl = (id: string,) => {
+
+
+
+
+  return `/admin/clubes/${id}/restaurar`
+}
+
+/**
+ * @summary Restaura un club archivado
+ */
+export const restaurarClub = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<ClubDto> => {
+
+  return apiFetch<ClubDto>(getRestaurarClubUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRestaurarClubMutationKey = () => ['restaurarClub'] as const;
+
+export const getRestaurarClubMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restaurarClub>>, TError,RestaurarClubMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restaurarClub>>, TError,RestaurarClubMutationVariables, TContext> => {
+
+const mutationKey = getRestaurarClubMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restaurarClub>>, RestaurarClubMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  restaurarClub(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestaurarClubMutationResult = NonNullable<Awaited<ReturnType<typeof restaurarClub>>>
+
+    export type RestaurarClubMutationError = ProblemDetailsDto
+    export type RestaurarClubMutationVariables = {id: string}
+
+    /**
+ * @summary Restaura un club archivado
+ */
+export const useRestaurarClub = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restaurarClub>>, TError,RestaurarClubMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restaurarClub>>,
+        TError,
+        RestaurarClubMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestaurarClubMutationOptions(options), queryClient);
+    }
+    export const getListarDelegadosUrl = () => {
+
+
+
+
+  return `/admin/delegados`
+}
+
+/**
+ * `ultimoAccesoEn: null` = «PIN aún no usado». `pinCambiadoEn: null` = sigue con el PIN temporal. El estado de acceso dice si está activo, desactivado o bloqueado por intentos (y hasta cuándo). Nunca incluye el PIN.
+ * @summary Delegados de mi cliente, con sus equipos, quién los registró y su estado de acceso
+ */
+export const listarDelegados = async ( options?: Parameters<typeof apiFetch>[1]): Promise<DelegadoDto[]> => {
+
+  return apiFetch<DelegadoDto[]>(getListarDelegadosUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarDelegadosQueryKey = () => {
+    return [
+    `/admin/delegados`
+    ] as const;
+    }
+
+
+export const getListarDelegadosQueryOptions = <TData = Awaited<ReturnType<typeof listarDelegados>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegados>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarDelegadosQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarDelegados>>> = ({ signal }) => listarDelegados({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarDelegados>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarDelegadosQueryResult = NonNullable<Awaited<ReturnType<typeof listarDelegados>>>
+export type ListarDelegadosQueryError = unknown
+
+
+export function useListarDelegados<TData = Awaited<ReturnType<typeof listarDelegados>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegados>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarDelegados>>,
+          TError,
+          Awaited<ReturnType<typeof listarDelegados>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarDelegados<TData = Awaited<ReturnType<typeof listarDelegados>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegados>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarDelegados>>,
+          TError,
+          Awaited<ReturnType<typeof listarDelegados>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarDelegados<TData = Awaited<ReturnType<typeof listarDelegados>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegados>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delegados de mi cliente, con sus equipos, quién los registró y su estado de acceso
+ */
+
+export function useListarDelegados<TData = Awaited<ReturnType<typeof listarDelegados>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarDelegados>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarDelegadosQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getActualizarDelegadoUrl = (id: string,) => {
+
+
+
+
+  return `/admin/delegados/${id}`
+}
+
+/**
+ * El teléfono se normaliza con el país del cliente y debe ser único en el cliente. Cambiarlo cierra las sesiones abiertas del delegado.
+ * @summary Cambia el nombre o el teléfono del delegado
+ */
+export const actualizarDelegado = async (id: string,
+    actualizarDelegadoDto: ActualizarDelegadoDto, options?: Parameters<typeof apiFetch>[1]): Promise<DelegadoDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<DelegadoDto>(getActualizarDelegadoUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(actualizarDelegadoDto)
+  }
+);}
+
+
+
+
+
+export const getActualizarDelegadoMutationKey = () => ['actualizarDelegado'] as const;
+
+export const getActualizarDelegadoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarDelegado>>, TError,ActualizarDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actualizarDelegado>>, TError,ActualizarDelegadoMutationVariables, TContext> => {
+
+const mutationKey = getActualizarDelegadoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actualizarDelegado>>, ActualizarDelegadoMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actualizarDelegado(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActualizarDelegadoMutationResult = NonNullable<Awaited<ReturnType<typeof actualizarDelegado>>>
+    export type ActualizarDelegadoMutationBody = ActualizarDelegadoDto
+    export type ActualizarDelegadoMutationError = ProblemDetailsDto
+    export type ActualizarDelegadoMutationVariables = {id: string;data: ActualizarDelegadoDto}
+
+    /**
+ * @summary Cambia el nombre o el teléfono del delegado
+ */
+export const useActualizarDelegado = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actualizarDelegado>>, TError,ActualizarDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actualizarDelegado>>,
+        TError,
+        ActualizarDelegadoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActualizarDelegadoMutationOptions(options), queryClient);
+    }
+    export const getActivarDelegadoUrl = (id: string,) => {
+
+
+
+
+  return `/admin/delegados/${id}/activar`
+}
+
+/**
+ * @summary Reactiva un delegado desactivado
+ */
+export const activarDelegado = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<DelegadoDto> => {
+
+  return apiFetch<DelegadoDto>(getActivarDelegadoUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getActivarDelegadoMutationKey = () => ['activarDelegado'] as const;
+
+export const getActivarDelegadoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activarDelegado>>, TError,ActivarDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activarDelegado>>, TError,ActivarDelegadoMutationVariables, TContext> => {
+
+const mutationKey = getActivarDelegadoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activarDelegado>>, ActivarDelegadoMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  activarDelegado(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivarDelegadoMutationResult = NonNullable<Awaited<ReturnType<typeof activarDelegado>>>
+
+    export type ActivarDelegadoMutationError = ProblemDetailsDto
+    export type ActivarDelegadoMutationVariables = {id: string}
+
+    /**
+ * @summary Reactiva un delegado desactivado
+ */
+export const useActivarDelegado = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activarDelegado>>, TError,ActivarDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof activarDelegado>>,
+        TError,
+        ActivarDelegadoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActivarDelegadoMutationOptions(options), queryClient);
+    }
+    export const getDesactivarDelegadoUrl = (id: string,) => {
+
+
+
+
+  return `/admin/delegados/${id}/desactivar`
+}
+
+/**
+ * Se rechaza mientras lleve un equipo (no retirado) en una liga no finalizada: primero se reasigna.
+ * @summary Desactiva un delegado: pierde el acceso al instante, también con la sesión abierta
+ */
+export const desactivarDelegado = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<DelegadoDto> => {
+
+  return apiFetch<DelegadoDto>(getDesactivarDelegadoUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDesactivarDelegadoMutationKey = () => ['desactivarDelegado'] as const;
+
+export const getDesactivarDelegadoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desactivarDelegado>>, TError,DesactivarDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof desactivarDelegado>>, TError,DesactivarDelegadoMutationVariables, TContext> => {
+
+const mutationKey = getDesactivarDelegadoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof desactivarDelegado>>, DesactivarDelegadoMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  desactivarDelegado(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DesactivarDelegadoMutationResult = NonNullable<Awaited<ReturnType<typeof desactivarDelegado>>>
+
+    export type DesactivarDelegadoMutationError = ProblemDetailsDto
+    export type DesactivarDelegadoMutationVariables = {id: string}
+
+    /**
+ * @summary Desactiva un delegado: pierde el acceso al instante, también con la sesión abierta
+ */
+export const useDesactivarDelegado = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desactivarDelegado>>, TError,DesactivarDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof desactivarDelegado>>,
+        TError,
+        DesactivarDelegadoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDesactivarDelegadoMutationOptions(options), queryClient);
+    }
+    export const getDesbloquearDelegadoUrl = (id: string,) => {
+
+
+
+
+  return `/admin/delegados/${id}/desbloquear`
+}
+
+/**
+ * @summary Levanta el bloqueo por intentos fallidos sin cambiar el PIN
+ */
+export const desbloquearDelegado = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<DelegadoDto> => {
+
+  return apiFetch<DelegadoDto>(getDesbloquearDelegadoUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDesbloquearDelegadoMutationKey = () => ['desbloquearDelegado'] as const;
+
+export const getDesbloquearDelegadoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desbloquearDelegado>>, TError,DesbloquearDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof desbloquearDelegado>>, TError,DesbloquearDelegadoMutationVariables, TContext> => {
+
+const mutationKey = getDesbloquearDelegadoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof desbloquearDelegado>>, DesbloquearDelegadoMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  desbloquearDelegado(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DesbloquearDelegadoMutationResult = NonNullable<Awaited<ReturnType<typeof desbloquearDelegado>>>
+
+    export type DesbloquearDelegadoMutationError = ProblemDetailsDto
+    export type DesbloquearDelegadoMutationVariables = {id: string}
+
+    /**
+ * @summary Levanta el bloqueo por intentos fallidos sin cambiar el PIN
+ */
+export const useDesbloquearDelegado = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof desbloquearDelegado>>, TError,DesbloquearDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof desbloquearDelegado>>,
+        TError,
+        DesbloquearDelegadoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDesbloquearDelegadoMutationOptions(options), queryClient);
+    }
+    export const getResetearPinDelegadoUrl = (id: string,) => {
+
+
+
+
+  return `/admin/delegados/${id}/pin/reset`
+}
+
+/**
+ * Cierra las sesiones abiertas del delegado y levanta su bloqueo por intentos. El WhatsApp se abre dirigido a su teléfono.
+ * @summary Genera un PIN temporal nuevo (el anterior deja de servir) y lo devuelve una sola vez
+ */
+export const resetearPinDelegado = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<DelegadoConPinDto> => {
+
+  return apiFetch<DelegadoConPinDto>(getResetearPinDelegadoUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResetearPinDelegadoMutationKey = () => ['resetearPinDelegado'] as const;
+
+export const getResetearPinDelegadoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetearPinDelegado>>, TError,ResetearPinDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetearPinDelegado>>, TError,ResetearPinDelegadoMutationVariables, TContext> => {
+
+const mutationKey = getResetearPinDelegadoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetearPinDelegado>>, ResetearPinDelegadoMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  resetearPinDelegado(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetearPinDelegadoMutationResult = NonNullable<Awaited<ReturnType<typeof resetearPinDelegado>>>
+
+    export type ResetearPinDelegadoMutationError = ProblemDetailsDto
+    export type ResetearPinDelegadoMutationVariables = {id: string}
+
+    /**
+ * @summary Genera un PIN temporal nuevo (el anterior deja de servir) y lo devuelve una sola vez
+ */
+export const useResetearPinDelegado = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetearPinDelegado>>, TError,ResetearPinDelegadoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resetearPinDelegado>>,
+        TError,
+        ResetearPinDelegadoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResetearPinDelegadoMutationOptions(options), queryClient);
+    }
     export const getListarEdicionesUrl = (params?: ListarEdicionesParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -694,6 +1443,667 @@ export const useCrearEdicion = <TError = ProblemDetailsDto,
         TContext
       > => {
       return useMutation(getCrearEdicionMutationOptions(options), queryClient);
+    }
+    export const getListarEquiposUrl = (edicionId: string,
+    params?: ListarEquiposParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/admin/ediciones/${edicionId}/equipos?${stringifiedParams}` : `/admin/ediciones/${edicionId}/equipos`
+}
+
+/**
+ * @summary Equipos de la liga con su club, su delegado y quién los registró (incluye retirados, marcados)
+ */
+export const listarEquipos = async (edicionId: string,
+    params?: ListarEquiposParams, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoDto[]> => {
+
+  return apiFetch<EquipoDto[]>(getListarEquiposUrl(edicionId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListarEquiposQueryKey = (edicionId: string,
+    params?: ListarEquiposParams,) => {
+    return [
+    `/admin/ediciones/${edicionId}/equipos`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListarEquiposQueryOptions = <TData = Awaited<ReturnType<typeof listarEquipos>>, TError = ProblemDetailsDto>(edicionId: string,
+    params?: ListarEquiposParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquipos>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListarEquiposQueryKey(edicionId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listarEquipos>>> = ({ signal }) => listarEquipos(edicionId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: edicionId !== null && edicionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listarEquipos>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListarEquiposQueryResult = NonNullable<Awaited<ReturnType<typeof listarEquipos>>>
+export type ListarEquiposQueryError = ProblemDetailsDto
+
+
+export function useListarEquipos<TData = Awaited<ReturnType<typeof listarEquipos>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    params: undefined |  ListarEquiposParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquipos>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarEquipos>>,
+          TError,
+          Awaited<ReturnType<typeof listarEquipos>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarEquipos<TData = Awaited<ReturnType<typeof listarEquipos>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    params?: ListarEquiposParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquipos>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listarEquipos>>,
+          TError,
+          Awaited<ReturnType<typeof listarEquipos>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListarEquipos<TData = Awaited<ReturnType<typeof listarEquipos>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    params?: ListarEquiposParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquipos>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Equipos de la liga con su club, su delegado y quién los registró (incluye retirados, marcados)
+ */
+
+export function useListarEquipos<TData = Awaited<ReturnType<typeof listarEquipos>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    params?: ListarEquiposParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listarEquipos>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListarEquiposQueryOptions(edicionId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getInscribirEquipoUrl = (edicionId: string,) => {
+
+
+
+
+  return `/admin/ediciones/${edicionId}/equipos`
+}
+
+/**
+ * Todo en una transacción. El club se reutiliza en silencio si el nombre coincide con uno del cliente. Si el teléfono ya es de un delegado, se reutiliza (`delegadoExistente: true`, sin PIN). Solo si el delegado es nuevo vienen `pin`, `loginUrl` y `waMeUrl`: es la única vez que se ve el PIN. Con la liga EN_CURSO solo el dueño inscribe (equipo tardío).
+ * @summary Formulario único: inscribe un equipo, creando el club y el delegado si hacen falta
+ */
+export const inscribirEquipo = async (edicionId: string,
+    inscribirEquipoDto: InscribirEquipoDto, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoConAccesoDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EquipoConAccesoDto>(getInscribirEquipoUrl(edicionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inscribirEquipoDto)
+  }
+);}
+
+
+
+
+
+export const getInscribirEquipoMutationKey = () => ['inscribirEquipo'] as const;
+
+export const getInscribirEquipoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inscribirEquipo>>, TError,InscribirEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof inscribirEquipo>>, TError,InscribirEquipoMutationVariables, TContext> => {
+
+const mutationKey = getInscribirEquipoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inscribirEquipo>>, InscribirEquipoMutationVariables> = (props) => {
+          const {edicionId,data} = props ?? {};
+
+          return  inscribirEquipo(edicionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InscribirEquipoMutationResult = NonNullable<Awaited<ReturnType<typeof inscribirEquipo>>>
+    export type InscribirEquipoMutationBody = InscribirEquipoDto
+    export type InscribirEquipoMutationError = ProblemDetailsDto
+    export type InscribirEquipoMutationVariables = {edicionId: string;data: InscribirEquipoDto}
+
+    /**
+ * @summary Formulario único: inscribe un equipo, creando el club y el delegado si hacen falta
+ */
+export const useInscribirEquipo = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inscribirEquipo>>, TError,InscribirEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof inscribirEquipo>>,
+        TError,
+        InscribirEquipoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getInscribirEquipoMutationOptions(options), queryClient);
+    }
+    export const getObtenerEquipoUrl = (edicionId: string,
+    equipoId: string,) => {
+
+
+
+
+  return `/admin/ediciones/${edicionId}/equipos/${equipoId}`
+}
+
+/**
+ * @summary Un equipo de la liga con su club, su delegado y quién lo registró
+ */
+export const obtenerEquipo = async (edicionId: string,
+    equipoId: string, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoDto> => {
+
+  return apiFetch<EquipoDto>(getObtenerEquipoUrl(edicionId,equipoId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getObtenerEquipoQueryKey = (edicionId: string,
+    equipoId: string,) => {
+    return [
+    `/admin/ediciones/${edicionId}/equipos/${equipoId}`
+    ] as const;
+    }
+
+
+export const getObtenerEquipoQueryOptions = <TData = Awaited<ReturnType<typeof obtenerEquipo>>, TError = ProblemDetailsDto>(edicionId: string,
+    equipoId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof obtenerEquipo>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getObtenerEquipoQueryKey(edicionId,equipoId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof obtenerEquipo>>> = ({ signal }) => obtenerEquipo(edicionId,equipoId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: edicionId !== null && edicionId !== undefined && equipoId !== null && equipoId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof obtenerEquipo>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ObtenerEquipoQueryResult = NonNullable<Awaited<ReturnType<typeof obtenerEquipo>>>
+export type ObtenerEquipoQueryError = ProblemDetailsDto
+
+
+export function useObtenerEquipo<TData = Awaited<ReturnType<typeof obtenerEquipo>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    equipoId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof obtenerEquipo>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof obtenerEquipo>>,
+          TError,
+          Awaited<ReturnType<typeof obtenerEquipo>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useObtenerEquipo<TData = Awaited<ReturnType<typeof obtenerEquipo>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    equipoId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof obtenerEquipo>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof obtenerEquipo>>,
+          TError,
+          Awaited<ReturnType<typeof obtenerEquipo>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useObtenerEquipo<TData = Awaited<ReturnType<typeof obtenerEquipo>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    equipoId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof obtenerEquipo>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Un equipo de la liga con su club, su delegado y quién lo registró
+ */
+
+export function useObtenerEquipo<TData = Awaited<ReturnType<typeof obtenerEquipo>>, TError = ProblemDetailsDto>(
+ edicionId: string,
+    equipoId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof obtenerEquipo>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getObtenerEquipoQueryOptions(edicionId,equipoId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getRenombrarEquipoUrl = (edicionId: string,
+    equipoId: string,) => {
+
+
+
+
+  return `/admin/ediciones/${edicionId}/equipos/${equipoId}`
+}
+
+/**
+ * No se puede en una liga finalizada ni archivada.
+ * @summary Cambia el nombre del equipo en esta liga (no toca otras ligas)
+ */
+export const renombrarEquipo = async (edicionId: string,
+    equipoId: string,
+    renombrarEquipoDto: RenombrarEquipoDto, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EquipoDto>(getRenombrarEquipoUrl(edicionId,equipoId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(renombrarEquipoDto)
+  }
+);}
+
+
+
+
+
+export const getRenombrarEquipoMutationKey = () => ['renombrarEquipo'] as const;
+
+export const getRenombrarEquipoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renombrarEquipo>>, TError,RenombrarEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renombrarEquipo>>, TError,RenombrarEquipoMutationVariables, TContext> => {
+
+const mutationKey = getRenombrarEquipoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renombrarEquipo>>, RenombrarEquipoMutationVariables> = (props) => {
+          const {edicionId,equipoId,data} = props ?? {};
+
+          return  renombrarEquipo(edicionId,equipoId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenombrarEquipoMutationResult = NonNullable<Awaited<ReturnType<typeof renombrarEquipo>>>
+    export type RenombrarEquipoMutationBody = RenombrarEquipoDto
+    export type RenombrarEquipoMutationError = ProblemDetailsDto
+    export type RenombrarEquipoMutationVariables = {edicionId: string;equipoId: string;data: RenombrarEquipoDto}
+
+    /**
+ * @summary Cambia el nombre del equipo en esta liga (no toca otras ligas)
+ */
+export const useRenombrarEquipo = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renombrarEquipo>>, TError,RenombrarEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof renombrarEquipo>>,
+        TError,
+        RenombrarEquipoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenombrarEquipoMutationOptions(options), queryClient);
+    }
+    export const getReasignarDelegadoEquipoUrl = (edicionId: string,
+    equipoId: string,) => {
+
+
+
+
+  return `/admin/ediciones/${edicionId}/equipos/${equipoId}/delegado`
+}
+
+/**
+ * El delegado anterior pierde este equipo al instante y conserva los demás. Si el delegado es nuevo vienen `pin`, `loginUrl` y `waMeUrl` (única vez). No se puede en una liga finalizada ni archivada.
+ * @summary Cambia el delegado del equipo por uno existente o uno nuevo (que recibe PIN)
+ */
+export const reasignarDelegadoEquipo = async (edicionId: string,
+    equipoId: string,
+    reasignarDelegadoDto: ReasignarDelegadoDto, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoConAccesoDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EquipoConAccesoDto>(getReasignarDelegadoEquipoUrl(edicionId,equipoId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reasignarDelegadoDto)
+  }
+);}
+
+
+
+
+
+export const getReasignarDelegadoEquipoMutationKey = () => ['reasignarDelegadoEquipo'] as const;
+
+export const getReasignarDelegadoEquipoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reasignarDelegadoEquipo>>, TError,ReasignarDelegadoEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reasignarDelegadoEquipo>>, TError,ReasignarDelegadoEquipoMutationVariables, TContext> => {
+
+const mutationKey = getReasignarDelegadoEquipoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reasignarDelegadoEquipo>>, ReasignarDelegadoEquipoMutationVariables> = (props) => {
+          const {edicionId,equipoId,data} = props ?? {};
+
+          return  reasignarDelegadoEquipo(edicionId,equipoId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReasignarDelegadoEquipoMutationResult = NonNullable<Awaited<ReturnType<typeof reasignarDelegadoEquipo>>>
+    export type ReasignarDelegadoEquipoMutationBody = ReasignarDelegadoDto
+    export type ReasignarDelegadoEquipoMutationError = ProblemDetailsDto
+    export type ReasignarDelegadoEquipoMutationVariables = {edicionId: string;equipoId: string;data: ReasignarDelegadoDto}
+
+    /**
+ * @summary Cambia el delegado del equipo por uno existente o uno nuevo (que recibe PIN)
+ */
+export const useReasignarDelegadoEquipo = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reasignarDelegadoEquipo>>, TError,ReasignarDelegadoEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reasignarDelegadoEquipo>>,
+        TError,
+        ReasignarDelegadoEquipoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReasignarDelegadoEquipoMutationOptions(options), queryClient);
+    }
+    export const getReincorporarEquipoUrl = (edicionId: string,
+    equipoId: string,) => {
+
+
+
+
+  return `/admin/ediciones/${edicionId}/equipos/${equipoId}/reincorporar`
+}
+
+/**
+ * Solo antes de arrancar (CONFIGURACION, EN_REGISTRO), dueño y admin. Con la liga en marcha o después: REINCORPORACION_CERRADA. Idempotente: si el equipo no estaba retirado responde 200 sin cambiar nada.
+ * @summary Devuelve un equipo retirado a la liga (CONFIRMADO, con su nombre)
+ */
+export const reincorporarEquipo = async (edicionId: string,
+    equipoId: string, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoDto> => {
+
+  return apiFetch<EquipoDto>(getReincorporarEquipoUrl(edicionId,equipoId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getReincorporarEquipoMutationKey = () => ['reincorporarEquipo'] as const;
+
+export const getReincorporarEquipoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reincorporarEquipo>>, TError,ReincorporarEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reincorporarEquipo>>, TError,ReincorporarEquipoMutationVariables, TContext> => {
+
+const mutationKey = getReincorporarEquipoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reincorporarEquipo>>, ReincorporarEquipoMutationVariables> = (props) => {
+          const {edicionId,equipoId} = props ?? {};
+
+          return  reincorporarEquipo(edicionId,equipoId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReincorporarEquipoMutationResult = NonNullable<Awaited<ReturnType<typeof reincorporarEquipo>>>
+
+    export type ReincorporarEquipoMutationError = ProblemDetailsDto
+    export type ReincorporarEquipoMutationVariables = {edicionId: string;equipoId: string}
+
+    /**
+ * @summary Devuelve un equipo retirado a la liga (CONFIRMADO, con su nombre)
+ */
+export const useReincorporarEquipo = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reincorporarEquipo>>, TError,ReincorporarEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reincorporarEquipo>>,
+        TError,
+        ReincorporarEquipoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReincorporarEquipoMutationOptions(options), queryClient);
+    }
+    export const getRetirarEquipoUrl = (edicionId: string,
+    equipoId: string,) => {
+
+
+
+
+  return `/admin/ediciones/${edicionId}/equipos/${equipoId}/retirar`
+}
+
+/**
+ * CONFIGURACION y EN_REGISTRO: dueño y admin, y se puede reincorporar. EN_CURSO y PAUSADA: solo el dueño, y el retiro es definitivo. EN_ELIMINATORIAS y FINALIZADA: no (RETIRO_CERRADO). El equipo conserva su nombre, que sigue ocupado en la liga. Idempotente: si ya estaba retirado responde 200 sin cambiar nada (ni el motivo original).
+ * @summary Retira el equipo de la liga (no se borra: queda RETIRADO con fecha, motivo y quién)
+ */
+export const retirarEquipo = async (edicionId: string,
+    equipoId: string,
+    retirarEquipoDto: RetirarEquipoDto, options?: Parameters<typeof apiFetch>[1]): Promise<EquipoDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EquipoDto>(getRetirarEquipoUrl(edicionId,equipoId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(retirarEquipoDto)
+  }
+);}
+
+
+
+
+
+export const getRetirarEquipoMutationKey = () => ['retirarEquipo'] as const;
+
+export const getRetirarEquipoMutationOptions = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retirarEquipo>>, TError,RetirarEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retirarEquipo>>, TError,RetirarEquipoMutationVariables, TContext> => {
+
+const mutationKey = getRetirarEquipoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retirarEquipo>>, RetirarEquipoMutationVariables> = (props) => {
+          const {edicionId,equipoId,data} = props ?? {};
+
+          return  retirarEquipo(edicionId,equipoId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetirarEquipoMutationResult = NonNullable<Awaited<ReturnType<typeof retirarEquipo>>>
+    export type RetirarEquipoMutationBody = RetirarEquipoDto
+    export type RetirarEquipoMutationError = ProblemDetailsDto
+    export type RetirarEquipoMutationVariables = {edicionId: string;equipoId: string;data: RetirarEquipoDto}
+
+    /**
+ * @summary Retira el equipo de la liga (no se borra: queda RETIRADO con fecha, motivo y quién)
+ */
+export const useRetirarEquipo = <TError = ProblemDetailsDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retirarEquipo>>, TError,RetirarEquipoMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retirarEquipo>>,
+        TError,
+        RetirarEquipoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetirarEquipoMutationOptions(options), queryClient);
     }
     export const getGetEdicionUrl = (id: string,) => {
 

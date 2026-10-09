@@ -11,6 +11,8 @@ export interface CambiarEstadoDto {
   a: EstadoEdicion;
   /** Obligatorio para FINALIZADA, que no tiene vuelta atrás */
   confirmar?: boolean;
+  /** Ids de equipos de esta liga que no arrancan: quedan habilitado=false (no se borran) y no cuentan para el mínimo. Solo al pasar de EN_REGISTRO a EN_CURSO (otro caso: 400); un equipo de otra liga: 404. */
+  excluirEquipos?: string[];
   /** Saltarse las precondiciones forzables. Solo el dueño (OWNER); queda auditado. */
   forzar?: boolean;
 }
