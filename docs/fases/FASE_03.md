@@ -1,88 +1,55 @@
-# FASE 3 — Clubes, delegados y equipos (prototipo con MSW)
+# FASE 3 — Clubes, delegados y equipos
 
-> **Fuente de la verdad:** `PLAN_FRONTEND.md` (§6, §10) y `PLAN_BACKEND.md` (modelos `Club`, `Delegado`, `EdicionEquipo`; decisiones R12, R13).
-> **Estado:** 🟡 **Prototipo contra MSW (2026-10-07), desactualizado.** Se construyó antes de que el backend publicara su especificación. Ahora existe `../cancha-nica-api/docs/fases/FASE_03.md` (decisiones R18) pero **todavía no hay endpoints, snapshot ni `FRONT_FASE_03.md`**. Las rutas, los campos y los códigos de este prototipo siguen siendo suposiciones y, según esa especificación, **varias son incorrectas** (ver la sección siguiente). No se debe integrar tal cual: se rehace cuando el backend publique el contrato.
-> En el admin, Clubes y Delegados solo aparecen en el menú con MSW (`HAY_PROTOTIPOS`).
+> **Fuente de la verdad:** `docs/contrato/FRONT_FASE_03.md` + `docs/contrato/openapi.snapshot.json` (publicados por el backend, `cancha-nica-api` commit `6931ede`, Fase 3 cerrada) y `../cancha-nica-api/docs/fases/FASE_03.md` (decisiones R12–R18).
+> **Estado (2026-10-08):** 🟡 **Integrada con el contrato real y probada contra la simulación (MSW). NO probada contra el backend real ni a mano en el navegador.** Ver §4 (pendiente).
 
-## 0. Diferencias entre este prototipo y la especificación del backend (`FASE_03.md`, R18)
+## 1. Qué está hecho
 
-| Tema | Este prototipo | Especificación del backend |
-|---|---|---|
-| Nombre del equipo | Es el nombre del club | El **equipo tiene su propio nombre en cada liga** (`EdicionEquipo.nombre`); renombrar en una liga no toca otra. Dos equipos de una misma liga no pueden llamarse igual (`409 EQUIPO_DUPLICADO`); entre ligas no se avisa nada |
-| Club | Se elige uno o se crea uno; error si el nombre se repite (`CLUB_DUPLICADO`) | **Silencioso**: si el nombre coincide con un club del cliente (normalizado) se reutiliza; si no, se crea. También se puede elegir por `club.id` |
-| Delegado con teléfono repetido | Error `TELEFONO_DUPLICADO`: hay que elegir al existente | **Se reutiliza en silencio**: conserva su nombre y su PIN, no hay PIN nuevo y la respuesta trae `delegadoExistente: true` |
-| Regla del delegado | Un equipo por **categoría** | Un equipo por **liga** (`409 DELEGADO_PHONE_DUPLICATED`); en ligas distintas puede llevar uno en cada una |
-| Teléfono | Exige formato internacional (`+505…`) | El dueño escribe el número **local** (`8888 8888`) y se normaliza con el país del cliente; también acepta `+` o `00` |
-| PIN del delegado | Solo 6 dígitos | 6 dígitos y se **rechazan los PIN obvios** (`PIN_DEBIL`); cambiarlo en el primer ingreso es opcional; sesión de 30 días |
-| Retirar equipos | No existe | **`RETIRADO`** (nunca se borra), con fecha, motivo y quién; reincorporar solo antes de arrancar; con la liga en marcha solo el dueño |
-| Equipo tardío | No existe | Con la liga `EN_CURSO` solo el dueño puede inscribir |
-| Inscribir según estado | Solo con `EN_REGISTRO` | `CONFIGURACION`, `EN_REGISTRO` (dueño y admin) y `EN_CURSO` (solo dueño); no en `PAUSADA`, `EN_ELIMINATORIAS`, `FINALIZADA` ni archivada |
-| Desactivar un delegado | No existe | Existe; no se puede con equipos en ligas no finalizadas (`409 DELEGADO_CON_EQUIPOS_ACTIVOS`) |
-| Desbloquear delegado | No existe | Existe; el listado muestra «bloqueado hasta…» |
-| Qué ve el delegado | Todos sus equipos | Solo los de ligas no finalizadas; el retirado sale marcado |
-| Estado de la liga | Requisitos con equipos simulados | Usa equipos reales (conteos del arranque y `excluirEquipos`) |
-| Lectura de plataforma | No existe | `GET …/delegados` y `…/equipos` y los conteos de la ficha |
-
-**Lo que sí coincide:** formulario único que crea club y delegado (R12), PIN de 6 dígitos que se ve una sola vez con copiar y WhatsApp, «PIN aún no usado» (`ultimoAccesoEn`), cambio de PIN por el propio delegado pidiendo el actual (R13), login por `POST /auth/delegado/:orgSlug/login` con URL `/delegado/<slug-del-cliente>`, «registrado por», y reasignar con `PATCH …/equipos/:equipoId/delegado`.
-
-## 1. Qué se construyó
+Hooks: los generados con Orval (22 `operationId` nuevos); `features/{clubes,delegados,equipos}/api*.ts` son fachadas finas que invalidan `/admin/clubes`, `/admin/delegados`, `/admin/ediciones` y `/plataforma`. Las mutaciones que pueden devolver un PIN usan `gcTime: 0`.
 
 | Pantalla | Ruta | Qué hace |
 |---|---|---|
-| Clubes | `/admin/clubes` | Lista con en cuántas ligas juega cada club y quién lo registró. Crear, renombrar, desactivar. Nombre único sin importar mayúsculas, tildes ni espacios |
-| Delegados | `/admin/delegados` | Lista con el estado del PIN: **«PIN aún no usado»** (nunca entró), «PIN temporal» (entró pero no lo cambió) y «PIN propio» (R13). Sus equipos. **Resetear PIN** con entrega de un solo uso |
-| Equipos de una liga | `/admin/ligas/[id]/equipos` | Equipos inscritos con su delegado. **Inscribir equipo en un solo formulario (R12):** club existente o nuevo + delegado existente o nuevo; lo nuevo se crea en ese mismo paso. **Cambiar delegado** |
-| Login del delegado | `/delegado/<slug-del-cliente>` | Teléfono + PIN de 6 dígitos, controles grandes. Misma respuesta ante teléfono inexistente, PIN errónea o cliente inexistente |
-| Inicio del delegado | `/delegado` | **Selector multi-equipo** (un delegado puede llevar varios, de categorías distintas), aviso «tu PIN es temporal» y **cambio de PIN por el propio delegado** |
+| Clubes | `/admin/clubes` | Lista con buscador y «ver archivados», ligas y «registrado por». Archivar / restaurar. **No hay «Crear club»** (nacen en el alta del equipo) |
+| Delegados | `/admin/delegados` | Acceso `ACTIVO/DESACTIVADO/BLOQUEADO` («bloqueado hasta las HH:MM»), «PIN aún no usado» (`ultimoAccesoEn === null`), «PIN temporal/propio», equipos con su liga. Editar, resetear PIN, desbloquear, activar, desactivar (`DELEGADO_CON_EQUIPOS_ACTIVOS` abre diálogo con enlaces a los equipos) |
+| Equipos de la liga | `/admin/ligas/[id]/equipos` | Formulario único (nombre del equipo en la liga, club por autocompletar o por nombre —sin avisos de «club existente»—, delegado existente o nuevo, teléfono local o internacional con vista previa tolerante). Pantalla del PIN de un solo uso; `delegadoExistente: true` muestra el nombre sin PIN. Renombrar (solo esa liga), cambiar delegado, retirar (motivo), reincorporar, equipo tardío (solo `OWNER`). Marcas retirado / excluido / tardío. Botones según estado de la liga y rol (`equipos/lib/permisos.ts`) |
+| Arranque de la liga | detalle de la liga | Casilla «No arranca» por equipo → `excluirEquipos`; los retirados no aparecen |
+| Login del delegado | `/delegado/<slug>` | Teléfono + PIN; un solo mensaje «Teléfono o PIN incorrectos.»; `DELEGADO_BLOQUEADO` / `IP_LOCKED` / `ORG_BLOQUEADA` |
+| Portal del delegado | `/delegado` (grupo `(panel)` con `exigirSesion('delegado')`, `/delegado/refresh`) | Tarjetas por equipo, retirado marcado y no abrible, «Sin ligas activas», aviso «Cambia tu PIN» mientras `pinCambiadoEn === null` (no bloquea), cambio de PIN (`PIN_DEBIL`, `PIN_ACTUAL_INCORRECTO` junto al campo), 401/403/404/409 de `/delegado/ediciones/:id` = «ya no tienes acceso» |
+| Plataforma (solo lectura) | ficha del cliente | Pestañas «Equipos» y «Delegados»; los conteos de la ficha ya vienen |
 
-El detalle de la liga enlaza a sus equipos y el menú del admin suma «Clubes» y «Delegados».
+Otros: catálogo de los 13 códigos nuevos en `shared/api/errors/es.ts`; `shared/lib/telefono.ts` (`normalizarTelefono(valor, pais)` con la tabla §9.1 del aviso, `aE164` se mantiene) y `shared/lib/pin.ts` (`pinDebil`); `shared/ui/pin-entrega.tsx` con `nota` opcional; `'delegado'` en `PORTALES_CON_REFRESH`.
 
-## 2. Reglas del plan que cubre
+**Se corrigieron dos fallos al cerrar:** (1) con delegado «existente», el error `DELEGADO_PHONE_DUPLICATED` no se mostraba en ninguna parte (ahora sale junto al selector); (2) la simulación no guardaba los intentos fallidos del login al recargar (`mocks/respuestas.ts` persiste también en rechazos).
 
-- **Alta en un paso (R12):** si el club o el delegado son nuevos se crean al inscribir; si algo falla no queda un club o un delegado a medias (se valida todo antes de crear).
-- **PIN de 6 dígitos que se ve una sola vez (R13, R16):** pantalla de entrega con «copiar PIN», «copiar mensaje completo» y WhatsApp (al teléfono del delegado, con el mensaje escrito). Resetear invalida el anterior y vuelve a marcar «PIN aún no usado».
-- **Un delegado nunca lleva dos equipos de la misma categoría:** el selector deshabilita a quien ya lleva uno («ya lleva un equipo de esta categoría») y el servidor lo rechaza igual.
-- **Teléfono único por cliente:** un teléfono repetido pide elegir al delegado existente.
-- **Solo con las inscripciones abiertas:** con la liga en otro estado el botón se deshabilita y explica qué falta.
-- **«Registrado por»** se muestra en clubes, delegados y equipos.
-- **Criterio de salida del plan:** un delegado con 2 equipos en categorías distintas (probado de punta a punta en el E2E).
+## 2. Simulación y pruebas
 
-## 3. Lo provisional (a confirmar con el contrato)
+- `src/mocks/fase3/` (db + handlers) está **tipada con los DTO generados** y simula los 22 `operationId` con las reglas del aviso (§3–§6). Con MSW apagado no interviene. Se conserva para el E2E sin backend y la exploración sin servidor; entrar en `/delegado/sopa`.
+- Vitest: 24 archivos, **323 pruebas verdes** (teléfono, PIN débil, permisos/inscripción, mapa de errores, base simulada, delegado-inicio, ficha de plataforma).
+- E2E `pnpm test:e2e:mock`: **verde** (los 31 de `tests/e2e-mock/fase3.spec.ts` y el resto de la suite).
+- `pnpm typecheck` y `pnpm lint` (0 errores) y prettier: verdes.
 
-- **Rutas supuestas:** `GET|POST /admin/clubes`, `PATCH /admin/clubes/:id`, `GET /admin/delegados`, `POST /admin/delegados/:id/pin/reset`, `GET|POST /admin/ediciones/:id/equipos`, `PATCH /admin/ediciones/:id/equipos/:equipoId/delegado` (esta última sale de H14 en el plan), `POST /auth/delegado/:orgSlug/login`, `POST /auth/delegado/logout`, `GET /delegado/me`, `POST /delegado/pin`.
-- **Login del delegado por el slug del cliente** (`/delegado/<slug>`): el plan no lo fija, pero el teléfono es único **por cliente** (`@@unique([organizacionId, telefono])`), así que hace falta saber el cliente, igual que en la mesa (R15).
-- **Cuerpo de inscripción:** `{ club: { id } | { nombre }, delegado: { id } | { nombre, telefono } }`; la respuesta trae `pinEntregado` solo si el delegado se creó en ese paso.
-- **Códigos de error inventados:** `CLUB_DUPLICADO`, `CLUB_INACTIVO`, `EQUIPO_DUPLICADO`, `TELEFONO_DUPLICADO`, `DELEGADO_MISMA_CATEGORIA`, `EDICION_NO_ACEPTA_INSCRIPCIONES`. El plan nombra `PLAYER_ALREADY_ACTIVE`, `TRANSFER_LIMIT_REACHED` (Fase 4) y otros que no aplican aquí.
-- **«PIN aún no usado» / «PIN temporal»:** salen de `ultimoAccesoEn` y `pinCambiadoEn` (R13). Los DTO exponen `pinSinUsar` y `pinCambiado` ya calculados; el contrato real puede traer las fechas.
-- **Cambiar el PIN:** cuerpo `{ pinActual, pinNuevo }`; el plan dice que el delegado puede cambiarlo, no el formato.
-- **Portal del delegado sin guard de servidor:** `/delegado` es un componente de cliente porque no hay API real. Con MSW el proxy deja pasar `/delegado` (sesión simulada, solo desarrollo).
-- **Slugs reservados:** `login` y `bloqueada` chocan con las rutas fijas de `/delegado/…` y `/mesa/…`. Conviene que el backend los prohíba como slug de cliente.
-- **Todo el mock se borra** (`src/mocks/fase3/`, el bypass del proxy y los hooks a mano) al integrar el contrato real.
+## 3. Cómo continuar en otra sesión
 
-## 4. Cómo probarlo sin backend
+1. Backend local: `node dist/main` desde `../cancha-nica-api` (Postgres en Docker, puerto 5433; **no modificar ese repo**). Si el contrato cambió: copiar `docs/contrato/openapi.snapshot.json` y `FRONT_FASE_03.md`, `pnpm api:generate`.
+2. El backend bloquea la red tras 5 logins fallidos (`IP_LOCKED`, ~15 min): no repetir pruebas con credenciales malas.
+3. Un E2E mock deja a veces un proceso huérfano en el puerto 3999 (`tests/e2e-mock/api-falsa.mjs`): si Playwright dice «already used», parar ese proceso.
 
-Igual que la Fase 2: backend de la Fase 1 levantado y `NEXT_PUBLIC_USE_MSW=true pnpm dev`. Datos de ejemplo: clubes Los Tigres, Deportivo Norte y Atlético Sur; delegados Pedro Gómez (`+50588880001`, PIN `111111`, nunca entró), Ana Ruiz (`+50588880002`, `222222`) y Marta Díaz (`+50588880009`, `333333`, sin equipos); entrar en `/delegado/sopa`.
+## 4. PENDIENTE (literal)
 
-## 5. Decisiones de implementación
+1. **No existe E2E contra el backend real para la Fase 3.** `tests/e2e-api/` solo cubre hasta la Fase 2. Escribir y correr `pnpm test:e2e:api` (variables `E2E_PLATAFORMA_EMAIL/PASSWORD` leídas del `.env` del backend solo para el comando, nunca en archivos) con el flujo: alta de equipo con delegado nuevo (PIN una vez), delegado existente por teléfono, `EQUIPO_DUPLICADO`, renombrar, retirar/reincorporar, equipo tardío, login del delegado por slug, `/delegado/me`, cambio de PIN, pestañas de plataforma.
+2. **Nada de esto se ha probado a mano en el navegador** ni contra el backend real; solo contra la simulación. Revisar a ojo móvil y escritorio.
+3. **Semántica de `useClubes({ archivados: true })`:** no se sabe si la API devuelve solo archivados o ambos; la pantalla muestra lo que llegue. Confirmar contra el backend real.
+4. **Bypass de sesión simulada:** `src/proxy.ts` y el layout `(delegado)/delegado/(panel)` mantienen una sesión simulada con MSW (`NEXT_PUBLIC_USE_MSW=true`) para el E2E sin backend. Revisar que no pueda activarse fuera de desarrollo/CI.
+5. **Warnings de lint** (no errores) en `src/mocks/fase2/db.ts` líneas ~575-578 (`_edicionId`, `_excluidos`, `_ids` sin usar).
+6. **Revisión de a11y/UX de la fase** (agente `revisor-ux-a11y`) sin hacer: contraste, foco en diálogos del PIN, tamaños táctiles del portal del delegado.
+7. **Auditoría del flujo del PIN:** confirmar que el PIN nunca queda en `localStorage`, URL, caché de React Query ni logs (solo en el estado del diálogo; `gcTime: 0`).
+8. **Slugs reservados** `login`, `bloqueada` y `refresh` chocan con rutas fijas de `/delegado/…` y `/mesa/…`: pedir al backend que los prohíba como slug de cliente.
+9. **Teléfono:** la tabla de países del front (§9.1) puede quedar corta si el API la amplía; la validación local es solo advertencia. Se envía el teléfono tal cual en el login del delegado (el API lo normaliza).
+10. **Cerrar la fase en el plan del front:** añadir el ajuste `Bn` en `PLAN_FRONTEND.md` (§11 del aviso) y marcar el criterio de salida.
 
-- **Validación del formulario sin esperar al servidor:** `features/equipos/lib/inscripcion.ts` (puro, probado) valida club y delegado según su modo y arma el cuerpo con el teléfono en E.164. El servidor manda.
-- **El formulario no se arma hasta tener los datos:** el modo inicial (club y delegado «existente» o «nuevo») depende de si hay clubes y delegados; armarlo antes de que carguen lo dejaba en «nuevo» por error (lo encontró el E2E).
-- **Diálogo de PIN compartido:** `shared/ui/pin-entrega.tsx` sirve a mesas y delegados; cada uno arma su mensaje y su `wa.me`.
-- **`aE164` pasó a `shared/lib/telefono.ts`** (lo usan plataforma y delegados; `plataforma/lib/formato.ts` lo reexporta).
-- **El PIN nunca se guarda:** vive solo en el estado del diálogo que lo muestra; las mutaciones usan `gcTime: 0`. Los listados no lo traen.
-- **Tras cambiar el PIN se vuelve a leer `/delegado/me`** para que desaparezca el aviso de PIN temporal.
+## 5. Qué NO entra (otras fases)
 
-## 6. Pruebas
-
-- **Vitest:** la base simulada (club único, alta en un paso, PIN una sola vez y ausente de los listados, sin restos si falla, categoría, teléfono duplicado o inválido, reasignar, resetear, login indistinguible, cambiar PIN) y la validación del formulario.
-- **E2E sin backend (`pnpm test:e2e:mock`, 37 pruebas en total, también en el CI):** las 19 de la Fase 3 cubren clubes (duplicado, renombrar, desactivar, conteo), delegados (estados del PIN, resetear), equipos (lista, inscribir en un paso con PIN y copiar, categoría deshabilitada, solo clubes que faltan, teléfono repetido, validación, inscripciones cerradas, cambiar delegado) y el portal del delegado (login indistinguible, validación, cambio de PIN, **un delegado con dos equipos en categorías distintas**).
-
-## 7. Qué NO se hizo (a propósito)
-
-- **Estado del equipo** (`BORRADOR`, `CONFIRMADO`, `DECLINADO`) y **habilitado**: llegan con la renovación (Fase 10) y el arranque de la liga.
-- **Desbloquear a un delegado** y **desactivarlo**: el modelo tiene `bloqueadoHasta` y `activo`, pero el plan de la fase no pide estas acciones. Resetear el PIN ya desbloquea.
-- **Autorización del dueño para un equipo agregado tras el arranque** (H14) y regenerar el fixture: Fase 5.
-- **Escudo del club:** `escudoUrl` espera a Storage (deuda técnica).
-- **Lectura de plataforma** (`/plataforma/organizaciones/:id/delegados|equipos`) y los conteos de la ficha: dependen del contrato.
-- **Plantilla, calendario y cuentas del equipo** en el portal del delegado: Fases 4 a 6.
-- **Mejorar la lista de requisitos de arranque de la liga:** «faltan equipos» aún no usa los equipos simulados.
+- Efecto de retiros y equipos tardíos sobre puntos y calendario: Fase 5 (hoy el API solo guarda el estado; no se promete recálculo en pantalla).
+- Jugadores y planteles: Fase 4. Finanzas y sanciones de equipo: Fase 6. Partido en vivo: Fase 7.
+- Escudo del club (`escudoUrl` siempre `null`): espera a Storage.
+- Carga masiva de equipos: no existe en el API.
